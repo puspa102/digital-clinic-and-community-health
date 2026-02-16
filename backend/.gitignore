@@ -1,37 +1,98 @@
-# Node modules
+# Dependencies
 node_modules/
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # Environment variables
 .env
 .env.local
-.env.development
-.env.production
-.env.test
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
 
-# Build output
-dist/
-build/
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Cache
-.cache/
-.tmp/
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
 
-# OS/System files
-.DS_Store
-Thumbs.db
+# Coverage directory used by testing tools
+coverage/
+.nyc_output/
 
-# IDE files
-.vscode/
+# IDE and editor files
 .idea/
-
-# Temporary files
-*.tmp
+.vscode/
 *.swp
 *.swo
+*.swn
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+out/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Database files (SQLite)
+*.sqlite
+*.sqlite3
+*.db
+
+# Uploaded files (if applicable)
+uploads/
+public/uploads/
+
+# Documentation build
+docs/_build/
+
+# Test files
+__tests__/
+*.test.js
+*.spec.js
+test-results/
+
+# Miscellaneous
+*.bak
+*.backup
+.cache/
