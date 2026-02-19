@@ -28,6 +28,7 @@ import {
 import {
   authLimiter,
   otpLimiter,
+  refreshTokenLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
 
 const router = express.Router();
@@ -38,14 +39,14 @@ const router = express.Router();
 
 /**
  * @route   POST /api/auth/register
- * @desc    Register a new user
+ * @desc    Register a new patient account (public registration is Patient-only)
  * @access  Public
  */
 router.post(
   "/register",
   // #swagger.tags = ['Authentication']
-  // #swagger.summary = 'Register a new user'
-  // #swagger.description = 'Creates a new user account and sends OTP for verification'
+  // #swagger.summary = 'Register a new patient'
+  // #swagger.description = 'Creates a new Patient account and sends OTP for verification. Public registration is ONLY for patients. Pharmacies are created by Admin (POST /api/pharmacies). Doctors are created by Pharmacies (POST /api/pharmacies/doctors).'
   /* #swagger.parameters['body'] = {
     in: 'body',
     required: true,
@@ -53,16 +54,27 @@ router.post(
       full_name: 'John Doe',
       email: 'john@example.com',
       password: 'SecurePass123',
-      role: 'Patient',
       phone: '+977-9812345678'
     }
   } */
   /* #swagger.responses[201] = {
-    description: 'User registered successfully',
+    description: 'Patient registered successfully',
     schema: {
       success: true,
-      message: 'User registered. Please verify OTP to activate account.',
-      user_id: 1
+      message: 'User registered successfully. Please verify OTP to activate account.',
+      data: {
+        user_id: 1,
+        email: 'john@example.com',
+        role: 'Patient',
+        status: 'approved'
+      }
+    }
+  } */
+  /* #swagger.responses[403] = {
+    description: 'Non-patient role rejected',
+    schema: {
+      success: false,
+      message: 'Public registration is only for patients. Pharmacies are created by Admin and Doctors are created by Pharmacies.'
     }
   } */
   authLimiter,
@@ -175,6 +187,7 @@ router.get(
       accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
     }
   } */
+  refreshTokenLimiter,
   refreshAccessToken,
 );
 
@@ -397,17 +410,17 @@ router.delete(
 
 /**
  * @route   GET /api/auth/patients
- * @desc    Get all patients (Admin and Doctor)
- * @access  Private (Admin, Doctor)
+ * @desc    Get all patients (Admin, Doctor, and Pharmacy)
+ * @access  Private (Admin, Doctor, Pharmacy)
  */
 router.get(
   "/patients",
   // #swagger.tags = ['User Management']
   // #swagger.summary = 'Get all patients'
-  // #swagger.description = 'Retrieves all patient users (Admin and Doctor only)'
+  // #swagger.description = 'Retrieves all patient users (Admin, Doctor, and Pharmacy)'
   // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
-  authorizeRoles("Admin", "Doctor"),
+  authorizeRoles("Admin", "Doctor", "Pharmacy"),
   (req, res, next) => {
     req.query.role = "Patient";
     next();

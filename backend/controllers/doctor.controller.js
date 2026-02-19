@@ -1,4 +1,5 @@
 import Doctor from "../models/doctor.model.js";
+import Pharmacy from "../models/pharmacy.model.js";
 import User from "../models/user.model.js";
 import { Op } from "sequelize";
 import {
@@ -10,110 +11,45 @@ import {
 import {
   HTTP_STATUS,
   USER_ROLES,
+  USER_STATUS,
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
 } from "../utils/constants.js";
 
 /**
- * Create doctor profile
- * @route POST /api/doctors/profile
+ * Standard includes used when fetching doctors with full associations
  */
-export const createDoctorProfile = async (req, res) => {
-  try {
-    const {
-      user_id,
-      specialization,
-      license_number,
-      experience_years,
-      hospital_name,
-      bio,
-      availability_json,
-    } = req.body;
-
-    // Ensure user exists and has doctor role
-    const user = await User.findByPk(user_id);
-    if (!user) {
-      return errorResponse(
-        res,
-        HTTP_STATUS.NOT_FOUND,
-        ERROR_MESSAGES.USER_NOT_FOUND,
-      );
-    }
-
-    if (user.role !== USER_ROLES.DOCTOR) {
-      return errorResponse(
-        res,
-        HTTP_STATUS.BAD_REQUEST,
-        ERROR_MESSAGES.INVALID_DOCTOR_USER,
-      );
-    }
-
-    // Check if doctor profile already exists
-    const existingProfile = await Doctor.findOne({ where: { user_id } });
-    if (existingProfile) {
-      return errorResponse(
-        res,
-        HTTP_STATUS.CONFLICT,
-        ERROR_MESSAGES.DOCTOR_PROFILE_EXISTS,
-      );
-    }
-
-    // Check if license number is already taken
-    const existingLicense = await Doctor.findOne({ where: { license_number } });
-    if (existingLicense) {
-      return errorResponse(
-        res,
-        HTTP_STATUS.CONFLICT,
-        "License number already registered",
-      );
-    }
-
-    // Create doctor profile
-    const doctor = await Doctor.create({
-      user_id,
-      specialization,
-      license_number,
-      experience_years,
-      hospital_name,
-      bio,
-      availability_json,
-    });
-
-    // Fetch complete profile with user info
-    const completeProfile = await Doctor.findByPk(doctor.doctor_id, {
-      include: {
-        model: User,
-        attributes: ["full_name", "email", "phone", "status"],
-      },
-    });
-
-    return successResponse(
-      res,
-      HTTP_STATUS.CREATED,
-      SUCCESS_MESSAGES.PROFILE_CREATED,
-      completeProfile,
-    );
-  } catch (error) {
-    console.error("Create doctor profile error:", error);
-    return errorResponse(
-      res,
-      HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      ERROR_MESSAGES.SERVER_ERROR,
-    );
-  }
-};
+const fullDoctorIncludes = [
+  {
+    model: User,
+    attributes: ["user_id", "full_name", "email", "phone", "status"],
+  },
+  {
+    model: Pharmacy,
+    attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"],
+  },
+];
 
 /**
  * Get all doctors with pagination
+ *
+ * Public endpoint — only shows doctors whose User status is approved.
+ *
  * @route GET /api/doctors
+ * @access Public
  */
 export const getAllDoctors = async (req, res) => {
   try {
     const { limit, offset, page } = getPagination(req.query);
-    const { specialization, hospital, experience_min, experience_max } =
-      req.query;
+    const {
+      specialization,
+      hospital,
+      experience_min,
+      experience_max,
+      pharmacy_id,
+    } = req.query;
 
-    // Build where clause
+    // Build where clause for Doctor
     const where = {};
     if (specialization) {
       where.specialization = { [Op.iLike]: `%${specialization}%` };
@@ -130,14 +66,23 @@ export const getAllDoctors = async (req, res) => {
         [Op.lte]: parseInt(experience_max, 10),
       };
     }
+    if (pharmacy_id) {
+      where.pharmacy_id = parseInt(pharmacy_id, 10);
+    }
 
     const { count, rows: doctors } = await Doctor.findAndCountAll({
       where,
-      include: {
-        model: User,
-        attributes: ["full_name", "email", "phone", "status"],
-        where: { status: "approved" }, // Only show approved doctors
-      },
+      include: [
+        {
+          model: User,
+          attributes: ["user_id", "full_name", "email", "phone", "status"],
+          where: { status: USER_STATUS.APPROVED }, // Only show approved doctors
+        },
+        {
+          model: Pharmacy,
+          attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"],
+        },
+      ],
       limit,
       offset,
       order: [["created_at", "DESC"]],
@@ -164,36 +109,50 @@ export const getAllDoctors = async (req, res) => {
 /**
  * Search doctors by name, specialization, or hospital
  * @route GET /api/doctors/search
+ * @access Public
  */
 export const searchDoctors = async (req, res) => {
   try {
     const { limit, offset, page } = getPagination(req.query);
-    const { q, specialization } = req.query;
+    const { q, specialization, pharmacy_id } = req.query;
 
     // Build doctor where clause
     const doctorWhere = {};
     if (specialization) {
       doctorWhere.specialization = { [Op.iLike]: `%${specialization}%` };
     }
+    if (pharmacy_id) {
+      doctorWhere.pharmacy_id = parseInt(pharmacy_id, 10);
+    }
 
     // Build user where clause for name search
-    const userWhere = { status: "approved" };
+    const userWhere = { status: USER_STATUS.APPROVED };
+
     if (q) {
+      // Search across doctor fields and user name
       userWhere[Op.or] = [{ full_name: { [Op.iLike]: `%${q}%` } }];
-      // Also search in doctor fields
-      doctorWhere[Op.or] = [
-        { specialization: { [Op.iLike]: `%${q}%` } },
-        { hospital_name: { [Op.iLike]: `%${q}%` } },
-      ];
+
+      if (!specialization) {
+        doctorWhere[Op.or] = [
+          { specialization: { [Op.iLike]: `%${q}%` } },
+          { hospital_name: { [Op.iLike]: `%${q}%` } },
+        ];
+      }
     }
 
     const { count, rows: doctors } = await Doctor.findAndCountAll({
-      where: q ? { [Op.or]: [doctorWhere, {}] } : doctorWhere,
-      include: {
-        model: User,
-        attributes: ["full_name", "email", "phone", "status"],
-        where: userWhere,
-      },
+      where: doctorWhere,
+      include: [
+        {
+          model: User,
+          attributes: ["user_id", "full_name", "email", "phone", "status"],
+          where: userWhere,
+        },
+        {
+          model: Pharmacy,
+          attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"],
+        },
+      ],
       limit,
       offset,
       order: [["experience_years", "DESC"]],
@@ -220,6 +179,7 @@ export const searchDoctors = async (req, res) => {
 /**
  * Get doctors by specialization
  * @route GET /api/doctors/specialization/:specialization
+ * @access Public
  */
 export const getDoctorsBySpecialization = async (req, res) => {
   try {
@@ -230,11 +190,17 @@ export const getDoctorsBySpecialization = async (req, res) => {
       where: {
         specialization: { [Op.iLike]: `%${specialization}%` },
       },
-      include: {
-        model: User,
-        attributes: ["full_name", "email", "phone", "status"],
-        where: { status: "approved" },
-      },
+      include: [
+        {
+          model: User,
+          attributes: ["user_id", "full_name", "email", "phone", "status"],
+          where: { status: USER_STATUS.APPROVED },
+        },
+        {
+          model: Pharmacy,
+          attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"],
+        },
+      ],
       limit,
       offset,
       order: [["experience_years", "DESC"]],
@@ -261,14 +227,12 @@ export const getDoctorsBySpecialization = async (req, res) => {
 /**
  * Get doctor by ID
  * @route GET /api/doctors/:id
+ * @access Public
  */
 export const getDoctorById = async (req, res) => {
   try {
     const doctor = await Doctor.findByPk(req.params.id, {
-      include: {
-        model: User,
-        attributes: ["full_name", "email", "phone", "status"],
-      },
+      include: fullDoctorIncludes,
     });
 
     if (!doctor) {
@@ -296,13 +260,55 @@ export const getDoctorById = async (req, res) => {
 };
 
 /**
+ * Get the profile of the currently logged-in doctor
+ * @route GET /api/doctors/me
+ * @access Private (Doctor)
+ */
+export const getMyDoctorProfile = async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({
+      where: { user_id: req.user.id },
+      include: fullDoctorIncludes,
+    });
+
+    if (!doctor) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        "Doctor profile not found for your account",
+      );
+    }
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Doctor profile retrieved successfully",
+      doctor,
+    );
+  } catch (error) {
+    console.error("Get my doctor profile error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
  * Update doctor profile
+ *
+ * The doctor themselves, their parent pharmacy, or an admin can update.
+ * NOTE: Doctors are created by pharmacies (via POST /api/pharmacies/doctors),
+ * so there is no self-creation endpoint here.
+ *
  * @route PUT /api/doctors/:id
+ * @access Private (Doctor owner, Pharmacy owner, Admin)
  */
 export const updateDoctor = async (req, res) => {
   try {
     const doctor = await Doctor.findByPk(req.params.id, {
-      include: { model: User },
+      include: [{ model: User }, { model: Pharmacy }],
     });
 
     if (!doctor) {
@@ -313,12 +319,24 @@ export const updateDoctor = async (req, res) => {
       );
     }
 
-    // Check ownership (doctor can only update their own profile, unless admin)
-    if (req.user.role !== USER_ROLES.ADMIN && doctor.user_id !== req.user.id) {
+    // Permission: the doctor themselves, the pharmacy that owns them, or admin
+    const isAdmin = req.user.role === USER_ROLES.ADMIN;
+    const isDoctorOwner = doctor.user_id === req.user.id;
+
+    let isPharmacyOwner = false;
+    if (req.user.role === USER_ROLES.PHARMACY) {
+      const pharmacy = await Pharmacy.findOne({
+        where: { user_id: req.user.id },
+      });
+      isPharmacyOwner =
+        pharmacy && pharmacy.pharmacy_id === doctor.pharmacy_id;
+    }
+
+    if (!isDoctorOwner && !isPharmacyOwner && !isAdmin) {
       return errorResponse(
         res,
         HTTP_STATUS.FORBIDDEN,
-        "You can only update your own profile",
+        "You can only update your own profile, or a doctor in your pharmacy",
       );
     }
 
@@ -329,6 +347,7 @@ export const updateDoctor = async (req, res) => {
       "experience_years",
       "hospital_name",
       "bio",
+      "consultation_fee",
       "availability_json",
     ];
 
@@ -361,12 +380,9 @@ export const updateDoctor = async (req, res) => {
 
     await doctor.update(updateData);
 
-    // Fetch updated profile
+    // Fetch updated profile with full includes
     const updatedDoctor = await Doctor.findByPk(req.params.id, {
-      include: {
-        model: User,
-        attributes: ["full_name", "email", "phone", "status"],
-      },
+      include: fullDoctorIncludes,
     });
 
     return successResponse(
@@ -386,8 +402,12 @@ export const updateDoctor = async (req, res) => {
 };
 
 /**
- * Delete doctor profile (Admin only)
+ * Delete doctor profile
+ *
+ * Only the parent pharmacy or an admin can delete a doctor.
+ *
  * @route DELETE /api/doctors/:id
+ * @access Private (Pharmacy owner, Admin)
  */
 export const deleteDoctor = async (req, res) => {
   try {
@@ -401,7 +421,33 @@ export const deleteDoctor = async (req, res) => {
       );
     }
 
+    // Permission: the pharmacy that owns the doctor, or admin
+    const isAdmin = req.user.role === USER_ROLES.ADMIN;
+
+    let isPharmacyOwner = false;
+    if (req.user.role === USER_ROLES.PHARMACY) {
+      const pharmacy = await Pharmacy.findOne({
+        where: { user_id: req.user.id },
+      });
+      isPharmacyOwner =
+        pharmacy && pharmacy.pharmacy_id === doctor.pharmacy_id;
+    }
+
+    if (!isPharmacyOwner && !isAdmin) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        "Only the parent pharmacy or an admin can delete a doctor",
+      );
+    }
+
+    // Also delete the associated user account
+    const user = await User.findByPk(doctor.user_id);
+
     await doctor.destroy();
+    if (user) {
+      await user.destroy();
+    }
 
     return successResponse(
       res,

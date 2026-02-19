@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../database/database.js";
 import User from "./user.model.js";
+import Pharmacy from "./pharmacy.model.js";
 import Doctor from "./doctor.model.js";
 
 const Appointment = sequelize.define(
@@ -21,13 +22,24 @@ const Appointment = sequelize.define(
       },
     },
 
-    doctor_id: {
+    pharmacy_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: Pharmacy,
+        key: "pharmacy_id",
+      },
+      comment: "Patient books appointment at a specific pharmacy",
+    },
+
+    doctor_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
       references: {
         model: Doctor,
         key: "doctor_id",
       },
+      comment: "Assigned later by the pharmacy; null until assigned",
     },
 
     appointment_date: {
@@ -40,15 +52,24 @@ const Appointment = sequelize.define(
       allowNull: false,
     },
 
+    reason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "Patient describes why they need the appointment",
+    },
+
     status: {
       type: DataTypes.ENUM(
         "requested",
+        "assigned",
         "confirmed",
         "completed",
         "cancelled",
         "no_show"
       ),
       defaultValue: "requested",
+      comment:
+        "requested = patient booked; assigned = pharmacy assigned doctor; confirmed = doctor accepted; completed/cancelled/no_show = terminal states",
     },
 
     payment_status: {
@@ -63,7 +84,7 @@ const Appointment = sequelize.define(
 
     payment_reference: {
       type: DataTypes.STRING,
-      allowNull: true, // eSewa / Khalti transaction ID
+      allowNull: true,
     },
 
     created_at: {
@@ -79,8 +100,12 @@ const Appointment = sequelize.define(
 
 // Relations
 User.hasMany(Appointment, { foreignKey: "patient_id" });
+Appointment.belongsTo(User, { foreignKey: "patient_id", as: "Patient" });
+
+Pharmacy.hasMany(Appointment, { foreignKey: "pharmacy_id" });
+Appointment.belongsTo(Pharmacy, { foreignKey: "pharmacy_id" });
+
 Doctor.hasMany(Appointment, { foreignKey: "doctor_id" });
-Appointment.belongsTo(User, { foreignKey: "patient_id" });
 Appointment.belongsTo(Doctor, { foreignKey: "doctor_id" });
 
 export default Appointment;

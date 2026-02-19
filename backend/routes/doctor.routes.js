@@ -1,8 +1,8 @@
 import express from "express";
 import {
-  createDoctorProfile,
   getAllDoctors,
   getDoctorById,
+  getMyDoctorProfile,
   updateDoctor,
   deleteDoctor,
   getDoctorsBySpecialization,
@@ -10,42 +10,15 @@ import {
 } from "../controllers/doctor.controller.js";
 import { verifyToken, authorizeRoles } from "../middlewares/auth.middleware.js";
 import {
-  validateDoctorProfile,
   validateDoctorUpdate,
   validateIdParam,
 } from "../middlewares/validation.middleware.js";
 
 const router = express.Router();
 
-/**
- * @route   POST /api/doctors/profile
- * @desc    Create doctor profile
- * @access  Private (Doctor only)
- */
-router.post(
-  "/profile",
-  // #swagger.tags = ['Doctors']
-  // #swagger.summary = 'Create doctor profile'
-  // #swagger.description = 'Creates a new doctor profile for a registered doctor user'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      user_id: 5,
-      specialization: 'Cardiologist',
-      license_number: 'DOC-NEP-12345',
-      experience_years: 8,
-      hospital_name: 'Kathmandu Medical',
-      bio: 'Heart specialist with 8 years of experience',
-      availability_json: { "mon": ["10:00","12:00"], "tue": ["14:00","16:00"] }
-    }
-  } */
-  verifyToken,
-  authorizeRoles("Doctor", "Admin"),
-  validateDoctorProfile,
-  createDoctorProfile,
-);
+// ============================================
+// Public Routes — Browse & search doctors
+// ============================================
 
 /**
  * @route   GET /api/doctors
@@ -56,17 +29,14 @@ router.get(
   "/",
   // #swagger.tags = ['Doctors']
   // #swagger.summary = 'Get all doctors'
-  // #swagger.description = 'Retrieves all doctors with pagination support'
-  /* #swagger.parameters['page'] = {
-    in: 'query',
-    type: 'integer',
-    description: 'Page number (default: 1)'
-  } */
-  /* #swagger.parameters['limit'] = {
-    in: 'query',
-    type: 'integer',
-    description: 'Items per page (default: 10, max: 100)'
-  } */
+  // #swagger.description = 'Retrieves all approved doctors with pagination. Optionally filter by specialization, hospital, experience, or pharmacy.'
+  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number (default: 1)' } */
+  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page (default: 10, max: 100)' } */
+  /* #swagger.parameters['specialization'] = { in: 'query', type: 'string', description: 'Filter by specialization' } */
+  /* #swagger.parameters['hospital'] = { in: 'query', type: 'string', description: 'Filter by hospital name' } */
+  /* #swagger.parameters['experience_min'] = { in: 'query', type: 'integer', description: 'Minimum experience years' } */
+  /* #swagger.parameters['experience_max'] = { in: 'query', type: 'integer', description: 'Maximum experience years' } */
+  /* #swagger.parameters['pharmacy_id'] = { in: 'query', type: 'integer', description: 'Filter by pharmacy ID' } */
   getAllDoctors,
 );
 
@@ -79,27 +49,12 @@ router.get(
   "/search",
   // #swagger.tags = ['Doctors']
   // #swagger.summary = 'Search doctors'
-  // #swagger.description = 'Search doctors by name, specialization, or hospital'
-  /* #swagger.parameters['q'] = {
-    in: 'query',
-    type: 'string',
-    description: 'Search query'
-  } */
-  /* #swagger.parameters['specialization'] = {
-    in: 'query',
-    type: 'string',
-    description: 'Filter by specialization'
-  } */
-  /* #swagger.parameters['page'] = {
-    in: 'query',
-    type: 'integer',
-    description: 'Page number'
-  } */
-  /* #swagger.parameters['limit'] = {
-    in: 'query',
-    type: 'integer',
-    description: 'Items per page'
-  } */
+  // #swagger.description = 'Search doctors by name, specialization, or hospital. Optionally filter by pharmacy.'
+  /* #swagger.parameters['q'] = { in: 'query', type: 'string', description: 'Search query (matches name, specialization, hospital)' } */
+  /* #swagger.parameters['specialization'] = { in: 'query', type: 'string', description: 'Filter by specialization' } */
+  /* #swagger.parameters['pharmacy_id'] = { in: 'query', type: 'integer', description: 'Filter by pharmacy ID' } */
+  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
+  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
   searchDoctors,
 );
 
@@ -112,15 +67,34 @@ router.get(
   "/specialization/:specialization",
   // #swagger.tags = ['Doctors']
   // #swagger.summary = 'Get doctors by specialization'
-  // #swagger.description = 'Retrieves all doctors with a specific specialization'
-  /* #swagger.parameters['specialization'] = {
-    in: 'path',
-    required: true,
-    type: 'string',
-    description: 'Doctor specialization'
-  } */
+  // #swagger.description = 'Retrieves all approved doctors with a specific specialization'
+  /* #swagger.parameters['specialization'] = { in: 'path', required: true, type: 'string', description: 'Doctor specialization' } */
   getDoctorsBySpecialization,
 );
+
+// ============================================
+// Protected Routes — Doctor's own profile
+// ============================================
+
+/**
+ * @route   GET /api/doctors/me
+ * @desc    Get the profile of the currently logged-in doctor
+ * @access  Private (Doctor)
+ */
+router.get(
+  "/me",
+  // #swagger.tags = ['Doctors']
+  // #swagger.summary = 'Get my doctor profile'
+  // #swagger.description = 'Returns the doctor profile for the currently logged-in doctor user, including pharmacy info'
+  // #swagger.security = [{ "bearerAuth": [] }]
+  verifyToken,
+  authorizeRoles("Doctor"),
+  getMyDoctorProfile,
+);
+
+// ============================================
+// Public Route — Get doctor by ID
+// ============================================
 
 /**
  * @route   GET /api/doctors/:id
@@ -131,34 +105,29 @@ router.get(
   "/:id",
   // #swagger.tags = ['Doctors']
   // #swagger.summary = 'Get doctor by ID'
-  // #swagger.description = 'Retrieves a specific doctor by their ID'
-  /* #swagger.parameters['id'] = {
-    in: 'path',
-    required: true,
-    type: 'integer',
-    description: 'Doctor ID'
-  } */
+  // #swagger.description = 'Retrieves a specific doctor by their ID, including pharmacy info'
+  /* #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer', description: 'Doctor ID' } */
   validateIdParam,
   getDoctorById,
 );
 
+// ============================================
+// Protected Routes — Update & delete
+// NOTE: Doctors are created by Pharmacies via POST /api/pharmacies/doctors
+// ============================================
+
 /**
  * @route   PUT /api/doctors/:id
  * @desc    Update doctor profile
- * @access  Private (Owner or Admin)
+ * @access  Private (Doctor owner, Pharmacy owner, Admin)
  */
 router.put(
   "/:id",
   // #swagger.tags = ['Doctors']
   // #swagger.summary = 'Update doctor profile'
-  // #swagger.description = 'Updates an existing doctor profile'
+  // #swagger.description = 'Updates an existing doctor profile. The doctor themselves, their parent pharmacy, or an admin can update.'
   // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['id'] = {
-    in: 'path',
-    required: true,
-    type: 'integer',
-    description: 'Doctor ID'
-  } */
+  /* #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer', description: 'Doctor ID' } */
   /* #swagger.parameters['body'] = {
     in: 'body',
     required: true,
@@ -166,34 +135,31 @@ router.put(
       specialization: 'Neurologist',
       experience_years: 10,
       hospital_name: 'Nepal Medical College',
-      bio: 'Updated bio'
+      bio: 'Updated bio',
+      consultation_fee: 700,
+      availability_json: { "mon": ["10:00","12:00"], "wed": ["14:00","16:00"] }
     }
   } */
   verifyToken,
-  authorizeRoles("Doctor", "Admin"),
+  authorizeRoles("Doctor", "Pharmacy", "Admin"),
   validateDoctorUpdate,
   updateDoctor,
 );
 
 /**
  * @route   DELETE /api/doctors/:id
- * @desc    Delete doctor profile
- * @access  Private (Admin only)
+ * @desc    Delete doctor profile and user account
+ * @access  Private (Pharmacy owner, Admin)
  */
 router.delete(
   "/:id",
   // #swagger.tags = ['Doctors']
-  // #swagger.summary = 'Delete doctor profile'
-  // #swagger.description = 'Deletes a doctor profile (Admin only)'
+  // #swagger.summary = 'Delete doctor (Pharmacy or Admin only)'
+  // #swagger.description = 'Permanently deletes a doctor profile and its associated user account. Only the parent pharmacy or an admin can delete.'
   // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['id'] = {
-    in: 'path',
-    required: true,
-    type: 'integer',
-    description: 'Doctor ID'
-  } */
+  /* #swagger.parameters['id'] = { in: 'path', required: true, type: 'integer', description: 'Doctor ID' } */
   verifyToken,
-  authorizeRoles("Admin"),
+  authorizeRoles("Pharmacy", "Admin"),
   validateIdParam,
   deleteDoctor,
 );

@@ -44,10 +44,6 @@ export const validateRegister = [
     .withMessage(
       "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     ),
-  body("role")
-    .optional()
-    .isIn(["Doctor", "Patient", "Admin", "Pharmacy"])
-    .withMessage("Invalid role"),
   body("phone")
     .optional()
     .trim()
@@ -212,7 +208,7 @@ export const validateAppointmentStatus = [
   body("status")
     .notEmpty()
     .withMessage("Status is required")
-    .isIn(["requested", "confirmed", "completed", "cancelled", "no_show"])
+    .isIn(["requested", "assigned", "confirmed", "completed", "cancelled", "no_show"])
     .withMessage("Invalid status value"),
   handleValidationErrors,
 ];

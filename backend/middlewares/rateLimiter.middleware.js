@@ -33,6 +33,22 @@ export const authLimiter = rateLimit({
 });
 
 /**
+ * Refresh token rate limiter
+ * More lenient than auth limiter since refresh is automatic
+ * Limits each IP to 20 requests per 5 minutes
+ */
+export const refreshTokenLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20, // Limit each IP to 20 requests per windowMs
+  message: {
+    success: false,
+    message: "Too many token refresh attempts, please try again after 5 minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
  * OTP verification rate limiter
  * Limits each IP to 3 OTP verification attempts per 5 minutes
  */
@@ -81,6 +97,7 @@ export const emergencyLimiter = rateLimit({
 export default {
   apiLimiter,
   authLimiter,
+  refreshTokenLimiter,
   otpLimiter,
   paymentLimiter,
   emergencyLimiter,

@@ -30,6 +30,7 @@ export {
 export {
   apiLimiter,
   authLimiter,
+  refreshTokenLimiter,
   otpLimiter,
   paymentLimiter,
   emergencyLimiter,
@@ -67,6 +68,7 @@ export default {
   rateLimiter: {
     apiLimiter,
     authLimiter,
+    refreshTokenLimiter,
     otpLimiter,
     paymentLimiter,
     emergencyLimiter,

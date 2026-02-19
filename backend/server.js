@@ -24,6 +24,7 @@ import {
 
 // Routes
 import authRoutes from "./routes/auth.routes.js";
+import pharmacyRoutes from "./routes/pharmacy.routes.js";
 import doctorRoutes from "./routes/doctor.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
@@ -138,8 +139,11 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     description: "Digital Clinic Backend API",
     documentation: "/api-docs",
+    description:
+      "Digital Clinic Backend API. Patients register publicly. Pharmacies are created by Admin. Doctors are created by Pharmacies. Patients book appointments at Pharmacies, and Pharmacies assign their Doctors.",
     endpoints: {
       auth: "/api/auth",
+      pharmacies: "/api/pharmacies",
       doctors: "/api/doctors",
       appointments: "/api/appointments",
       payments: "/api/payments",
@@ -155,7 +159,10 @@ app.get("/", (req, res) => {
 // Authentication routes
 app.use("/api/auth", authRoutes);
 
-// Doctor routes
+// Pharmacy routes (Admin creates pharmacies, Pharmacy creates doctors & assigns them to appointments)
+app.use("/api/pharmacies", pharmacyRoutes);
+
+// Doctor routes (public browsing, doctor profile management)
 app.use("/api/doctors", doctorRoutes);
 
 // Appointment routes

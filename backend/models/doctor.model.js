@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../database/database.js";
 import User from "./user.model.js";
+import Pharmacy from "./pharmacy.model.js";
 
 const Doctor = sequelize.define(
   "Doctor",
@@ -15,6 +16,20 @@ const Doctor = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       unique: true,
+      references: {
+        model: User,
+        key: "user_id",
+      },
+    },
+
+    pharmacy_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Pharmacy,
+        key: "pharmacy_id",
+      },
+      comment: "The pharmacy this doctor belongs to (created by that pharmacy)",
     },
 
     specialization: {
@@ -43,6 +58,12 @@ const Doctor = sequelize.define(
       allowNull: true,
     },
 
+    consultation_fee: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      comment: "Default consultation fee for this doctor",
+    },
+
     availability_json: {
       type: DataTypes.JSON,
       allowNull: true,
@@ -56,11 +77,14 @@ const Doctor = sequelize.define(
   {
     tableName: "doctors",
     timestamps: false,
-  },
+  }
 );
 
-// RELATION
+// RELATIONS
 Doctor.belongsTo(User, { foreignKey: "user_id" });
 User.hasOne(Doctor, { foreignKey: "user_id" });
+
+Doctor.belongsTo(Pharmacy, { foreignKey: "pharmacy_id" });
+Pharmacy.hasMany(Doctor, { foreignKey: "pharmacy_id" });
 
 export default Doctor;

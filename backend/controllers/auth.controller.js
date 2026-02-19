@@ -24,12 +24,29 @@ import {
 dotenv.config();
 
 /**
- * Register a new user
+ * Register a new user (PUBLIC — Patient only)
+ *
+ * Pharmacies are created by Admin.
+ * Doctors are created by Pharmacies.
+ * This endpoint is exclusively for normal patients.
+ *
  * @route POST /api/auth/register
  */
 export const registerUser = async (req, res) => {
   try {
-    const { full_name, email, password, role, phone } = req.body;
+    const { full_name, email, password, phone } = req.body;
+
+    // ------------------------------------------------------------------
+    // Public registration is ONLY for patients.
+    // If someone tries to pass role=Doctor / Pharmacy / Admin we reject.
+    // ------------------------------------------------------------------
+    if (req.body.role && req.body.role !== USER_ROLES.PATIENT) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        ERROR_MESSAGES.ONLY_PATIENT_REGISTRATION,
+      );
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -56,23 +73,17 @@ export const registerUser = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Set initial status based on role
-    let status = USER_STATUS.APPROVED;
-    if (role === USER_ROLES.DOCTOR || role === USER_ROLES.PHARMACY) {
-      status = USER_STATUS.PENDING;
-    }
-
     // Generate OTP
     const otp = generateOtp();
     const otp_expiry = getOtpExpiry(5);
 
-    // Create user
+    // Create patient user — role is always Patient, status is approved
     const user = await User.create({
       full_name,
       email,
       password_hash: hashedPassword,
-      role: role || USER_ROLES.PATIENT,
-      status,
+      role: USER_ROLES.PATIENT,
+      status: USER_STATUS.APPROVED,
       otp,
       otp_expiry,
       phone,
@@ -260,7 +271,7 @@ export const loginUser = async (req, res) => {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       maxAge: JWT_CONFIG.REFRESH_TOKEN_COOKIE_MAX_AGE,
     });
 
@@ -367,7 +378,7 @@ export const logoutUser = async (req, res) => {
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
     });
 
     return successResponse(

@@ -37,6 +37,7 @@ export const USER_STATUS = {
 // Appointment Status
 export const APPOINTMENT_STATUS = {
   REQUESTED: "requested",
+  ASSIGNED: "assigned",
   CONFIRMED: "confirmed",
   COMPLETED: "completed",
   CANCELLED: "cancelled",
@@ -155,7 +156,12 @@ export const SUCCESS_MESSAGES = {
   PROFILE_CREATED: "Profile created successfully",
   PROFILE_UPDATED: "Profile updated successfully",
   PROFILE_DELETED: "Profile deleted successfully",
-  APPOINTMENT_CREATED: "Appointment requested successfully",
+  PHARMACY_CREATED: "Pharmacy created successfully",
+  PHARMACY_UPDATED: "Pharmacy updated successfully",
+  PHARMACY_DELETED: "Pharmacy deleted successfully",
+  DOCTOR_CREATED_BY_PHARMACY: "Doctor created and linked to pharmacy successfully",
+  APPOINTMENT_CREATED: "Appointment requested at pharmacy successfully",
+  APPOINTMENT_ASSIGNED: "Doctor assigned to appointment successfully",
   APPOINTMENT_UPDATED: "Appointment updated successfully",
   APPOINTMENT_COMPLETED: "Appointment completed successfully",
   PAYMENT_INITIATED: "Payment initiated successfully",
@@ -175,10 +181,19 @@ export const ERROR_MESSAGES = {
   USER_NOT_FOUND: "User not found",
   INVALID_CREDENTIALS: "Invalid email or password",
   INVALID_OTP: "Invalid or expired OTP",
+  PHARMACY_NOT_FOUND: "Pharmacy not found",
+  PHARMACY_PROFILE_EXISTS: "Pharmacy profile already exists for this user",
+  PHARMACY_LICENSE_EXISTS: "Pharmacy license number already registered",
+  INVALID_PHARMACY_USER: "User is not registered as a pharmacy",
   DOCTOR_NOT_FOUND: "Doctor not found",
   DOCTOR_PROFILE_EXISTS: "Doctor profile already exists",
+  DOCTOR_NOT_IN_PHARMACY: "This doctor does not belong to your pharmacy",
   INVALID_DOCTOR_USER: "User is not registered as a doctor",
   APPOINTMENT_NOT_FOUND: "Appointment not found",
+  APPOINTMENT_NOT_IN_PHARMACY: "This appointment does not belong to your pharmacy",
+  APPOINTMENT_ALREADY_ASSIGNED: "This appointment already has a doctor assigned",
+  APPOINTMENT_NO_DOCTOR: "No doctor has been assigned to this appointment yet",
+  ONLY_PATIENT_REGISTRATION: "Public registration is only for patients. Pharmacies are created by Admin and Doctors are created by Pharmacies.",
   EMERGENCY_NOT_FOUND: "Emergency not found",
   EMERGENCY_ALREADY_ACCEPTED: "Emergency has already been accepted",
   UNAUTHORIZED: "Unauthorized access",
@@ -188,11 +203,22 @@ export const ERROR_MESSAGES = {
   SERVER_ERROR: "Internal server error. Please try again later.",
 };
 
+// Appointment status valid transitions
+export const APPOINTMENT_TRANSITIONS = {
+  [APPOINTMENT_STATUS.REQUESTED]: [APPOINTMENT_STATUS.ASSIGNED, APPOINTMENT_STATUS.CANCELLED],
+  [APPOINTMENT_STATUS.ASSIGNED]: [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.CANCELLED],
+  [APPOINTMENT_STATUS.CONFIRMED]: [APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.CANCELLED, APPOINTMENT_STATUS.NO_SHOW],
+  [APPOINTMENT_STATUS.COMPLETED]: [],
+  [APPOINTMENT_STATUS.CANCELLED]: [],
+  [APPOINTMENT_STATUS.NO_SHOW]: [],
+};
+
 export default {
   HTTP_STATUS,
   USER_ROLES,
   USER_STATUS,
   APPOINTMENT_STATUS,
+  APPOINTMENT_TRANSITIONS,
   PAYMENT_STATUS,
   EMERGENCY_TYPES,
   EMERGENCY_STATUS,

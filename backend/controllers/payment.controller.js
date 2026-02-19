@@ -1,5 +1,6 @@
 import Appointment from "../models/appointment.model.js";
 import User from "../models/user.model.js";
+import Pharmacy from "../models/pharmacy.model.js";
 import Doctor from "../models/doctor.model.js";
 import { Op } from "sequelize";
 import {
@@ -28,9 +29,11 @@ export const initiatePayment = async (req, res) => {
     // Find appointment
     const appointment = await Appointment.findByPk(appointment_id, {
       include: [
-        { model: User, attributes: ["full_name", "email", "phone"] },
+        { model: User, as: "Patient", attributes: ["user_id", "full_name", "email", "phone"] },
+        { model: Pharmacy, attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"] },
         {
           model: Doctor,
+          required: false,
           include: [{ model: User, attributes: ["full_name"] }],
         },
       ],
@@ -189,9 +192,11 @@ export const confirmPayment = async (req, res) => {
     // Fetch updated appointment with associations
     const updatedAppointment = await Appointment.findByPk(appointment_id, {
       include: [
-        { model: User, attributes: ["full_name", "email", "phone"] },
+        { model: User, as: "Patient", attributes: ["user_id", "full_name", "email", "phone"] },
+        { model: Pharmacy, attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"] },
         {
           model: Doctor,
+          required: false,
           include: [{ model: User, attributes: ["full_name"] }],
         },
       ],
@@ -235,6 +240,7 @@ export const getPaymentStatus = async (req, res) => {
       attributes: [
         "appointment_id",
         "patient_id",
+        "pharmacy_id",
         "doctor_id",
         "payment_status",
         "payment_amount",
@@ -244,9 +250,11 @@ export const getPaymentStatus = async (req, res) => {
         "appointment_time",
       ],
       include: [
-        { model: User, attributes: ["full_name", "email"] },
+        { model: User, as: "Patient", attributes: ["user_id", "full_name", "email"] },
+        { model: Pharmacy, attributes: ["pharmacy_id", "pharmacy_name", "address"] },
         {
           model: Doctor,
+          required: false,
           include: [{ model: User, attributes: ["full_name"] }],
         },
       ],
@@ -286,7 +294,8 @@ export const getPaymentStatus = async (req, res) => {
         payment_status: appointment.payment_status,
         payment_amount: appointment.payment_amount,
         payment_reference: appointment.payment_reference,
-        patient: appointment.User,
+        patient: appointment.Patient,
+        pharmacy: appointment.Pharmacy,
         doctor: appointment.Doctor,
       },
     );
@@ -349,7 +358,12 @@ export const getPaymentHistory = async (req, res) => {
       ],
       include: [
         {
+          model: Pharmacy,
+          attributes: ["pharmacy_id", "pharmacy_name"],
+        },
+        {
           model: Doctor,
+          required: false,
           include: [{ model: User, attributes: ["full_name"] }],
         },
       ],
