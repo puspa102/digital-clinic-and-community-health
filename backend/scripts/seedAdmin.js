@@ -28,8 +28,8 @@ const DB_PORT = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432;
 // Default admin credentials - CHANGE THESE IN PRODUCTION!
 const DEFAULT_ADMIN = {
   full_name: process.env.ADMIN_NAME || "System Administrator",
-  email: process.env.ADMIN_EMAIL || "anjalniraula334@gmail.com",
-  password: process.env.ADMIN_PASSWORD || "Anjal.2007@123",
+  email: process.env.ADMIN_EMAIL || "puspakhadka123@gmail.com",
+  password: process.env.ADMIN_PASSWORD || "puspa123@",
   phone: process.env.ADMIN_PHONE || "+977-9800000000",
 };
 
