@@ -1,11 +1,93 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Layout from "../../components/Layout";
+import { authAPI, doctorAPI, appointmentAPI, handleApiError, formatDate, getStatusBadgeClass, getRoleBadgeClass } from "../../services/api";
 
 const Dashboard = () => {
-  const stats = [
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalDoctors: 0,
+    totalAppointments: 0,
+    pendingUsers: 0,
+  });
+  const [recentUsers, setRecentUsers] = useState([]);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all data in parallel
+      const [usersResponse, doctorsResponse, appointmentsResponse, pendingUsersResponse] = await Promise.all([
+        authAPI.getAllUsers({ page: 1, limit: 5 }),
+        doctorAPI.getAllDoctors({ page: 1, limit: 10 }),
+        appointmentAPI.getAllAppointments({ page: 1, limit: 10 }),
+        authAPI.getAllUsers({ page: 1, limit: 10, status: "pending" }),
+      ]);
+
+      console.log("Dashboard API Responses:", {
+        users: usersResponse,
+        doctors: doctorsResponse,
+        appointments: appointmentsResponse,
+        pendingUsers: pendingUsersResponse,
+      });
+
+      // Set stats
+      setStats({
+        totalUsers: usersResponse.pagination?.totalItems || 0,
+        totalDoctors: doctorsResponse.pagination?.totalItems || 0,
+        totalAppointments: appointmentsResponse.pagination?.totalItems || 0,
+        pendingUsers: pendingUsersResponse.pagination?.totalItems || 0,
+      });
+
+      // Set recent users
+      if (usersResponse.success && usersResponse.data) {
+        setRecentUsers(usersResponse.data);
+      }
+
+      // Set pending approvals
+      if (pendingUsersResponse.success && pendingUsersResponse.data) {
+        setPendingApprovals(pendingUsersResponse.data);
+      }
+    } catch (err) {
+      console.error("Dashboard API Error:", err);
+      const errorData = handleApiError(err);
+      setError(errorData.message || "Failed to connect to server. Please make sure the backend is running.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveUser = async (userId) => {
+    try {
+      const response = await authAPI.updateUserStatus(userId, "approved");
+      if (response.success) {
+        fetchDashboardData();
+      }
+    } catch (err) {
+      const errorData = handleApiError(err);
+      alert(errorData.message);
+    }
+  };
+
+  const colorClasses = {
+    blue: "bg-blue-100 text-blue-600",
+    green: "bg-green-100 text-green-600",
+    purple: "bg-purple-100 text-purple-600",
+    orange: "bg-orange-100 text-orange-600",
+  };
+
+  const statsConfig = [
     {
       label: "Total Users",
-      value: "1,234",
-      change: "+12%",
+      value: stats.totalUsers,
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -15,11 +97,11 @@ const Dashboard = () => {
         </svg>
       ),
       color: "blue",
+      link: "/admin/users",
     },
     {
       label: "Active Doctors",
-      value: "48",
-      change: "+5%",
+      value: stats.totalDoctors,
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -27,11 +109,11 @@ const Dashboard = () => {
         </svg>
       ),
       color: "green",
+      link: "/admin/doctors",
     },
     {
-      label: "Appointments Today",
-      value: "156",
-      change: "+18%",
+      label: "Total Appointments",
+      value: stats.totalAppointments,
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -41,40 +123,20 @@ const Dashboard = () => {
         </svg>
       ),
       color: "purple",
+      link: "/admin/appointments",
     },
     {
-      label: "Revenue",
-      value: "$12,450",
-      change: "+23%",
+      label: "Pending Approvals",
+      value: stats.pendingUsers,
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="12" y1="1" x2="12" y2="23" />
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
         </svg>
       ),
       color: "orange",
+      link: "/admin/users?status=pending",
     },
-  ];
-
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    purple: "bg-purple-100 text-purple-600",
-    orange: "bg-orange-100 text-orange-600",
-  };
-
-  const recentUsers = [
-    { id: 1, name: "John Doe", email: "john@example.com", role: "Patient", status: "active", date: "Dec 18, 2024" },
-    { id: 2, name: "Dr. Sarah Johnson", email: "sarah@example.com", role: "Doctor", status: "pending", date: "Dec 17, 2024" },
-    { id: 3, name: "MedPharm Store", email: "medpharm@example.com", role: "Pharmacy", status: "active", date: "Dec 17, 2024" },
-    { id: 4, name: "Jane Smith", email: "jane@example.com", role: "Patient", status: "active", date: "Dec 16, 2024" },
-    { id: 5, name: "Dr. Michael Chen", email: "michael@example.com", role: "Doctor", status: "pending", date: "Dec 16, 2024" },
-  ];
-
-  const pendingApprovals = [
-    { id: 1, name: "Dr. Emily Brown", type: "Doctor Registration", date: "Dec 18, 2024" },
-    { id: 2, name: "HealthPlus Pharmacy", type: "Pharmacy Registration", date: "Dec 17, 2024" },
-    { id: 3, name: "Dr. Robert Wilson", type: "Doctor Registration", date: "Dec 16, 2024" },
   ];
 
   const quickActions = [
@@ -91,7 +153,7 @@ const Dashboard = () => {
       href: "/admin/users",
     },
     {
-      label: "Verify Doctors",
+      label: "Manage Doctors",
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -101,15 +163,16 @@ const Dashboard = () => {
       href: "/admin/doctors",
     },
     {
-      label: "View Reports",
+      label: "View Appointments",
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
       ),
-      href: "/admin/reports",
+      href: "/admin/appointments",
     },
     {
       label: "Settings",
@@ -123,24 +186,15 @@ const Dashboard = () => {
     },
   ];
 
-  const getStatusBadge = (status) => {
-    const styles = {
-      active: "bg-green-100 text-green-700",
-      pending: "bg-yellow-100 text-yellow-700",
-      blocked: "bg-red-100 text-red-700",
-    };
-    return styles[status] || styles.pending;
-  };
-
-  const getRoleBadge = (role) => {
-    const styles = {
-      Patient: "bg-blue-100 text-blue-700",
-      Doctor: "bg-purple-100 text-purple-700",
-      Pharmacy: "bg-orange-100 text-orange-700",
-      Admin: "bg-gray-100 text-gray-700",
-    };
-    return styles[role] || styles.Patient;
-  };
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -149,23 +203,39 @@ const Dashboard = () => {
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white">
           <h1 className="text-2xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-purple-100">
-            Welcome back! Here's an overview of your clinic's performance.
+            Welcome back! Here's an overview of your platform's performance.
           </p>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+            <p className="text-red-700">{error}</p>
+            <button
+              onClick={fetchDashboardData}
+              className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl p-5 shadow-sm">
+          {statsConfig.map((stat, index) => (
+            <Link
+              key={index}
+              to={stat.link}
+              className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+            >
               <div className="flex items-center justify-between mb-3">
                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[stat.color]}`}>
                   {stat.icon}
                 </div>
-                <span className="text-sm font-medium text-green-600">{stat.change}</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-2xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
               <p className="text-sm text-gray-500">{stat.label}</p>
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -174,16 +244,16 @@ const Dashboard = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action, index) => (
-              <a
+              <Link
                 key={index}
-                href={action.href}
+                to={action.href}
                 className="flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-purple-500 border-2 border-transparent transition-all duration-200 group"
               >
                 <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-3 group-hover:bg-purple-600 group-hover:text-white transition-colors">
                   {action.icon}
                 </div>
                 <span className="font-medium text-gray-700">{action.label}</span>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -193,9 +263,9 @@ const Dashboard = () => {
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Recent Users</h2>
-              <a href="/admin/users" className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+              <Link to="/admin/users" className="text-sm text-purple-600 hover:text-purple-700 font-medium">
                 View All →
-              </a>
+              </Link>
             </div>
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -209,32 +279,40 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {recentUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-semibold">
-                              {user.name.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{user.name}</p>
-                              <p className="text-sm text-gray-500">{user.email}</p>
-                            </div>
-                          </div>
+                    {recentUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                          No users found
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${getRoleBadge(user.role)}`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadge(user.status)}`}>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-gray-600">{user.date}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      recentUsers.map((user) => (
+                        <tr key={user.user_id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-semibold">
+                                {user.full_name?.charAt(0)?.toUpperCase() || "?"}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{user.full_name}</p>
+                                <p className="text-sm text-gray-500">{user.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(user.role)}`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeClass(user.status)}`}>
+                              {user.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">{formatDate(user.created_at)}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -250,24 +328,7 @@ const Dashboard = () => {
               </span>
             </div>
             <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
-              {pendingApprovals.map((item) => (
-                <div key={item.id} className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-gray-900">{item.name}</h3>
-                    <span className="text-xs text-gray-500">{item.date}</span>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-3">{item.type}</p>
-                  <div className="flex gap-2">
-                    <button className="flex-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
-                      Approve
-                    </button>
-                    <button className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
-                      Review
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {pendingApprovals.length === 0 && (
+              {pendingApprovals.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   <svg
                     className="w-12 h-12 mx-auto mb-4 text-gray-300"
@@ -281,6 +342,32 @@ const Dashboard = () => {
                   </svg>
                   <p>No pending approvals</p>
                 </div>
+              ) : (
+                pendingApprovals.slice(0, 5).map((user) => (
+                  <div key={user.user_id} className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-gray-900">{user.full_name}</h3>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(user.role)}`}>
+                        {user.role}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-3">{user.email}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApproveUser(user.user_id)}
+                        className="flex-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <Link
+                        to="/admin/users"
+                        className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors text-center"
+                      >
+                        Review
+                      </Link>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -296,25 +383,34 @@ const Dashboard = () => {
                 <span className="w-3 h-3 bg-green-500 rounded-full"></span>
               </div>
               <p className="text-sm text-gray-500">All systems operational</p>
-              <p className="text-xs text-gray-400 mt-1">Last checked: 2 min ago</p>
+              <p className="text-xs text-gray-400 mt-1">API connected</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-gray-900">Database</h3>
                 <span className="w-3 h-3 bg-green-500 rounded-full"></span>
               </div>
-              <p className="text-sm text-gray-500">Connected - 45ms latency</p>
-              <p className="text-xs text-gray-400 mt-1">PostgreSQL v15.2</p>
+              <p className="text-sm text-gray-500">Connected</p>
+              <p className="text-xs text-gray-400 mt-1">PostgreSQL</p>
             </div>
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-gray-900">Storage</h3>
-                <span className="text-sm font-medium text-gray-600">68%</span>
+                <h3 className="font-medium text-gray-900">Platform Stats</h3>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-600 h-2 rounded-full" style={{ width: "68%" }}></div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Users</span>
+                  <span className="font-medium text-gray-900">{stats.totalUsers}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Doctors</span>
+                  <span className="font-medium text-gray-900">{stats.totalDoctors}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Appointments</span>
+                  <span className="font-medium text-gray-900">{stats.totalAppointments}</span>
+                </div>
               </div>
-              <p className="text-xs text-gray-400 mt-2">34 GB of 50 GB used</p>
             </div>
           </div>
         </div>
