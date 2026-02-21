@@ -29,7 +29,7 @@ const DB_PORT = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432;
 const DEFAULT_ADMIN = {
   full_name: process.env.ADMIN_NAME || "System Administrator",
   email: process.env.ADMIN_EMAIL || "puspakhadka123@gmail.com",
-  password: process.env.ADMIN_PASSWORD || "puspa123@",
+  password: process.env.ADMIN_PASSWORD || "Puspa123@",
   phone: process.env.ADMIN_PHONE || "+977-9800000000",
 };
 
