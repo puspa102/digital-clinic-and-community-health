@@ -1,193 +1,199 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Layout from "../../components/Layout";
+import {
+  pharmacyAPI,
+  getStatusBadgeClass,
+  formatDate,
+  formatTime,
+  handleApiError,
+  APPOINTMENT_STATUS,
+} from "../../services/api";
 
 const Dashboard = () => {
-  const stats = [
+  const [pharmacy, setPharmacy] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [pharmacyRes, appointmentsRes, doctorsRes] = await Promise.all([
+        pharmacyAPI.getMyPharmacy().catch(() => null),
+        pharmacyAPI.getMyAppointments({ limit: 5 }).catch(() => ({ data: [] })),
+        pharmacyAPI.getMyDoctors({ limit: 10 }).catch(() => ({ data: [] })),
+      ]);
+      
+      if (pharmacyRes?.data) {
+        setPharmacy(pharmacyRes.data);
+      }
+      setAppointments(appointmentsRes?.data || []);
+      setDoctors(doctorsRes?.data || []);
+      setError(null);
+    } catch (err) {
+      const errorInfo = handleApiError(err);
+      setError(errorInfo.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate stats
+  const stats = {
+    pendingAssignment: appointments.filter((a) => a.status === APPOINTMENT_STATUS.REQUESTED).length,
+    assigned: appointments.filter((a) => a.status === APPOINTMENT_STATUS.ASSIGNED).length,
+    confirmed: appointments.filter((a) => a.status === APPOINTMENT_STATUS.CONFIRMED).length,
+    totalDoctors: doctors.length,
+  };
+
+  const quickActions = [
     {
-      label: "Pending Orders",
-      value: "23",
+      label: "Manage Appointments",
+      description: "View and assign doctors",
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
       ),
+      href: "/pharmacy/appointments",
       color: "orange",
     },
     {
-      label: "Completed Today",
-      value: "45",
+      label: "My Doctors",
+      description: "View and add doctors",
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       ),
+      href: "/pharmacy/doctors",
+      color: "blue",
+    },
+    {
+      label: "Add Doctor",
+      description: "Register a new doctor",
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="8.5" cy="7" r="4" />
+          <line x1="20" y1="8" x2="20" y2="14" />
+          <line x1="23" y1="11" x2="17" y2="11" />
+        </svg>
+      ),
+      href: "/pharmacy/doctors/add",
       color: "green",
     },
     {
-      label: "Low Stock Items",
-      value: "8",
+      label: "Prescriptions",
+      description: "Manage prescriptions",
       icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-          <line x1="12" y1="9" x2="12" y2="13" />
-          <line x1="12" y1="17" x2="12.01" y2="17" />
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+          <rect x="9" y="3" width="6" height="4" rx="2" />
+          <path d="M9 14h.01" />
+          <path d="M13 14h2" />
+          <path d="M9 17h.01" />
+          <path d="M13 17h2" />
         </svg>
       ),
-      color: "red",
-    },
-    {
-      label: "Total Revenue",
-      value: "$3,250",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="12" y1="1" x2="12" y2="23" />
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-        </svg>
-      ),
-      color: "blue",
+      href: "/pharmacy/prescriptions",
+      color: "purple",
     },
   ];
 
   const colorClasses = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    orange: "bg-orange-100 text-orange-600",
-    red: "bg-red-100 text-red-600",
+    orange: {
+      bg: "bg-orange-100",
+      text: "text-orange-600",
+      hover: "hover:bg-orange-600 hover:text-white",
+    },
+    blue: {
+      bg: "bg-blue-100",
+      text: "text-blue-600",
+      hover: "hover:bg-blue-600 hover:text-white",
+    },
+    green: {
+      bg: "bg-green-100",
+      text: "text-green-600",
+      hover: "hover:bg-green-600 hover:text-white",
+    },
+    purple: {
+      bg: "bg-purple-100",
+      text: "text-purple-600",
+      hover: "hover:bg-purple-600 hover:text-white",
+    },
   };
 
-  const pendingOrders = [
-    {
-      id: "ORD-001",
-      patient: "John Doe",
-      doctor: "Dr. Sarah Johnson",
-      items: 3,
-      total: "$45.00",
-      time: "10 min ago",
-      status: "pending",
-    },
-    {
-      id: "ORD-002",
-      patient: "Jane Smith",
-      doctor: "Dr. Michael Chen",
-      items: 5,
-      total: "$78.50",
-      time: "25 min ago",
-      status: "processing",
-    },
-    {
-      id: "ORD-003",
-      patient: "Mike Johnson",
-      doctor: "Dr. Emily Brown",
-      items: 2,
-      total: "$32.00",
-      time: "45 min ago",
-      status: "pending",
-    },
-    {
-      id: "ORD-004",
-      patient: "Sarah Wilson",
-      doctor: "Dr. Robert Wilson",
-      items: 4,
-      total: "$56.75",
-      time: "1 hour ago",
-      status: "ready",
-    },
-  ];
-
-  const lowStockItems = [
-    { id: 1, name: "Amoxicillin 500mg", stock: 12, minStock: 50 },
-    { id: 2, name: "Paracetamol 650mg", stock: 25, minStock: 100 },
-    { id: 3, name: "Omeprazole 20mg", stock: 8, minStock: 30 },
-    { id: 4, name: "Metformin 500mg", stock: 15, minStock: 40 },
-  ];
-
-  const quickActions = [
-    {
-      label: "Process Orders",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <path d="M16 10a4 4 0 0 1-8 0" />
-        </svg>
-      ),
-      href: "/pharmacy/orders",
-    },
-    {
-      label: "Manage Inventory",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
-        </svg>
-      ),
-      href: "/pharmacy/inventory",
-    },
-    {
-      label: "Dispense Medicine",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-        </svg>
-      ),
-      href: "/pharmacy/dispense",
-    },
-    {
-      label: "View Reports",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ),
-      href: "/pharmacy/reports",
-    },
-  ];
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      pending: "bg-yellow-100 text-yellow-700",
-      processing: "bg-blue-100 text-blue-700",
-      ready: "bg-green-100 text-green-700",
-      completed: "bg-gray-100 text-gray-700",
-    };
-    return styles[status] || styles.pending;
-  };
-
-  const getStockLevel = (stock, minStock) => {
-    const percentage = (stock / minStock) * 100;
-    if (percentage <= 25) return "bg-red-500";
-    if (percentage <= 50) return "bg-orange-500";
-    return "bg-green-500";
-  };
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="space-y-6">
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
-          <h1 className="text-2xl font-bold mb-2">Pharmacy Dashboard</h1>
+          <h1 className="text-2xl font-bold mb-2">
+            {pharmacy?.pharmacy_name || "Pharmacy Dashboard"}
+          </h1>
           <p className="text-orange-100">
-            You have {pendingOrders.filter(o => o.status === "pending").length} pending orders to process.
+            {stats.pendingAssignment > 0
+              ? `You have ${stats.pendingAssignment} appointment${stats.pendingAssignment > 1 ? "s" : ""} waiting for doctor assignment.`
+              : "All appointments are up to date!"}
           </p>
+          {pharmacy?.address && (
+            <p className="text-orange-200 text-sm mt-2">
+              📍 {pharmacy.address}
+            </p>
+          )}
         </div>
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            {error}
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[stat.color]}`}>
-                  {stat.icon}
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-            </div>
-          ))}
+          <div className="bg-white rounded-xl p-5 shadow-sm border-l-4 border-yellow-500">
+            <p className="text-2xl font-bold text-yellow-600">{stats.pendingAssignment}</p>
+            <p className="text-sm text-gray-500">Pending Assignment</p>
+          </div>
+          <div className="bg-white rounded-xl p-5 shadow-sm border-l-4 border-blue-500">
+            <p className="text-2xl font-bold text-blue-600">{stats.assigned}</p>
+            <p className="text-sm text-gray-500">Awaiting Confirmation</p>
+          </div>
+          <div className="bg-white rounded-xl p-5 shadow-sm border-l-4 border-green-500">
+            <p className="text-2xl font-bold text-green-600">{stats.confirmed}</p>
+            <p className="text-sm text-gray-500">Confirmed</p>
+          </div>
+          <div className="bg-white rounded-xl p-5 shadow-sm border-l-4 border-purple-500">
+            <p className="text-2xl font-bold text-purple-600">{stats.totalDoctors}</p>
+            <p className="text-sm text-gray-500">Total Doctors</p>
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -195,171 +201,176 @@ const Dashboard = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action, index) => (
-              <a
+              <Link
                 key={index}
-                href={action.href}
-                className="flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-orange-500 border-2 border-transparent transition-all duration-200 group"
+                to={action.href}
+                className="flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md border-2 border-transparent hover:border-orange-500 transition-all duration-200 group"
               >
-                <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-3 group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                <div
+                  className={`w-12 h-12 rounded-full ${colorClasses[action.color].bg} ${colorClasses[action.color].text} flex items-center justify-center mb-3 group-hover:bg-orange-600 group-hover:text-white transition-colors`}
+                >
                   {action.icon}
                 </div>
-                <span className="font-medium text-gray-700">{action.label}</span>
-              </a>
+                <span className="font-medium text-gray-700 text-center">{action.label}</span>
+                <span className="text-xs text-gray-400 text-center mt-1">{action.description}</span>
+              </Link>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Pending Orders */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Appointments */}
+          <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
-              <a href="/pharmacy/orders" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+              <h2 className="text-lg font-semibold text-gray-900">Recent Appointments</h2>
+              <Link to="/pharmacy/appointments" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
                 View All →
-              </a>
+              </Link>
             </div>
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {pendingOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="font-medium text-gray-900">{order.id}</p>
-                            <p className="text-sm text-gray-500">{order.time}</p>
+              {appointments.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <svg
+                    className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <p>No appointments yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {appointments.slice(0, 5).map((appointment) => (
+                    <div key={appointment.appointment_id} className="p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
+                            {appointment.Patient?.full_name?.charAt(0)?.toUpperCase() || "P"}
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
                           <div>
-                            <p className="font-medium text-gray-900">{order.patient}</p>
-                            <p className="text-sm text-gray-500">{order.doctor}</p>
+                            <p className="font-medium text-gray-900">
+                              {appointment.Patient?.full_name || "Patient"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {formatDate(appointment.appointment_date)} • {formatTime(appointment.appointment_time)}
+                            </p>
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="text-gray-900">{order.items} items</p>
-                            <p className="text-sm font-medium text-gray-600">{order.total}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadge(order.status)}`}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {order.status === "pending" && (
-                            <button className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors">
-                              Process
-                            </button>
-                          )}
-                          {order.status === "processing" && (
-                            <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
-                              Complete
-                            </button>
-                          )}
-                          {order.status === "ready" && (
-                            <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                              Dispense
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeClass(
+                            appointment.status
+                          )}`}
+                        >
+                          {appointment.status?.replace("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Low Stock Alert */}
+          {/* My Doctors */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Low Stock Alert</h2>
-              <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-full">
-                {lowStockItems.length} items
-              </span>
+              <h2 className="text-lg font-semibold text-gray-900">My Doctors</h2>
+              <Link to="/pharmacy/doctors" className="text-sm text-orange-600 hover:text-orange-700 font-medium">
+                View All →
+              </Link>
             </div>
-            <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
-              {lowStockItems.map((item) => (
-                <div key={item.id} className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-gray-900">{item.name}</h3>
-                    <span className="text-sm font-medium text-red-600">{item.stock} left</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div
-                      className={`h-2 rounded-full ${getStockLevel(item.stock, item.minStock)}`}
-                      style={{ width: `${Math.min((item.stock / item.minStock) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500">Min. stock: {item.minStock} units</p>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {doctors.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <svg
+                    className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <p>No doctors yet</p>
+                  <Link to="/pharmacy/doctors/add" className="text-orange-600 hover:underline text-sm mt-2 inline-block">
+                    Add your first doctor
+                  </Link>
                 </div>
-              ))}
-              <div className="p-4">
-                <a
-                  href="/pharmacy/inventory"
-                  className="block w-full text-center px-4 py-2 bg-orange-50 text-orange-600 font-medium rounded-lg hover:bg-orange-100 transition-colors"
-                >
-                  Manage Inventory
-                </a>
-              </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {doctors.slice(0, 5).map((doctor) => (
+                    <div key={doctor.doctor_id} className="p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold">
+                            {doctor.User?.full_name?.charAt(0)?.toUpperCase() || "D"}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {doctor.User?.full_name}
+                            </p>
+                            <p className="text-sm text-gray-500">{doctor.specialization}</p>
+                          </div>
+                        </div>
+                        {doctor.consultation_fee && (
+                          <span className="text-sm text-gray-600">
+                            Rs. {doctor.consultation_fee}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Today's Summary */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Today's Summary</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">45</p>
-                  <p className="text-sm text-gray-500">Orders Completed</p>
-                </div>
+        {/* Workflow Guide */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">How It Works</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-sm shrink-0">
+                1
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Patient Books</p>
+                <p className="text-sm text-gray-500">Patient requests appointment at your pharmacy</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">156</p>
-                  <p className="text-sm text-gray-500">Items Dispensed</p>
-                </div>
+            <div className="flex items-start gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold text-sm shrink-0">
+                2
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">You Assign</p>
+                <p className="text-sm text-gray-500">Assign one of your doctors to the appointment</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="1" x2="12" y2="23" />
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">$3,250</p>
-                  <p className="text-sm text-gray-500">Total Sales</p>
-                </div>
+            <div className="flex items-start gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm shrink-0">
+                3
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Doctor Confirms</p>
+                <p className="text-sm text-gray-500">The doctor confirms the appointment</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-semibold text-sm shrink-0">
+                4
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Completed</p>
+                <p className="text-sm text-gray-500">Doctor marks appointment as completed</p>
               </div>
             </div>
           </div>
