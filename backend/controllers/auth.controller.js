@@ -20,6 +20,7 @@ import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
 } from "../utils/constants.js";
+import { otpMail } from "../utils/mail.js";
 
 dotenv.config();
 
@@ -90,6 +91,7 @@ export const registerUser = async (req, res) => {
     });
 
     // TODO: Send OTP via email/SMS
+    await otpMail(email, otp);
     console.log(`[DEV] OTP for ${email}: ${otp}`);
 
     return successResponse(
