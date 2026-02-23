@@ -9,11 +9,41 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyOtp from "./pages/VerifyOtp";
 
-// Dashboard Pages
+// Patient Pages
 import PatientDashboard from "./pages/patient/Dashboard";
+import PatientAppointments from "./pages/patient/Appointments";
+import PatientRecords from "./pages/patient/Records";
+import PatientPrescriptions from "./pages/patient/Prescriptions";
+import PatientPharmacies from "./pages/patient/Pharmacies";
+import PatientProfile from "./pages/patient/Profile";
+
+// Doctor Pages
 import DoctorDashboard from "./pages/doctor/Dashboard";
+import DoctorAppointments from "./pages/doctor/Appointments";
+import DoctorPatients from "./pages/doctor/Patients";
+import DoctorSchedule from "./pages/doctor/Schedule";
+import DoctorPrescriptions from "./pages/doctor/Prescriptions";
+import DoctorProfile from "./pages/doctor/Profile";
+
+// Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
+import AdminUsers from "./pages/admin/Users";
+import AdminPharmacies from "./pages/admin/Pharmacies";
+import AdminDoctors from "./pages/admin/Doctors";
+import AdminAppointments from "./pages/admin/Appointments";
+import AdminReports from "./pages/admin/Reports";
+import AdminSettings from "./pages/admin/Settings";
+
+// Pharmacy Pages
 import PharmacyDashboard from "./pages/pharmacy/Dashboard";
+import PharmacyAppointments from "./pages/pharmacy/Appointments";
+import PharmacyDoctors from "./pages/pharmacy/Doctors";
+import PharmacyPrescriptions from "./pages/pharmacy/Prescriptions";
+import PharmacyReports from "./pages/pharmacy/Reports";
+import PharmacySettings from "./pages/pharmacy/Settings";
+
+// Shared Pages
+import Emergency from "./pages/Emergency";
 
 // Component to redirect to role-based dashboard
 const DashboardRedirect = () => {
@@ -59,7 +89,7 @@ function App() {
         }
       />
 
-      {/* Patient Routes */}
+      {/* ==================== Patient Routes ==================== */}
       <Route
         path="/patient/dashboard"
         element={
@@ -68,8 +98,48 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/patient/appointments"
+        element={
+          <ProtectedRoute roles={["Patient", "Admin"]}>
+            <PatientAppointments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/pharmacies"
+        element={
+          <ProtectedRoute roles={["Patient", "Admin"]}>
+            <PatientPharmacies />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/records"
+        element={
+          <ProtectedRoute roles={["Patient", "Admin"]}>
+            <PatientRecords />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/prescriptions"
+        element={
+          <ProtectedRoute roles={["Patient", "Admin"]}>
+            <PatientPrescriptions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/profile"
+        element={
+          <ProtectedRoute roles={["Patient", "Admin"]}>
+            <PatientProfile />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Doctor Routes */}
+      {/* ==================== Doctor Routes ==================== */}
       <Route
         path="/doctor/dashboard"
         element={
@@ -78,8 +148,48 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/doctor/appointments"
+        element={
+          <ProtectedRoute roles={["Doctor", "Admin"]}>
+            <DoctorAppointments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor/patients"
+        element={
+          <ProtectedRoute roles={["Doctor", "Admin"]}>
+            <DoctorPatients />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor/schedule"
+        element={
+          <ProtectedRoute roles={["Doctor", "Admin"]}>
+            <DoctorSchedule />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor/prescriptions"
+        element={
+          <ProtectedRoute roles={["Doctor", "Admin"]}>
+            <DoctorPrescriptions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor/profile"
+        element={
+          <ProtectedRoute roles={["Doctor", "Admin"]}>
+            <DoctorProfile />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Admin Routes */}
+      {/* ==================== Admin Routes ==================== */}
       <Route
         path="/admin/dashboard"
         element={
@@ -88,13 +198,119 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminUsers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/pharmacies"
+        element={
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminPharmacies />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/doctors"
+        element={
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminDoctors />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/appointments"
+        element={
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminAppointments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/reports"
+        element={
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminReports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminSettings />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Pharmacy Routes */}
+      {/* ==================== Pharmacy Routes ==================== */}
       <Route
         path="/pharmacy/dashboard"
         element={
           <ProtectedRoute roles={["Pharmacy", "Admin"]}>
             <PharmacyDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/appointments"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacyAppointments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/doctors"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacyDoctors />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/doctors/add"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacyDoctors />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/prescriptions"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacyPrescriptions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/reports"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacyReports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/settings"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacySettings />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ==================== Shared Routes ==================== */}
+      <Route
+        path="/emergency"
+        element={
+          <ProtectedRoute roles={["Patient", "Doctor", "Admin", "Pharmacy"]}>
+            <Emergency />
           </ProtectedRoute>
         }
       />
