@@ -12,19 +12,12 @@ const Register = () => {
     password: "",
     confirmPassword: "",
     phone: "",
-    role: "Patient",
   });
 
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const roles = [
-    { value: "Patient", label: "Patient", icon: "👤" },
-    { value: "Doctor", label: "Doctor", icon: "👨‍⚕️" },
-    { value: "Pharmacy", label: "Pharmacy", icon: "💊" },
-  ];
 
   const validateForm = () => {
     const errors = {};
@@ -59,7 +52,7 @@ const Register = () => {
     if (!formData.phone.trim()) {
       errors.phone = "Phone number is required";
     } else if (
-      !/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/.test(
+      !/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(
         formData.phone.replace(/\s/g, ""),
       )
     ) {
@@ -98,12 +91,12 @@ const Register = () => {
 
     setLoading(true);
 
+    // Public registration is Patient-only (backend enforces this)
     const result = await register({
       full_name: formData.full_name.trim(),
       email: formData.email.trim().toLowerCase(),
       password: formData.password,
       phone: formData.phone.trim(),
-      role: formData.role,
     });
 
     setLoading(false);
@@ -138,10 +131,31 @@ const Register = () => {
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Create Patient Account</h1>
             <p className="text-gray-500">
-              Join us for better healthcare management
+              Register to book appointments at pharmacies
             </p>
+          </div>
+
+          {/* Info Notice */}
+          <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <svg
+              className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            <div className="text-sm text-blue-700">
+              <p className="font-medium">Patient Registration</p>
+              <p className="mt-1">
+                This registration is for patients only. Pharmacies are registered by administrators, and doctors are registered by pharmacies.
+              </p>
+            </div>
           </div>
 
           {/* Error Alert */}
@@ -164,36 +178,6 @@ const Register = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Role Selection */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                I am a
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {roles.map((role) => (
-                  <label
-                    key={role.value}
-                    className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                      formData.role === role.value
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={role.value}
-                      checked={formData.role === role.value}
-                      onChange={handleChange}
-                      className="sr-only"
-                    />
-                    <span className="text-2xl mb-1">{role.icon}</span>
-                    <span className="text-sm font-medium">{role.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
             {/* Full Name */}
             <div className="space-y-1.5">
               <label
@@ -484,11 +468,44 @@ const Register = () => {
             >
               {loading ? (
                 <>
-                  <span className="spinner"></span>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
                   Creating Account...
                 </>
               ) : (
-                "Create Account"
+                <>
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <line x1="20" y1="8" x2="20" y2="14" />
+                    <line x1="23" y1="11" x2="17" y2="11" />
+                  </svg>
+                  Create Patient Account
+                </>
               )}
             </button>
           </form>
