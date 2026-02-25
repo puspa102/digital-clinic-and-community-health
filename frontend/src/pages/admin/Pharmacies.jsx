@@ -1,5 +1,6 @@
-import { useState, useEffeCLFt } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
+import Loading from "../../components/Loading";
 import { pharmacyAPI, getStatusBadgeClass, handleApiError } from "../../services/api";
 
 const Pharmacies = () => {
@@ -190,10 +191,7 @@ const Pharmacies = () => {
         {/* Pharmacies List */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center">
-              <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-500">Loading pharmacies...</p>
-            </div>
+            <Loading message="Loading pharmacies..." color="purple" />
           ) : pharmacies.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <svg

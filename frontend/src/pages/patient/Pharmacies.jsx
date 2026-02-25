@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
+import Loading from "../../components/Loading";
 import {
   pharmacyAPI,
   appointmentAPI,
@@ -177,10 +178,7 @@ const Pharmacies = () => {
 
         {/* Pharmacies Grid */}
         {loading ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading pharmacies...</p>
-          </div>
+          <Loading message="Loading pharmacies..." color="blue" />
         ) : pharmacies.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-500">
             <svg
