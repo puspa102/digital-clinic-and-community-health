@@ -30,6 +30,8 @@ import appointmentRoutes from "./routes/appointment.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import emergencyRoutes from "./routes/emergency.routes.js";
 
+import { seedAdminIfNotExists } from "./scripts/seedAdmin.js";
+
 // Load environment variables
 dotenv.config();
 
@@ -212,7 +214,11 @@ const startServer = async () => {
     // Connect to database
     await connectDB();
 
-    // Start server
+    // Seed admin ONLY if enabled
+    if (process.env.SEED_ADMIN === "true") {
+      await seedAdminIfNotExists();
+    }
+
     const PORT = config.app.port;
     const HOST = config.app.host;
 
