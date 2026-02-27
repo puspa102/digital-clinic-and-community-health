@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
-import { pharmacyAPI, getStatusBadgeClass, handleApiError } from "../../services/api";
+import {
+  pharmacyAPI,
+  getStatusBadgeClass,
+  handleApiError,
+} from "../../services/api";
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
@@ -19,7 +23,6 @@ const Doctors = () => {
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
-    password: "",
     phone: "",
     specialization: "",
     license_number: "",
@@ -70,15 +73,18 @@ const Doctors = () => {
     const errors = {};
     if (!formData.full_name.trim()) errors.full_name = "Name is required";
     if (!formData.email.trim()) errors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = "Invalid email";
-    if (!formData.password) errors.password = "Password is required";
-    else if (formData.password.length < 8) errors.password = "Password must be at least 8 characters";
-    else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password))
-      errors.password = "Password must contain uppercase, lowercase, and number";
-    if (!formData.specialization.trim()) errors.specialization = "Specialization is required";
-    if (!formData.license_number.trim()) errors.license_number = "License number is required";
-    if (!formData.experience_years) errors.experience_years = "Experience is required";
-    else if (isNaN(formData.experience_years) || parseInt(formData.experience_years) < 0)
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+      errors.email = "Invalid email";
+    if (!formData.specialization.trim())
+      errors.specialization = "Specialization is required";
+    if (!formData.license_number.trim())
+      errors.license_number = "License number is required";
+    if (!formData.experience_years)
+      errors.experience_years = "Experience is required";
+    else if (
+      isNaN(formData.experience_years) ||
+      parseInt(formData.experience_years) < 0
+    )
       errors.experience_years = "Invalid experience years";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -93,14 +99,15 @@ const Doctors = () => {
       const dataToSend = {
         ...formData,
         experience_years: parseInt(formData.experience_years),
-        consultation_fee: formData.consultation_fee ? parseFloat(formData.consultation_fee) : undefined,
+        consultation_fee: formData.consultation_fee
+          ? parseFloat(formData.consultation_fee)
+          : undefined,
       };
       await pharmacyAPI.createDoctor(dataToSend);
       setShowCreateModal(false);
       setFormData({
         full_name: "",
         email: "",
-        password: "",
         phone: "",
         specialization: "",
         license_number: "",
@@ -139,13 +146,21 @@ const Doctors = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Doctors</h1>
-            <p className="text-gray-500">Manage doctors working at your pharmacy</p>
+            <p className="text-gray-500">
+              Manage doctors working at your pharmacy
+            </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -166,7 +181,9 @@ const Doctors = () => {
             >
               <option value="">All Specializations</option>
               {specializations.map((spec) => (
-                <option key={spec} value={spec}>{spec}</option>
+                <option key={spec} value={spec}>
+                  {spec}
+                </option>
               ))}
             </select>
           </div>
@@ -209,34 +226,51 @@ const Doctors = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
               {doctors.map((doctor) => (
-                <div key={doctor.doctor_id} className="bg-white border rounded-xl p-5 hover:shadow-md transition-shadow">
+                <div
+                  key={doctor.doctor_id}
+                  className="bg-white border rounded-xl p-5 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-semibold text-lg">
                       {doctor.User?.full_name?.charAt(0)?.toUpperCase() || "D"}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">{doctor.User?.full_name}</h3>
-                      <p className="text-sm text-orange-600">{doctor.specialization}</p>
-                      <p className="text-xs text-gray-500 mt-1">{doctor.experience_years} years experience</p>
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {doctor.User?.full_name}
+                      </h3>
+                      <p className="text-sm text-orange-600">
+                        {doctor.specialization}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {doctor.experience_years} years experience
+                      </p>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(doctor.User?.status)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(doctor.User?.status)}`}
+                    >
                       {doctor.User?.status}
                     </span>
                   </div>
                   <div className="mt-4 pt-4 border-t space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">License</span>
-                      <span className="text-gray-900 font-mono">{doctor.license_number}</span>
+                      <span className="text-gray-900 font-mono">
+                        {doctor.license_number}
+                      </span>
                     </div>
                     {doctor.consultation_fee && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Consultation Fee</span>
-                        <span className="text-gray-900">Rs. {doctor.consultation_fee}</span>
+                        <span className="text-gray-900">
+                          Rs. {doctor.consultation_fee}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Email</span>
-                      <span className="text-gray-900 truncate ml-2">{doctor.User?.email}</span>
+                      <span className="text-gray-900 truncate ml-2">
+                        {doctor.User?.email}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -249,18 +283,23 @@ const Doctors = () => {
             <div className="px-6 py-4 border-t flex items-center justify-between">
               <p className="text-sm text-gray-500">
                 Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
+                of {pagination.total}
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+                  onClick={() =>
+                    setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+                  }
                   disabled={pagination.page === 1}
                   className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   Previous
                 </button>
                 <button
-                  onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+                  onClick={() =>
+                    setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+                  }
                   disabled={pagination.page === pagination.totalPages}
                   className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
@@ -278,12 +317,20 @@ const Doctors = () => {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Add New Doctor</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Add New Doctor
+                </h2>
                 <button
                   onClick={() => setShowCreateModal(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="w-6 h-6"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
@@ -303,24 +350,36 @@ const Doctors = () => {
 
               {/* Account Details */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Account Details</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Account Details
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
                     <input
                       type="text"
                       name="full_name"
                       value={formData.full_name}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.full_name ? "border-red-500" : "border-gray-300"
+                        formErrors.full_name
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                       placeholder="Dr. John Doe"
                     />
-                    {formErrors.full_name && <p className="text-red-500 text-xs mt-1">{formErrors.full_name}</p>}
+                    {formErrors.full_name && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.full_name}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email *
+                    </label>
                     <input
                       type="email"
                       name="email"
@@ -331,24 +390,16 @@ const Doctors = () => {
                       }`}
                       placeholder="doctor@example.com"
                     />
-                    {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+                    {formErrors.email && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.email}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.password ? "border-red-500" : "border-gray-300"
-                      }`}
-                      placeholder="Min 8 characters"
-                    />
-                    {formErrors.password && <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone
+                    </label>
                     <input
                       type="tel"
                       name="phone"
@@ -359,45 +410,75 @@ const Doctors = () => {
                     />
                   </div>
                 </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>📧 Email Notification:</strong> A temporary password
+                    will be automatically generated and sent to the doctor's
+                    email address.
+                  </p>
+                </div>
               </div>
 
               {/* Professional Details */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Professional Details</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Professional Details
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Specialization *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Specialization *
+                    </label>
                     <select
                       name="specialization"
                       value={formData.specialization}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.specialization ? "border-red-500" : "border-gray-300"
+                        formErrors.specialization
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                     >
                       <option value="">Select specialization</option>
                       {specializations.map((spec) => (
-                        <option key={spec} value={spec}>{spec}</option>
+                        <option key={spec} value={spec}>
+                          {spec}
+                        </option>
                       ))}
                     </select>
-                    {formErrors.specialization && <p className="text-red-500 text-xs mt-1">{formErrors.specialization}</p>}
+                    {formErrors.specialization && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.specialization}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">License Number *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      License Number *
+                    </label>
                     <input
                       type="text"
                       name="license_number"
                       value={formData.license_number}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.license_number ? "border-red-500" : "border-gray-300"
+                        formErrors.license_number
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                       placeholder="DOC-NEP-12345"
                     />
-                    {formErrors.license_number && <p className="text-red-500 text-xs mt-1">{formErrors.license_number}</p>}
+                    {formErrors.license_number && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.license_number}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Experience (years) *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Experience (years) *
+                    </label>
                     <input
                       type="number"
                       name="experience_years"
@@ -406,14 +487,22 @@ const Doctors = () => {
                       min="0"
                       max="70"
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.experience_years ? "border-red-500" : "border-gray-300"
+                        formErrors.experience_years
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                       placeholder="5"
                     />
-                    {formErrors.experience_years && <p className="text-red-500 text-xs mt-1">{formErrors.experience_years}</p>}
+                    {formErrors.experience_years && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.experience_years}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Consultation Fee (Rs.)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Consultation Fee (Rs.)
+                    </label>
                     <input
                       type="number"
                       name="consultation_fee"
@@ -426,7 +515,9 @@ const Doctors = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Hospital/Clinic Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Hospital/Clinic Name
+                    </label>
                     <input
                       type="text"
                       name="hospital_name"
@@ -437,7 +528,9 @@ const Doctors = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bio
+                    </label>
                     <textarea
                       name="bio"
                       value={formData.bio}
@@ -465,9 +558,24 @@ const Doctors = () => {
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {creating && (
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
                     </svg>
                   )}
                   {creating ? "Creating..." : "Create Doctor"}

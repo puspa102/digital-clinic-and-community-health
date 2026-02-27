@@ -40,25 +40,14 @@ const validateCreatePharmacy = [
     .isEmail()
     .withMessage("Invalid email format")
     .normalizeEmail(),
-  body("password")
-    .notEmpty()
-    .withMessage("Password is required")
-    .isLength({ min: 8 })
-    .withMessage("Password must be at least 8 characters")
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-    ),
+  // Password is now auto-generated on the backend, so no validation needed
   body("pharmacy_name")
     .trim()
     .notEmpty()
     .withMessage("Pharmacy name is required")
     .isLength({ max: 200 })
     .withMessage("Pharmacy name must be less than 200 characters"),
-  body("address")
-    .trim()
-    .notEmpty()
-    .withMessage("Address is required"),
+  body("address").trim().notEmpty().withMessage("Address is required"),
   body("license_number")
     .trim()
     .notEmpty()
@@ -108,15 +97,7 @@ const validateCreateDoctor = [
     .isEmail()
     .withMessage("Invalid email format")
     .normalizeEmail(),
-  body("password")
-    .notEmpty()
-    .withMessage("Password is required")
-    .isLength({ min: 8 })
-    .withMessage("Password must be at least 8 characters")
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-    ),
+  // Password is now auto-generated on the backend, so no validation needed
   body("phone")
     .optional()
     .trim()
@@ -195,7 +176,6 @@ router.post(
     schema: {
       full_name: 'Pharmacy Owner Name',
       email: 'pharmacy@example.com',
-      password: 'SecurePass123',
       phone: '+977-9812345678',
       pharmacy_name: 'City Health Pharmacy',
       address: 'Kathmandu, Thamel',
@@ -206,6 +186,9 @@ router.post(
       closing_time: '20:00',
       description: 'A trusted pharmacy in the heart of Thamel'
     }
+  } */
+  /* #swagger.responses[201] = {
+    description: 'Pharmacy created successfully. A temporary password will be generated and sent via email to the pharmacy owner.'
   } */
   verifyToken,
   authorizeRoles("Admin"),
@@ -266,7 +249,6 @@ router.post(
     schema: {
       full_name: 'Dr. Ram Sharma',
       email: 'doctor@example.com',
-      password: 'SecurePass123',
       phone: '+977-9812345679',
       specialization: 'Cardiologist',
       license_number: 'DOC-NEP-12345',
@@ -276,6 +258,9 @@ router.post(
       consultation_fee: 500,
       availability_json: { "mon": ["10:00","12:00"], "tue": ["14:00","16:00"] }
     }
+  } */
+  /* #swagger.responses[201] = {
+    description: 'Doctor created successfully. A temporary password will be generated and sent via email to the doctor.'
   } */
   verifyToken,
   authorizeRoles("Pharmacy"),

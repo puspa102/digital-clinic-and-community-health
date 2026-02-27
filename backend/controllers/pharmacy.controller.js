@@ -9,9 +9,10 @@ import {
   formatPaginatedResponse,
   successResponse,
   errorResponse,
-  generateOtp,
   getOtpExpiry,
+  generateTempPassword,
 } from "../utils/helpers.js";
+import { sendCredentialsMail } from "../utils/mail.js";
 import {
   HTTP_STATUS,
   USER_ROLES,
@@ -37,7 +38,6 @@ export const createPharmacy = async (req, res) => {
     const {
       full_name,
       email,
-      password,
       phone,
       pharmacy_name,
       address,
@@ -48,6 +48,9 @@ export const createPharmacy = async (req, res) => {
       closing_time,
       description,
     } = req.body;
+
+    // Generate secure temporary password
+    const password = generateTempPassword(12);
 
     // Check if email already exists
     const existingEmail = await User.findOne({ where: { email } });
@@ -72,7 +75,9 @@ export const createPharmacy = async (req, res) => {
     }
 
     // Check if pharmacy license number already exists
-    const existingLicense = await Pharmacy.findOne({ where: { license_number } });
+    const existingLicense = await Pharmacy.findOne({
+      where: { license_number },
+    });
     if (existingLicense) {
       return errorResponse(
         res,
@@ -92,6 +97,7 @@ export const createPharmacy = async (req, res) => {
       role: USER_ROLES.PHARMACY,
       status: USER_STATUS.APPROVED,
       phone,
+      is_temp_password: true, // Flag for password reset on first login
     });
 
     // Create Pharmacy profile
@@ -112,9 +118,27 @@ export const createPharmacy = async (req, res) => {
     const createdPharmacy = await Pharmacy.findByPk(pharmacy.pharmacy_id, {
       include: {
         model: User,
-        attributes: ["user_id", "full_name", "email", "phone", "role", "status"],
+        attributes: [
+          "user_id",
+          "full_name",
+          "email",
+          "phone",
+          "role",
+          "status",
+        ],
       },
     });
+
+    // Try to send credentials email to the pharmacy owner (do not block creation on email failure)
+    try {
+      await sendCredentialsMail(
+        user.email,
+        password,
+        pharmacy.pharmacy_name || user.full_name,
+      );
+    } catch (mailErr) {
+      console.error("Error sending credentials email:", mailErr);
+    }
 
     return successResponse(
       res,
@@ -250,7 +274,10 @@ export const updatePharmacy = async (req, res) => {
     }
 
     // Only the pharmacy owner or admin can update
-    if (req.user.role !== USER_ROLES.ADMIN && pharmacy.user_id !== req.user.id) {
+    if (
+      req.user.role !== USER_ROLES.ADMIN &&
+      pharmacy.user_id !== req.user.id
+    ) {
       return errorResponse(
         res,
         HTTP_STATUS.FORBIDDEN,
@@ -385,7 +412,6 @@ export const createDoctor = async (req, res) => {
     const {
       full_name,
       email,
-      password,
       phone,
       specialization,
       license_number,
@@ -395,6 +421,9 @@ export const createDoctor = async (req, res) => {
       consultation_fee,
       availability_json,
     } = req.body;
+
+    // Generate secure temporary password
+    const password = generateTempPassword(12);
 
     // Resolve the pharmacy for the logged-in user
     const pharmacy = await getPharmacyForCurrentUser(req.user.id);
@@ -449,6 +478,7 @@ export const createDoctor = async (req, res) => {
       role: USER_ROLES.DOCTOR,
       status: USER_STATUS.APPROVED,
       phone,
+      is_temp_password: true, // Flag for password reset on first login
     });
 
     // Create Doctor profile linked to this pharmacy
@@ -469,7 +499,14 @@ export const createDoctor = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ["user_id", "full_name", "email", "phone", "role", "status"],
+          attributes: [
+            "user_id",
+            "full_name",
+            "email",
+            "phone",
+            "role",
+            "status",
+          ],
         },
         {
           model: Pharmacy,
@@ -477,6 +514,13 @@ export const createDoctor = async (req, res) => {
         },
       ],
     });
+
+    // Try to send credentials email to the doctor (do not block creation on email failure)
+    try {
+      await sendCredentialsMail(user.email, password, user.full_name);
+    } catch (mailErr) {
+      console.error("Error sending credentials email to doctor:", mailErr);
+    }
 
     return successResponse(
       res,
@@ -684,7 +728,10 @@ export const assignDoctorToAppointment = async (req, res) => {
         appointment_date: appointment.appointment_date,
         appointment_time: appointment.appointment_time,
         status: {
-          [Op.notIn]: [APPOINTMENT_STATUS.CANCELLED, APPOINTMENT_STATUS.NO_SHOW],
+          [Op.notIn]: [
+            APPOINTMENT_STATUS.CANCELLED,
+            APPOINTMENT_STATUS.NO_SHOW,
+          ],
         },
         appointment_id: { [Op.ne]: appointment.appointment_id },
       },
