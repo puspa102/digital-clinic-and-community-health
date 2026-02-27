@@ -61,8 +61,16 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
 
     Patient: [
       { label: "Dashboard", path: "/patient/dashboard", icon: icons.dashboard },
-      { label: "Find Pharmacies", path: "/patient/pharmacies", icon: icons.search },
-      { label: "My Appointments", path: "/patient/appointments", icon: icons.calendar },
+      {
+        label: "Find Pharmacies",
+        path: "/patient/pharmacies",
+        icon: icons.search,
+      },
+      {
+        label: "My Appointments",
+        path: "/patient/appointments",
+        icon: icons.calendar,
+      },
       { label: "Emergency", path: "/emergency", icon: icons.emergency },
       { label: "Medical History", path: "/patient/history", icon: icons.file },
       { label: "Profile", path: "/patient/profile", icon: icons.user },
@@ -71,10 +79,18 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
 
     Doctor: [
       { label: "Dashboard", path: "/doctor/dashboard", icon: icons.dashboard },
-      { label: "My Appointments", path: "/doctor/appointments", icon: icons.calendar },
+      {
+        label: "My Appointments",
+        path: "/doctor/appointments",
+        icon: icons.calendar,
+      },
       { label: "Patients", path: "/doctor/patients", icon: icons.users },
       { label: "Schedule", path: "/doctor/schedule", icon: icons.clock },
-      { label: "Prescriptions", path: "/doctor/prescriptions", icon: icons.prescription },
+      {
+        label: "Prescriptions",
+        path: "/doctor/prescriptions",
+        icon: icons.prescription,
+      },
       { label: "Profile", path: "/doctor/profile", icon: icons.user },
       { label: "Settings", path: "/doctor/settings", icon: icons.settings },
     ],
@@ -83,17 +99,33 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
       { label: "Dashboard", path: "/admin/dashboard", icon: icons.dashboard },
       { label: "Users", path: "/admin/users", icon: icons.users },
       { label: "Doctors", path: "/admin/doctors", icon: icons.verify },
-      { label: "Appointments", path: "/admin/appointments", icon: icons.calendar },
+      {
+        label: "Appointments",
+        path: "/admin/appointments",
+        icon: icons.calendar,
+      },
       { label: "Pharmacies", path: "/admin/pharmacies", icon: icons.orders },
       { label: "Reports", path: "/admin/reports", icon: icons.chart },
       { label: "Settings", path: "/admin/settings", icon: icons.settings },
     ],
 
     Pharmacy: [
-      { label: "Dashboard", path: "/pharmacy/dashboard", icon: icons.dashboard },
-      { label: "Appointments", path: "/pharmacy/appointments", icon: icons.calendar },
+      {
+        label: "Dashboard",
+        path: "/pharmacy/dashboard",
+        icon: icons.dashboard,
+      },
+      {
+        label: "Appointments",
+        path: "/pharmacy/appointments",
+        icon: icons.calendar,
+      },
       { label: "Doctors", path: "/pharmacy/doctors", icon: icons.users },
-      { label: "Inventory", path: "/pharmacy/inventory", icon: icons.inventory },
+      {
+        label: "Inventory",
+        path: "/pharmacy/inventory",
+        icon: icons.inventory,
+      },
       { label: "Orders", path: "/pharmacy/orders", icon: icons.orders },
       { label: "Reports", path: "/pharmacy/reports", icon: icons.chart },
       { label: "Settings", path: "/pharmacy/settings", icon: icons.settings },
@@ -155,7 +187,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-50 h-full bg-white shadow-lg transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 h-full bg-white dark:bg-gray-800 shadow-lg border-r border-gray-200 dark:border-gray-700 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } ${isMinimized ? "lg:w-20" : "w-64"}`}
       >
@@ -163,7 +195,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
         <div
           className={`flex items-center ${
             isMinimized ? "justify-center" : "gap-3"
-          } p-4 border-b relative`}
+          } p-4 border-b border-gray-200 dark:border-gray-700 relative`}
         >
           <div
             className={`w-10 h-10 ${roleColors.primary} rounded-lg flex items-center justify-center`}
@@ -173,20 +205,24 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
 
           {!isMinimized && (
             <div className="flex-1">
-              <h1 className="font-bold text-gray-900">Digital Clinic</h1>
+              <h1 className="font-bold text-gray-900 dark:text-gray-100">
+                Digital Clinic
+              </h1>
               {isAuthenticated ? (
                 <span className={`text-xs ${roleColors.text} font-medium`}>
                   {user?.role} Portal
                 </span>
               ) : (
-                <span className="text-xs text-gray-500">Welcome</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Welcome
+                </span>
               )}
             </div>
           )}
 
           <button
             onClick={onToggleMinimize}
-            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-full items-center justify-center shadow-sm hover:bg-gray-50"
+            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full items-center justify-center shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             {isMinimized ? icons.chevronRight : icons.chevronLeft}
           </button>
@@ -204,7 +240,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               } px-4 py-3 rounded-lg transition-all ${
                 isActivePath(item.path)
                   ? roleColors.active
-                  : `text-gray-600 ${roleColors.hover}`
+                  : `text-gray-600 dark:text-gray-300 ${roleColors.hover} dark:hover:bg-gray-700`
               }`}
               title={isMinimized ? item.label : undefined}
             >
