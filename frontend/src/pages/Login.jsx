@@ -68,7 +68,17 @@ const Login = () => {
     const result = await login(formData.email, formData.password);
 
     if (result.success) {
-      navigate(from, { replace: true });
+      // Check if user has temporary password
+      if (result.data?.user?.is_temp_password) {
+        // Redirect to reset password page
+        navigate("/reset-password", {
+          replace: true,
+          state: { role: result.data.user.role },
+        });
+      } else {
+        // Normal login flow
+        navigate(from, { replace: true });
+      }
     }
 
     setIsSubmitting(false);
@@ -78,12 +88,12 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
           {/* Header */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
               <svg
-                className="w-8 h-8 text-blue-600"
+                className="w-8 h-8 text-blue-600 dark:text-blue-400"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -94,13 +104,17 @@ const Login = () => {
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-            <p className="text-gray-500">Sign in to access Digital Clinic</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Welcome Back
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              Sign in to access Digital Clinic
+            </p>
           </div>
 
           {/* Success message from registration */}
           {location.state?.message && (
-            <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
               <svg
                 className="w-5 h-5 text-green-600 flex-shrink-0"
                 viewBox="0 0 24 24"
@@ -111,7 +125,7 @@ const Login = () => {
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
-              <span className="text-sm text-green-700">
+              <span className="text-sm text-green-700 dark:text-green-200">
                 {location.state.message}
               </span>
             </div>
@@ -119,7 +133,7 @@ const Login = () => {
 
           {/* Error message */}
           {error && (
-            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <svg
                 className="w-5 h-5 text-red-600 flex-shrink-0"
                 viewBox="0 0 24 24"
@@ -131,7 +145,9 @@ const Login = () => {
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <span className="text-sm text-red-700">{error}</span>
+              <span className="text-sm text-red-700 dark:text-red-200">
+                {error}
+              </span>
             </div>
           )}
 
@@ -141,14 +157,14 @@ const Login = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-gray-400 dark:text-gray-500"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -165,16 +181,18 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter your email"
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg outline-none transition-all duration-200 ${
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg outline-none transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                     formErrors.email
                       ? "border-red-500 focus:ring-2 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      : "border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   }`}
                   autoComplete="email"
                 />
               </div>
               {formErrors.email && (
-                <p className="text-sm text-red-600">{formErrors.email}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {formErrors.email}
+                </p>
               )}
             </div>
 
@@ -182,14 +200,14 @@ const Login = () => {
             <div className="space-y-1.5">
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-gray-400 dark:text-gray-500"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -206,16 +224,16 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
-                  className={`w-full pl-10 pr-12 py-2.5 border rounded-lg outline-none transition-all duration-200 ${
+                  className={`w-full pl-10 pr-12 py-2.5 border rounded-lg outline-none transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                     formErrors.password
                       ? "border-red-500 focus:ring-2 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      : "border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   }`}
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -245,7 +263,9 @@ const Login = () => {
                 </button>
               </div>
               {formErrors.password && (
-                <p className="text-sm text-red-600">{formErrors.password}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {formErrors.password}
+                </p>
               )}
             </div>
 
@@ -257,11 +277,13 @@ const Login = () => {
                   name="remember"
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-600">Remember me</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Remember me
+                </span>
               </label>
               <Link
                 to="/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
                 Forgot password?
               </Link>
@@ -285,12 +307,12 @@ const Login = () => {
           </form>
 
           {/* Footer */}
-          <div className="text-center pt-4 border-t border-gray-100">
-            <p className="text-gray-600">
+          <div className="text-center pt-4 border-t border-gray-100 dark:border-gray-700">
+            <p className="text-gray-600 dark:text-gray-400">
               Don't have an account?{" "}
               <Link
                 to="/register"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
                 Create account
               </Link>
@@ -299,13 +321,19 @@ const Login = () => {
         </div>
 
         {/* Additional Info */}
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
           By signing in, you agree to our{" "}
-          <Link to="/terms" className="text-blue-600 hover:underline">
+          <Link
+            to="/terms"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+          >
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link to="/privacy" className="text-blue-600 hover:underline">
+          <Link
+            to="/privacy"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+          >
             Privacy Policy
           </Link>
         </p>

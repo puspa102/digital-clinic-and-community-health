@@ -289,6 +289,7 @@ export const loginUser = async (req, res) => {
           full_name: user.full_name,
           role: user.role,
           phone: user.phone,
+          is_temp_password: user.is_temp_password || false,
         },
       },
     );
@@ -526,6 +527,10 @@ export const changePassword = async (req, res) => {
 
     // Hash and save new password
     user.password_hash = await bcrypt.hash(new_password, 12);
+    // Reset temp password flag if it was set
+    if (user.is_temp_password) {
+      user.is_temp_password = false;
+    }
     await user.save();
 
     return successResponse(
