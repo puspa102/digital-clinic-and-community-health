@@ -48,7 +48,12 @@ export const formatPaginatedResponse = (data, totalCount, page, limit) => {
  * @param {string} message - Success message
  * @param {Object} data - Response data
  */
-export const successResponse = (res, statusCode = 200, message = "Success", data = null) => {
+export const successResponse = (
+  res,
+  statusCode = 200,
+  message = "Success",
+  data = null,
+) => {
   const response = {
     success: true,
     message,
@@ -73,7 +78,12 @@ export const successResponse = (res, statusCode = 200, message = "Success", data
  * @param {string} message - Error message
  * @param {Array} errors - Array of error details
  */
-export const errorResponse = (res, statusCode = 500, message = "Error", errors = []) => {
+export const errorResponse = (
+  res,
+  statusCode = 500,
+  message = "Error",
+  errors = [],
+) => {
   const response = {
     success: false,
     message,
@@ -104,7 +114,8 @@ export const asyncHandler = (fn) => {
  * @returns {string} - Random alphanumeric string
  */
 export const generateRandomString = (length = 32) => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -118,6 +129,39 @@ export const generateRandomString = (length = 32) => {
  */
 export const generateOtp = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
+ * Generate secure temporary password
+ * Includes uppercase, lowercase, numbers, and special characters
+ * @param {number} length - Length of password (default 12)
+ * @returns {string} - Secure temporary password
+ */
+export const generateTempPassword = (length = 12) => {
+  const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lowercase = "abcdefghijklmnopqrstuvwxyz";
+  const numbers = "0123456789";
+  const special = "@#$%&*!";
+  const allChars = uppercase + lowercase + numbers + special;
+
+  let password = "";
+
+  // Ensure at least one character from each set
+  password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+  password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+  password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  password += special.charAt(Math.floor(Math.random() * special.length));
+
+  // Fill the rest randomly
+  for (let i = password.length; i < length; i++) {
+    password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+  }
+
+  // Shuffle the password to avoid predictable patterns
+  return password
+    .split("")
+    .sort(() => Math.random() - 0.5)
+    .join("");
 };
 
 /**
@@ -145,7 +189,9 @@ export const isOtpExpired = (expiryDate) => {
  */
 export const sanitizeObject = (obj) => {
   return Object.fromEntries(
-    Object.entries(obj).filter(([_, value]) => value !== undefined && value !== null)
+    Object.entries(obj).filter(
+      ([_, value]) => value !== undefined && value !== null,
+    ),
   );
 };
 
@@ -207,6 +253,7 @@ export default {
   asyncHandler,
   generateRandomString,
   generateOtp,
+  generateTempPassword,
   getOtpExpiry,
   isOtpExpired,
   sanitizeObject,

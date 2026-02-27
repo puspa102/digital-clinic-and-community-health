@@ -44,6 +44,11 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    is_temp_password: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
     created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -52,7 +57,7 @@ const User = sequelize.define(
   {
     tableName: "users",
     timestamps: false,
-  }
+  },
 );
 
 export default User;

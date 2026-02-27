@@ -51,6 +51,22 @@ export const PAYMENT_STATUS = {
   FAILED: "failed",
 };
 
+// Order Status
+export const ORDER_STATUS = {
+  PENDING: "pending",
+  CONFIRMED: "confirmed",
+  SHIPPED: "shipped",
+  DELIVERED: "delivered",
+  CANCELLED: "cancelled",
+};
+
+// Prescription Status
+export const PRESCRIPTION_STATUS = {
+  ACTIVE: "active",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+};
+
 // Emergency Types
 export const EMERGENCY_TYPES = {
   DOCTOR: "Doctor",
@@ -220,6 +236,8 @@ export default {
   APPOINTMENT_STATUS,
   APPOINTMENT_TRANSITIONS,
   PAYMENT_STATUS,
+  ORDER_STATUS,
+  PRESCRIPTION_STATUS,
   EMERGENCY_TYPES,
   EMERGENCY_STATUS,
   EMERGENCY_PRIORITY,

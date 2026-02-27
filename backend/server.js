@@ -29,6 +29,9 @@ import doctorRoutes from "./routes/doctor.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import emergencyRoutes from "./routes/emergency.routes.js";
+import inventoryRoutes from "./routes/inventory.routes.js";
+import orderRoutes from "./routes/order.routes.js";
+import prescriptionRoutes from "./routes/prescription.routes.js";
 
 import { seedAdminIfNotExists } from "./scripts/seedAdmin.js";
 
@@ -175,6 +178,15 @@ app.use("/api/payments", paymentRoutes);
 
 // Emergency routes
 app.use("/api/emergencies", emergencyRoutes);
+
+// Inventory routes (Pharmacy)
+app.use("/api/inventory", inventoryRoutes);
+
+// Order routes (Pharmacy)
+app.use("/api/orders", orderRoutes);
+
+// Prescription routes (Doctor)
+app.use("/api/prescriptions", prescriptionRoutes);
 
 // ============================================
 // API Documentation
