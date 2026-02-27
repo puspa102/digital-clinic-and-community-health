@@ -1,325 +1,408 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Layout from "../../components/Layout";
+import {
+  Calendar,
+  Users,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  TrendingUp,
+} from "lucide-react";
+import api, { handleApiError } from "../../services/api";
 
 const Dashboard = () => {
-  const stats = [
-    {
-      label: "Today's Appointments",
-      value: "8",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      ),
-      color: "blue",
-    },
-    {
-      label: "Completed Today",
-      value: "5",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      ),
-      color: "green",
-    },
-    {
-      label: "Total Patients",
-      value: "156",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      color: "purple",
-    },
-    {
-      label: "Pending Reviews",
-      value: "3",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      ),
-      color: "orange",
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    todayAppointments: 0,
+    completedToday: 0,
+    totalPatients: 0,
+    pendingAppointments: 0,
+    totalEarnings: 0,
+    thisMonthEarnings: 0,
+  });
+  const [appointments, setAppointments] = useState([]);
+  const [recentPatients, setRecentPatients] = useState([]);
 
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    purple: "bg-purple-100 text-purple-600",
-    orange: "bg-orange-100 text-orange-600",
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch doctor's appointments
+      const appointmentsResponse = await api.get("/appointments/doctor/me");
+      const allAppointments = appointmentsResponse.data.data || [];
+
+      // Calculate today's date
+      const today = new Date().toISOString().split("T")[0];
+
+      // Filter today's appointments
+      const todayAppts = allAppointments.filter(
+        (apt) => apt.appointment_date === today,
+      );
+
+      // Calculate completed today
+      const completedToday = todayAppts.filter(
+        (apt) => apt.status === "completed",
+      ).length;
+
+      // Calculate pending appointments
+      const pendingAppts = allAppointments.filter(
+        (apt) => apt.status === "assigned" || apt.status === "confirmed",
+      ).length;
+
+      // Get unique patients
+      const uniquePatients = new Set(
+        allAppointments.map((apt) => apt.patient_id),
+      );
+
+      // Calculate total earnings (paid appointments)
+      const totalEarnings = allAppointments
+        .filter((apt) => apt.payment_status === "paid")
+        .reduce((sum, apt) => sum + (apt.payment_amount || 0), 0);
+
+      // Calculate this month's earnings
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const thisMonthEarnings = allAppointments
+        .filter((apt) => {
+          const aptDate = new Date(apt.appointment_date);
+          return (
+            aptDate.getMonth() === currentMonth &&
+            aptDate.getFullYear() === currentYear &&
+            apt.payment_status === "paid"
+          );
+        })
+        .reduce((sum, apt) => sum + (apt.payment_amount || 0), 0);
+
+      setStats({
+        todayAppointments: todayAppts.length,
+        completedToday: completedToday,
+        totalPatients: uniquePatients.size,
+        pendingAppointments: pendingAppts,
+        totalEarnings: totalEarnings,
+        thisMonthEarnings: thisMonthEarnings,
+      });
+
+      // Set recent appointments (upcoming and today)
+      const upcomingAppointments = allAppointments
+        .filter(
+          (apt) =>
+            apt.status !== "completed" &&
+            apt.status !== "cancelled" &&
+            apt.status !== "no_show",
+        )
+        .sort((a, b) => {
+          const dateA = new Date(`${a.appointment_date}T${a.appointment_time}`);
+          const dateB = new Date(`${b.appointment_date}T${b.appointment_time}`);
+          return dateA - dateB;
+        })
+        .slice(0, 5);
+
+      setAppointments(upcomingAppointments);
+
+      // Get recent patients (from recent completed appointments)
+      const completedAppointments = allAppointments
+        .filter((apt) => apt.status === "completed")
+        .sort(
+          (a, b) => new Date(b.appointment_date) - new Date(a.appointment_date),
+        )
+        .slice(0, 5);
+
+      setRecentPatients(completedAppointments);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const todayAppointments = [
-    {
-      id: 1,
-      patient: "John Doe",
-      age: 45,
-      time: "09:00 AM",
-      type: "Check-up",
-      status: "completed",
-    },
-    {
-      id: 2,
-      patient: "Jane Smith",
-      age: 32,
-      time: "10:30 AM",
-      type: "Follow-up",
-      status: "completed",
-    },
-    {
-      id: 3,
-      patient: "Mike Johnson",
-      age: 58,
-      time: "11:30 AM",
-      type: "Consultation",
-      status: "in-progress",
-    },
-    {
-      id: 4,
-      patient: "Sarah Wilson",
-      age: 28,
-      time: "02:00 PM",
-      type: "Check-up",
-      status: "upcoming",
-    },
-    {
-      id: 5,
-      patient: "Robert Brown",
-      age: 65,
-      time: "03:30 PM",
-      type: "Follow-up",
-      status: "upcoming",
-    },
-  ];
-
-  const quickActions = [
-    {
-      label: "Start Consultation",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-        </svg>
-      ),
-      href: "/doctor/consultation",
-    },
-    {
-      label: "Write Prescription",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-        </svg>
-      ),
-      href: "/doctor/prescriptions/new",
-    },
-    {
-      label: "View Patients",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      href: "/doctor/patients",
-    },
-    {
-      label: "Manage Schedule",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      ),
-      href: "/doctor/schedule",
-    },
-  ];
 
   const getStatusBadge = (status) => {
-    const styles = {
-      completed: "bg-green-100 text-green-700",
-      "in-progress": "bg-blue-100 text-blue-700",
-      upcoming: "bg-gray-100 text-gray-700",
+    const statusConfig = {
+      requested: { label: "Requested", class: "bg-gray-100 text-gray-700" },
+      assigned: { label: "Assigned", class: "bg-blue-100 text-blue-700" },
+      confirmed: { label: "Confirmed", class: "bg-green-100 text-green-700" },
+      completed: { label: "Completed", class: "bg-purple-100 text-purple-700" },
+      cancelled: { label: "Cancelled", class: "bg-red-100 text-red-700" },
+      no_show: { label: "No Show", class: "bg-orange-100 text-orange-700" },
     };
-    return styles[status] || styles.upcoming;
+    const config = statusConfig[status] || statusConfig.requested;
+    return (
+      <span
+        className={`px-2 py-1 text-xs font-medium rounded-full ${config.class}`}
+      >
+        {config.label}
+      </span>
+    );
   };
+
+  const formatTime = (time) => {
+    if (!time) return "N/A";
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl p-6 text-white">
-          <h1 className="text-2xl font-bold mb-2">
-            Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}, Doctor!
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Doctor Dashboard
           </h1>
-          <p className="text-green-100">
-            You have {todayAppointments.filter(a => a.status === "upcoming").length} upcoming appointments today.
+          <p className="text-gray-500 dark:text-gray-400">
+            Welcome back! Here's what's happening today.
           </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[stat.color]}`}>
-                  {stat.icon}
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Today's Appointments */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Today's Appointments
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+                  {stats.todayAppointments}
+                </p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
-          ))}
+            <div className="mt-4 flex items-center text-sm text-green-600 dark:text-green-400">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              {stats.completedToday} completed
+            </div>
+          </div>
+
+          {/* Total Patients */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Total Patients
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+                  {stats.totalPatients}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-sm text-gray-600 dark:text-gray-400">
+              <Clock className="w-4 h-4 mr-1" />
+              {stats.pendingAppointments} pending
+            </div>
+          </div>
+
+          {/* This Month Earnings */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  This Month
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+                  ${stats.thisMonthEarnings.toFixed(2)}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-sm text-gray-600 dark:text-gray-400">
+              Total: ${stats.totalEarnings.toFixed(2)}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Upcoming Appointments */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Upcoming Appointments
+                </h2>
+                <Link
+                  to="/doctor/appointments"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  View All
+                </Link>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {appointments.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No upcoming appointments</p>
+                </div>
+              ) : (
+                appointments.map((appointment) => (
+                  <div
+                    key={appointment.appointment_id}
+                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            {appointment.Patient?.full_name
+                              ?.charAt(0)
+                              ?.toUpperCase() || "P"}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {appointment.Patient?.full_name ||
+                                "Unknown Patient"}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {formatDate(appointment.appointment_date)} at{" "}
+                              {formatTime(appointment.appointment_time)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      {getStatusBadge(appointment.status)}
+                    </div>
+                    {appointment.reason && (
+                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 ml-13">
+                        {appointment.reason}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Recent Patients */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Recent Patients
+                </h2>
+                <Link
+                  to="/doctor/patients"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  View All
+                </Link>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {recentPatients.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No recent patients</p>
+                </div>
+              ) : (
+                recentPatients.map((appointment) => (
+                  <div
+                    key={appointment.appointment_id}
+                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {appointment.Patient?.full_name
+                            ?.charAt(0)
+                            ?.toUpperCase() || "P"}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            {appointment.Patient?.full_name ||
+                              "Unknown Patient"}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Last visit:{" "}
+                            {formatDate(appointment.appointment_date)}
+                          </p>
+                        </div>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
-              <a
-                key={index}
-                href={action.href}
-                className="flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-green-500 border-2 border-transparent transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-3 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                  {action.icon}
-                </div>
-                <span className="font-medium text-gray-700">{action.label}</span>
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* Today's Appointments */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Today's Appointments</h2>
-            <a href="/doctor/appointments" className="text-sm text-green-600 hover:text-green-700 font-medium">
-              View All →
-            </a>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {todayAppointments.map((appointment) => (
-                    <tr key={appointment.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold">
-                            {appointment.patient.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{appointment.patient}</p>
-                            <p className="text-sm text-gray-500">Age: {appointment.age}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-900">{appointment.time}</td>
-                      <td className="px-6 py-4 text-gray-600">{appointment.type}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadge(appointment.status)}`}>
-                          {appointment.status.replace("-", " ")}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {appointment.status === "upcoming" && (
-                          <button className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
-                            Start
-                          </button>
-                        )}
-                        {appointment.status === "in-progress" && (
-                          <button className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                            Continue
-                          </button>
-                        )}
-                        {appointment.status === "completed" && (
-                          <button className="px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
-                            View
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Patients */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Patients</h2>
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="space-y-4">
-                {todayAppointments.slice(0, 3).map((appointment) => (
-                  <div key={appointment.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold">
-                        {appointment.patient.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{appointment.patient}</p>
-                        <p className="text-sm text-gray-500">{appointment.type}</p>
-                      </div>
-                    </div>
-                    <a href={`/doctor/patients/${appointment.id}`} className="text-green-600 hover:text-green-700 text-sm font-medium">
-                      View Profile
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Schedule Overview</h2>
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="text-center py-8 text-gray-500">
-                <svg
-                  className="w-16 h-16 mx-auto mb-4 text-gray-300"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                <p>Weekly schedule view coming soon</p>
-                <a href="/doctor/schedule" className="text-green-600 hover:underline text-sm mt-2 inline-block">
-                  Manage Schedule
-                </a>
-              </div>
-            </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link
+              to="/doctor/appointments"
+              className="flex flex-col items-center justify-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+            >
+              <Calendar className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-2" />
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Appointments
+              </span>
+            </Link>
+            <Link
+              to="/doctor/patients"
+              className="flex flex-col items-center justify-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+            >
+              <Users className="w-8 h-8 text-purple-600 dark:text-purple-400 mb-2" />
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Patients
+              </span>
+            </Link>
+            <Link
+              to="/doctor/schedule"
+              className="flex flex-col items-center justify-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+            >
+              <Clock className="w-8 h-8 text-green-600 dark:text-green-400 mb-2" />
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Schedule
+              </span>
+            </Link>
+            <Link
+              to="/doctor/profile"
+              className="flex flex-col items-center justify-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+            >
+              <Users className="w-8 h-8 text-orange-600 dark:text-orange-400 mb-2" />
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Profile
+              </span>
+            </Link>
           </div>
         </div>
       </div>
