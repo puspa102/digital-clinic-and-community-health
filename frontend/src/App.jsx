@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyOtp from "./pages/VerifyOtp";
+import ResetPassword from "./pages/ResetPassword";
 
 // Patient Pages
 import PatientDashboard from "./pages/patient/Dashboard";
@@ -16,6 +17,7 @@ import PatientRecords from "./pages/patient/Records";
 import PatientPrescriptions from "./pages/patient/Prescriptions";
 import PatientPharmacies from "./pages/patient/Pharmacies";
 import PatientProfile from "./pages/patient/Profile";
+import PatientSettings from "./pages/patient/Settings";
 
 // Doctor Pages
 import DoctorDashboard from "./pages/doctor/Dashboard";
@@ -24,6 +26,7 @@ import DoctorPatients from "./pages/doctor/Patients";
 import DoctorSchedule from "./pages/doctor/Schedule";
 import DoctorPrescriptions from "./pages/doctor/Prescriptions";
 import DoctorProfile from "./pages/doctor/Profile";
+import DoctorSettings from "./pages/doctor/Settings";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -39,6 +42,8 @@ import PharmacyDashboard from "./pages/pharmacy/Dashboard";
 import PharmacyAppointments from "./pages/pharmacy/Appointments";
 import PharmacyDoctors from "./pages/pharmacy/Doctors";
 import PharmacyPrescriptions from "./pages/pharmacy/Prescriptions";
+import PharmacyInventory from "./pages/pharmacy/Inventory";
+import PharmacyOrders from "./pages/pharmacy/Orders";
 import PharmacyReports from "./pages/pharmacy/Reports";
 import PharmacySettings from "./pages/pharmacy/Settings";
 
@@ -78,6 +83,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Dashboard redirect - redirects to role-based dashboard */}
       <Route
@@ -123,6 +129,14 @@ function App() {
         }
       />
       <Route
+        path="/patient/history"
+        element={
+          <ProtectedRoute roles={["Patient", "Admin"]}>
+            <PatientRecords />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/patient/prescriptions"
         element={
           <ProtectedRoute roles={["Patient", "Admin"]}>
@@ -135,6 +149,14 @@ function App() {
         element={
           <ProtectedRoute roles={["Patient", "Admin"]}>
             <PatientProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/settings"
+        element={
+          <ProtectedRoute roles={["Patient", "Admin"]}>
+            <PatientSettings />
           </ProtectedRoute>
         }
       />
@@ -185,6 +207,14 @@ function App() {
         element={
           <ProtectedRoute roles={["Doctor", "Admin"]}>
             <DoctorProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor/settings"
+        element={
+          <ProtectedRoute roles={["Doctor", "Admin"]}>
+            <DoctorSettings />
           </ProtectedRoute>
         }
       />
@@ -293,6 +323,22 @@ function App() {
         element={
           <ProtectedRoute roles={["Pharmacy", "Admin"]}>
             <PharmacyReports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/inventory"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacyInventory />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/orders"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacyOrders />
           </ProtectedRoute>
         }
       />

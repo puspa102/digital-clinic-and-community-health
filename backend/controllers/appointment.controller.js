@@ -3,6 +3,7 @@ import Doctor from "../models/doctor.model.js";
 import Pharmacy from "../models/pharmacy.model.js";
 import User from "../models/user.model.js";
 import { Op } from "sequelize";
+import { sendPaymentRequestMail } from "../utils/mail.js";
 import {
   getPagination,
   formatPaginatedResponse,
@@ -51,7 +52,8 @@ const fullAppointmentIncludes = [
  */
 export const createAppointment = async (req, res) => {
   try {
-    const { pharmacy_id, appointment_date, appointment_time, reason } = req.body;
+    const { pharmacy_id, appointment_date, appointment_time, reason } =
+      req.body;
 
     // The patient is the logged-in user
     const patient_id = req.user.id;
@@ -98,7 +100,10 @@ export const createAppointment = async (req, res) => {
         appointment_date,
         appointment_time,
         status: {
-          [Op.notIn]: [APPOINTMENT_STATUS.CANCELLED, APPOINTMENT_STATUS.NO_SHOW],
+          [Op.notIn]: [
+            APPOINTMENT_STATUS.CANCELLED,
+            APPOINTMENT_STATUS.NO_SHOW,
+          ],
         },
       },
     });
@@ -153,7 +158,8 @@ export const createAppointment = async (req, res) => {
 export const getAllAppointments = async (req, res) => {
   try {
     const { limit, offset, page } = getPagination(req.query);
-    const { status, payment_status, date_from, date_to, pharmacy_id } = req.query;
+    const { status, payment_status, date_from, date_to, pharmacy_id } =
+      req.query;
 
     // Build where clause
     const where = {};
@@ -230,8 +236,11 @@ export const getAppointmentById = async (req, res) => {
     // Check if the logged-in user is the pharmacy owner
     let isPharmacyOwner = false;
     if (req.user.role === "Pharmacy") {
-      const pharmacy = await Pharmacy.findOne({ where: { user_id: req.user.id } });
-      isPharmacyOwner = pharmacy && pharmacy.pharmacy_id === appointment.pharmacy_id;
+      const pharmacy = await Pharmacy.findOne({
+        where: { user_id: req.user.id },
+      });
+      isPharmacyOwner =
+        pharmacy && pharmacy.pharmacy_id === appointment.pharmacy_id;
     }
 
     if (!isPatient && !isAssignedDoctor && !isPharmacyOwner && !isAdmin) {
@@ -352,7 +361,9 @@ export const getDoctorAppointments = async (req, res) => {
     const isOwnerDoctor = doctor.user_id === req.user.id;
     let isPharmacyOwner = false;
     if (req.user.role === "Pharmacy") {
-      const pharmacy = await Pharmacy.findOne({ where: { user_id: req.user.id } });
+      const pharmacy = await Pharmacy.findOne({
+        where: { user_id: req.user.id },
+      });
       isPharmacyOwner = pharmacy && pharmacy.pharmacy_id === doctor.pharmacy_id;
     }
 
@@ -605,9 +616,19 @@ export const updateAppointmentStatus = async (req, res) => {
 
     // Define valid transitions
     const validTransitions = {
-      [APPOINTMENT_STATUS.REQUESTED]: [APPOINTMENT_STATUS.ASSIGNED, APPOINTMENT_STATUS.CANCELLED],
-      [APPOINTMENT_STATUS.ASSIGNED]: [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.CANCELLED],
-      [APPOINTMENT_STATUS.CONFIRMED]: [APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.CANCELLED, APPOINTMENT_STATUS.NO_SHOW],
+      [APPOINTMENT_STATUS.REQUESTED]: [
+        APPOINTMENT_STATUS.ASSIGNED,
+        APPOINTMENT_STATUS.CANCELLED,
+      ],
+      [APPOINTMENT_STATUS.ASSIGNED]: [
+        APPOINTMENT_STATUS.CONFIRMED,
+        APPOINTMENT_STATUS.CANCELLED,
+      ],
+      [APPOINTMENT_STATUS.CONFIRMED]: [
+        APPOINTMENT_STATUS.COMPLETED,
+        APPOINTMENT_STATUS.CANCELLED,
+        APPOINTMENT_STATUS.NO_SHOW,
+      ],
       [APPOINTMENT_STATUS.COMPLETED]: [],
       [APPOINTMENT_STATUS.CANCELLED]: [],
       [APPOINTMENT_STATUS.NO_SHOW]: [],
@@ -627,7 +648,9 @@ export const updateAppointmentStatus = async (req, res) => {
     if (!isAdmin) {
       if (req.user.role === "Doctor") {
         // Doctor can only update appointments assigned to them
-        const doctor = await Doctor.findOne({ where: { user_id: req.user.id } });
+        const doctor = await Doctor.findOne({
+          where: { user_id: req.user.id },
+        });
         if (!doctor || doctor.doctor_id !== appointment.doctor_id) {
           return errorResponse(
             res,
@@ -636,7 +659,12 @@ export const updateAppointmentStatus = async (req, res) => {
           );
         }
         // Doctor can: assigned->confirmed, confirmed->completed, confirmed->no_show, confirmed->cancelled
-        const doctorAllowed = [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.COMPLETED, APPOINTMENT_STATUS.NO_SHOW, APPOINTMENT_STATUS.CANCELLED];
+        const doctorAllowed = [
+          APPOINTMENT_STATUS.CONFIRMED,
+          APPOINTMENT_STATUS.COMPLETED,
+          APPOINTMENT_STATUS.NO_SHOW,
+          APPOINTMENT_STATUS.CANCELLED,
+        ];
         if (!doctorAllowed.includes(status)) {
           return errorResponse(
             res,
@@ -646,7 +674,9 @@ export const updateAppointmentStatus = async (req, res) => {
         }
       } else if (req.user.role === "Pharmacy") {
         // Pharmacy can update appointments in their pharmacy
-        const pharmacy = await Pharmacy.findOne({ where: { user_id: req.user.id } });
+        const pharmacy = await Pharmacy.findOne({
+          where: { user_id: req.user.id },
+        });
         if (!pharmacy || pharmacy.pharmacy_id !== appointment.pharmacy_id) {
           return errorResponse(
             res,
@@ -676,6 +706,58 @@ export const updateAppointmentStatus = async (req, res) => {
     const previousStatus = appointment.status;
     appointment.status = status;
     await appointment.save();
+
+    // If doctor confirms appointment, send payment request to patient
+    if (
+      status === APPOINTMENT_STATUS.CONFIRMED &&
+      previousStatus === APPOINTMENT_STATUS.ASSIGNED
+    ) {
+      try {
+        // Fetch complete appointment details with patient, doctor info
+        const fullAppointment = await Appointment.findByPk(appointment_id, {
+          include: [
+            {
+              model: User,
+              as: "Patient",
+              attributes: ["user_id", "full_name", "email"],
+            },
+            {
+              model: Doctor,
+              include: {
+                model: User,
+                attributes: ["full_name"],
+              },
+            },
+          ],
+        });
+
+        if (
+          fullAppointment &&
+          fullAppointment.Patient &&
+          fullAppointment.Doctor
+        ) {
+          const paymentAmount = fullAppointment.Doctor.consultation_fee || 50;
+
+          // Update payment amount in appointment
+          fullAppointment.payment_amount = paymentAmount;
+          await fullAppointment.save();
+
+          // Send payment request email
+          await sendPaymentRequestMail(
+            fullAppointment.Patient.email,
+            fullAppointment.Patient.full_name,
+            fullAppointment.Doctor.User.full_name,
+            fullAppointment.appointment_date,
+            fullAppointment.appointment_time,
+            paymentAmount,
+            appointment_id,
+          );
+        }
+      } catch (mailErr) {
+        console.error("Error sending payment request email:", mailErr);
+        // Don't fail the status update if email fails
+      }
+    }
 
     return successResponse(
       res,
@@ -864,8 +946,11 @@ export const cancelAppointment = async (req, res) => {
 
     let isPharmacyOwner = false;
     if (req.user.role === "Pharmacy") {
-      const pharmacy = await Pharmacy.findOne({ where: { user_id: req.user.id } });
-      isPharmacyOwner = pharmacy && pharmacy.pharmacy_id === appointment.pharmacy_id;
+      const pharmacy = await Pharmacy.findOne({
+        where: { user_id: req.user.id },
+      });
+      isPharmacyOwner =
+        pharmacy && pharmacy.pharmacy_id === appointment.pharmacy_id;
     }
 
     if (!isPatient && !isAssignedDoctor && !isPharmacyOwner && !isAdmin) {

@@ -228,6 +228,141 @@ export const pharmacyAPI = {
 };
 
 // ============================================
+// Inventory API endpoints
+// ============================================
+export const inventoryAPI = {
+  // Get inventory items (Pharmacy only)
+  getInventory: async (params = {}) => {
+    const response = await api.get("/inventory", { params });
+    return response.data;
+  },
+
+  // Get inventory item by ID (Pharmacy only)
+  getInventoryItem: async (itemId) => {
+    const response = await api.get(`/inventory/${itemId}`);
+    return response.data;
+  },
+
+  // Create inventory item (Pharmacy only)
+  createInventoryItem: async (data) => {
+    const response = await api.post("/inventory", data);
+    return response.data;
+  },
+
+  // Update inventory item (Pharmacy only)
+  updateInventoryItem: async (itemId, data) => {
+    const response = await api.put(`/inventory/${itemId}`, data);
+    return response.data;
+  },
+
+  // Delete inventory item (Pharmacy only)
+  deleteInventoryItem: async (itemId) => {
+    const response = await api.delete(`/inventory/${itemId}`);
+    return response.data;
+  },
+
+  // Get inventory stats (Pharmacy only)
+  getInventoryStats: async () => {
+    const response = await api.get("/inventory/stats");
+    return response.data;
+  },
+};
+
+// ============================================
+// Order API endpoints
+// ============================================
+export const orderAPI = {
+  // Get orders (Pharmacy only)
+  getOrders: async (params = {}) => {
+    const response = await api.get("/orders", { params });
+    return response.data;
+  },
+
+  // Get order by ID (Pharmacy only)
+  getOrderById: async (orderId) => {
+    const response = await api.get(`/orders/${orderId}`);
+    return response.data;
+  },
+
+  // Create order (Pharmacy only)
+  createOrder: async (data) => {
+    const response = await api.post("/orders", data);
+    return response.data;
+  },
+
+  // Update order details (Pharmacy only)
+  updateOrder: async (orderId, data) => {
+    const response = await api.put(`/orders/${orderId}`, data);
+    return response.data;
+  },
+
+  // Update order status (Pharmacy only)
+  updateOrderStatus: async (orderId, status) => {
+    const response = await api.put(`/orders/${orderId}/status`, { status });
+    return response.data;
+  },
+
+  // Delete order (Pharmacy only)
+  deleteOrder: async (orderId) => {
+    const response = await api.delete(`/orders/${orderId}`);
+    return response.data;
+  },
+
+  // Get order stats (Pharmacy only)
+  getOrderStats: async () => {
+    const response = await api.get("/orders/stats");
+    return response.data;
+  },
+};
+
+// ============================================
+// Prescription API endpoints
+// ============================================
+export const prescriptionAPI = {
+  // Get my prescriptions (Doctor)
+  getMyPrescriptions: async (params = {}) => {
+    const response = await api.get("/prescriptions/my-prescriptions", { params });
+    return response.data;
+  },
+
+  // Get prescription by ID
+  getPrescriptionById: async (id) => {
+    const response = await api.get(`/prescriptions/${id}`);
+    return response.data;
+  },
+
+  // Create prescription (Doctor)
+  createPrescription: async (data) => {
+    const response = await api.post("/prescriptions", data);
+    return response.data;
+  },
+
+  // Update prescription (Doctor)
+  updatePrescription: async (id, data) => {
+    const response = await api.put(`/prescriptions/${id}`, data);
+    return response.data;
+  },
+
+  // Delete prescription
+  deletePrescription: async (id) => {
+    const response = await api.delete(`/prescriptions/${id}`);
+    return response.data;
+  },
+
+  // Get prescription stats (Doctor)
+  getPrescriptionStats: async () => {
+    const response = await api.get("/prescriptions/stats");
+    return response.data;
+  },
+
+  // Get prescriptions for a patient
+  getPatientPrescriptions: async (patientId, params = {}) => {
+    const response = await api.get(`/prescriptions/patient/${patientId}`, { params });
+    return response.data;
+  },
+};
+
+// ============================================
 // Doctor API endpoints
 // ============================================
 export const doctorAPI = {
@@ -490,6 +625,22 @@ export const PAYMENT_STATUS = {
   FAILED: "failed",
 };
 
+// Order status constants
+export const ORDER_STATUS = {
+  PENDING: "pending",
+  CONFIRMED: "confirmed",
+  SHIPPED: "shipped",
+  DELIVERED: "delivered",
+  CANCELLED: "cancelled",
+};
+
+// Prescription status constants
+export const PRESCRIPTION_STATUS = {
+  ACTIVE: "active",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+};
+
 // Status badge color mapping
 export const getStatusBadgeClass = (status) => {
   const statusClasses = {
@@ -508,6 +659,10 @@ export const getStatusBadgeClass = (status) => {
     // Payment statuses
     paid: "bg-green-100 text-green-700",
     failed: "bg-red-100 text-red-700",
+    // Order statuses
+    confirmed: "bg-blue-100 text-blue-700",
+    shipped: "bg-indigo-100 text-indigo-700",
+    delivered: "bg-green-100 text-green-700",
   };
   return statusClasses[status] || "bg-gray-100 text-gray-700";
 };
