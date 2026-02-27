@@ -210,7 +210,7 @@ const Pharmacies = () => {
                 className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
               >
                 {/* Pharmacy Header */}
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
+                <div className="bg-linear-to-r from-blue-500 to-blue-600 p-4 text-white">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                       <svg
@@ -511,7 +511,7 @@ const Pharmacies = () => {
                   {/* Info Notice */}
                   <div className="flex items-start gap-2 text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
                     <svg
-                      className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0"
+                      className="w-4 h-4 text-gray-400 mt-0.5 shrink-0"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
