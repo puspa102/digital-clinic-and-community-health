@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import Layout from "../../components/Layout";
 import {
   appointmentAPI,
   getStatusBadgeClass,
   formatTime,
+  formatDate,
   handleApiError,
   APPOINTMENT_STATUS,
 } from "../../services/api";
@@ -24,6 +26,10 @@ const Appointments = () => {
   // Filters
   const [statusFilter, setStatusFilter] = useState("");
   const [showUpcoming, setShowUpcoming] = useState(false);
+
+  // QR Code modal
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrAppointment, setQrAppointment] = useState(null);
 
   useEffect(() => {
     fetchAppointments();
@@ -268,9 +274,18 @@ const Appointments = () => {
                           >
                             {appointment.status?.replace("_", " ")}
                           </span>
+                          {appointment.consultation_type && (
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full capitalize ${
+                              appointment.consultation_type === "online"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-teal-100 text-teal-700"
+                            }`}>
+                              {appointment.consultation_type === "online" ? "🎥 Online" : "🏥 Physical"}
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-gray-500 mt-1">
-                          {formatTime(appointment.appointment_time)} •{" "}
+                          {formatTime(appointment.scheduled_time || appointment.appointment_time)} •{" "}
                           {appointment.Pharmacy?.address || ""}
                         </p>
                         {appointment.Doctor ? (
@@ -288,6 +303,49 @@ const Appointments = () => {
                             <span className="font-medium">Reason:</span> {appointment.reason}
                           </p>
                         )}
+                        {appointment.doctor_notes && (
+                          <p className="text-sm text-blue-600 mt-1">
+                            <span className="font-medium">Doctor's Note:</span> {appointment.doctor_notes}
+                          </p>
+                        )}
+
+                        {/* Doctor Fee - shown when confirmed */}
+                        {appointment.payment_amount > 0 && appointment.status !== APPOINTMENT_STATUS.REQUESTED && (
+                          <div className="mt-2 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
+                            <svg className="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <line x1="12" y1="1" x2="12" y2="23" />
+                              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                            </svg>
+                            <span className="text-sm font-semibold text-green-700">
+                              Doctor Fee: Rs. {appointment.payment_amount}
+                            </span>
+                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                              appointment.payment_status === "paid"
+                                ? "bg-green-200 text-green-800"
+                                : "bg-yellow-200 text-yellow-800"
+                            }`}>
+                              {appointment.payment_status === "paid" ? "Paid" : "Pending"}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Meeting Link for online */}
+                        {appointment.consultation_type === "online" && appointment.meeting_link && appointment.status === APPOINTMENT_STATUS.CONFIRMED && (
+                          <div className="mt-2">
+                            <a
+                              href={appointment.meeting_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                            >
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z" />
+                              </svg>
+                              Join Online Meeting
+                            </a>
+                          </div>
+                        )}
+
                         <p className="text-xs text-gray-400 mt-1">
                           {getStatusDescription(appointment.status)}
                         </p>
@@ -296,6 +354,24 @@ const Appointments = () => {
 
                     {/* Right: Actions */}
                     <div className="flex items-center gap-2 md:flex-shrink-0">
+                      {/* QR Code Button - for confirmed/completed appointments */}
+                      {appointment.qr_token && [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.COMPLETED].includes(appointment.status) && (
+                        <button
+                          onClick={() => {
+                            setQrAppointment(appointment);
+                            setShowQrModal(true);
+                          }}
+                          className="px-3 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2 text-sm font-medium"
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                          </svg>
+                          QR Code
+                        </button>
+                      )}
                       {canCancel(appointment.status) && (
                         <button
                           onClick={() => handleCancel(appointment.appointment_id)}
@@ -375,7 +451,7 @@ const Appointments = () => {
                 3
               </div>
               <span className="text-gray-600">
-                <strong>Confirmed</strong> — Doctor confirms
+                <strong>Confirmed</strong> — Doctor sets time & type, fee shown + QR generated
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -389,6 +465,83 @@ const Appointments = () => {
           </div>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showQrModal && qrAppointment && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="p-6 border-b flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Appointment QR Code</h2>
+              <button
+                onClick={() => { setShowQrModal(false); setQrAppointment(null); }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 flex flex-col items-center">
+              {/* QR Code */}
+              <div className="bg-white p-4 rounded-xl border-2 border-gray-100 mb-4">
+                <QRCodeSVG
+                  value={JSON.stringify({
+                    type: "appointment",
+                    token: qrAppointment.qr_token,
+                    id: qrAppointment.appointment_id,
+                    date: qrAppointment.appointment_date,
+                    time: qrAppointment.scheduled_time || qrAppointment.appointment_time,
+                    consultation: qrAppointment.consultation_type,
+                    fee: qrAppointment.payment_amount,
+                  })}
+                  size={200}
+                  level="M"
+                  includeMargin={true}
+                />
+              </div>
+
+              {/* Appointment Details */}
+              <div className="w-full space-y-2 text-sm">
+                <div className="flex justify-between py-1 border-b border-gray-100">
+                  <span className="text-gray-500">Pharmacy</span>
+                  <span className="font-medium text-gray-900">{qrAppointment.Pharmacy?.pharmacy_name}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-gray-100">
+                  <span className="text-gray-500">Doctor</span>
+                  <span className="font-medium text-gray-900">{qrAppointment.Doctor?.User?.full_name || "—"}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-gray-100">
+                  <span className="text-gray-500">Date</span>
+                  <span className="font-medium text-gray-900">{formatDate(qrAppointment.appointment_date)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-gray-100">
+                  <span className="text-gray-500">Time</span>
+                  <span className="font-medium text-gray-900">{formatTime(qrAppointment.scheduled_time || qrAppointment.appointment_time)}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-gray-100">
+                  <span className="text-gray-500">Type</span>
+                  <span className={`font-medium capitalize ${
+                    qrAppointment.consultation_type === "online" ? "text-purple-700" : "text-teal-700"
+                  }`}>
+                    {qrAppointment.consultation_type || "—"}
+                  </span>
+                </div>
+                {qrAppointment.payment_amount > 0 && (
+                  <div className="flex justify-between py-2 bg-green-50 rounded-lg px-3 mt-2">
+                    <span className="text-green-700 font-medium">Doctor Fee</span>
+                    <span className="font-bold text-green-800 text-lg">Rs. {qrAppointment.payment_amount}</span>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-gray-400 mt-4 text-center">
+                Show this QR code at the pharmacy for verification
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

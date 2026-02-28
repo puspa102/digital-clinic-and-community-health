@@ -26,6 +26,17 @@ const Appointments = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  // Confirm modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmingAppointment, setConfirmingAppointment] = useState(null);
+  const [confirmForm, setConfirmForm] = useState({
+    consultation_type: "physical",
+    scheduled_time: "",
+    doctor_notes: "",
+    meeting_link: "",
+  });
+  const [confirmError, setConfirmError] = useState(null);
+
   useEffect(() => {
     fetchAppointments();
   }, [pagination.page, statusFilter, dateFrom, dateTo]);
@@ -40,7 +51,6 @@ const Appointments = () => {
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
       });
-      // API returns { success, data: [...], pagination: {...} }
       setAppointments(response.data || []);
       setPagination((prev) => ({
         ...prev,
@@ -56,14 +66,46 @@ const Appointments = () => {
     }
   };
 
-  const handleConfirm = async (appointmentId) => {
+  const openConfirmModal = (appointment) => {
+    setConfirmingAppointment(appointment);
+    setConfirmForm({
+      consultation_type: "physical",
+      scheduled_time: appointment.appointment_time?.slice(0, 5) || "",
+      doctor_notes: "",
+      meeting_link: "",
+    });
+    setConfirmError(null);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    if (!confirmForm.scheduled_time) {
+      setConfirmError("Please set a consultation time");
+      return;
+    }
+    if (confirmForm.consultation_type === "online" && !confirmForm.meeting_link) {
+      setConfirmError("Meeting link is required for online consultations");
+      return;
+    }
+
     try {
-      setActionLoading(appointmentId);
-      await appointmentAPI.confirmAppointment(appointmentId);
+      setActionLoading(confirmingAppointment.appointment_id);
+      setConfirmError(null);
+      await appointmentAPI.confirmAppointment(
+        confirmingAppointment.appointment_id,
+        {
+          consultation_type: confirmForm.consultation_type,
+          scheduled_time: confirmForm.scheduled_time,
+          doctor_notes: confirmForm.doctor_notes || undefined,
+          meeting_link: confirmForm.consultation_type === "online" ? confirmForm.meeting_link : undefined,
+        }
+      );
+      setShowConfirmModal(false);
+      setConfirmingAppointment(null);
       fetchAppointments();
     } catch (err) {
       const errorInfo = handleApiError(err);
-      alert(errorInfo.message);
+      setConfirmError(errorInfo.message);
     } finally {
       setActionLoading(null);
     }
@@ -84,7 +126,7 @@ const Appointments = () => {
 
   const handleCancel = async (appointmentId) => {
     const reason = window.prompt("Please provide a reason for cancellation (optional):");
-    if (reason === null) return; // User clicked cancel
+    if (reason === null) return;
 
     try {
       setActionLoading(appointmentId);
@@ -114,7 +156,7 @@ const Appointments = () => {
       return (
         <div className="flex gap-2">
           <button
-            onClick={() => handleConfirm(appointment.appointment_id)}
+            onClick={() => openConfirmModal(appointment)}
             disabled={isLoading}
             className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
           >
@@ -357,6 +399,25 @@ const Appointments = () => {
                         </p>
                       </td>
                       <td className="px-6 py-4">
+                        {appointment.consultation_type && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full mb-1 ${
+                            appointment.consultation_type === "online"
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-teal-100 text-teal-700"
+                          }`}>
+                            {appointment.consultation_type === "online" ? (
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                <polyline points="9 22 9 12 15 12 15 22" />
+                              </svg>
+                            )}
+                            {appointment.consultation_type}
+                          </span>
+                        )}
                         <span
                           className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeClass(
                             appointment.status
@@ -364,6 +425,11 @@ const Appointments = () => {
                         >
                           {appointment.status?.replace("_", " ")}
                         </span>
+                        {appointment.scheduled_time && appointment.scheduled_time !== appointment.appointment_time && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Scheduled: {formatTime(appointment.scheduled_time)}
+                          </p>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         {getStatusAction(appointment)}
@@ -432,6 +498,160 @@ const Appointments = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirm Appointment Modal */}
+      {showConfirmModal && confirmingAppointment && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Confirm Appointment</h2>
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Appointment Info */}
+              <div className="bg-green-50 rounded-lg p-4">
+                <p className="text-sm text-green-600 font-medium">Patient Details</p>
+                <p className="font-semibold text-gray-900 mt-1">
+                  {confirmingAppointment.Patient?.full_name || "Unknown Patient"}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {formatDate(confirmingAppointment.appointment_date)} at{" "}
+                  {formatTime(confirmingAppointment.appointment_time)}
+                </p>
+                {confirmingAppointment.reason && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    <span className="font-medium">Reason:</span> {confirmingAppointment.reason}
+                  </p>
+                )}
+              </div>
+
+              {/* Error */}
+              {confirmError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+                  {confirmError}
+                </div>
+              )}
+
+              {/* Consultation Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Consultation Type *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmForm((prev) => ({ ...prev, consultation_type: "physical" }))}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                      confirmForm.consultation_type === "physical"
+                        ? "border-green-500 bg-green-50 text-green-700"
+                        : "border-gray-200 hover:border-gray-300 text-gray-600"
+                    }`}
+                  >
+                    <svg className="w-8 h-8 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                    <p className="font-semibold">Physical</p>
+                    <p className="text-xs mt-1">In-person visit</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmForm((prev) => ({ ...prev, consultation_type: "online" }))}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                      confirmForm.consultation_type === "online"
+                        ? "border-purple-500 bg-purple-50 text-purple-700"
+                        : "border-gray-200 hover:border-gray-300 text-gray-600"
+                    }`}
+                  >
+                    <svg className="w-8 h-8 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z" />
+                    </svg>
+                    <p className="font-semibold">Online</p>
+                    <p className="text-xs mt-1">Video consultation</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Scheduled Time */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Consultation Time *
+                </label>
+                <input
+                  type="time"
+                  value={confirmForm.scheduled_time}
+                  onChange={(e) => setConfirmForm((prev) => ({ ...prev, scheduled_time: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {/* Meeting Link (for online) */}
+              {confirmForm.consultation_type === "online" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Meeting Link *
+                  </label>
+                  <input
+                    type="url"
+                    value={confirmForm.meeting_link}
+                    onChange={(e) => setConfirmForm((prev) => ({ ...prev, meeting_link: e.target.value }))}
+                    placeholder="https://meet.google.com/..."
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              )}
+
+              {/* Doctor Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes for Patient (optional)
+                </label>
+                <textarea
+                  value={confirmForm.doctor_notes}
+                  onChange={(e) => setConfirmForm((prev) => ({ ...prev, doctor_notes: e.target.value }))}
+                  rows={3}
+                  placeholder="e.g., Please bring your previous reports, fast before coming..."
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmSubmit}
+                  disabled={actionLoading === confirmingAppointment?.appointment_id}
+                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+                >
+                  {actionLoading === confirmingAppointment?.appointment_id && (
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                  Confirm Appointment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

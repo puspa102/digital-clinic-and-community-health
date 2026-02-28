@@ -104,9 +104,38 @@ export const connectDB = async () => {
     // 🔥 Sync models: create tables if they do not exist
     await sequelize.sync({ alter: false });
     console.log("All models were synchronized successfully");
+
+    // Run pending migrations (add missing columns safely)
+    await runMigrations();
   } catch (err) {
     console.error("Database connection failed:", err.message || err);
     throw err;
+  }
+};
+
+/**
+ * Run safe migrations to add missing columns to existing tables.
+ * Uses IF NOT EXISTS so they are idempotent and safe to re-run.
+ */
+const runMigrations = async () => {
+  try {
+    // Add consultation fields to appointments table
+    await sequelize.query(`
+      DO $$ BEGIN
+        CREATE TYPE "enum_appointments_consultation_type" AS ENUM ('physical', 'online');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS consultation_type "enum_appointments_consultation_type";`);
+    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS scheduled_time TIME;`);
+    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS doctor_notes TEXT;`);
+    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS meeting_link VARCHAR(255);`);
+    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS qr_token VARCHAR(255) UNIQUE;`);
+    console.log("Migrations completed successfully");
+  } catch (err) {
+    console.error("Migration warning:", err.message);
+    // Don't throw — migrations are best-effort for existing columns
   }
 };
 

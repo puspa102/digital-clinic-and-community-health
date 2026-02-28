@@ -72,6 +72,30 @@ const Appointment = sequelize.define(
         "requested = patient booked; assigned = pharmacy assigned doctor; confirmed = doctor accepted; completed/cancelled/no_show = terminal states",
     },
 
+    consultation_type: {
+      type: DataTypes.ENUM("physical", "online"),
+      allowNull: true,
+      comment: "Set by doctor when confirming — physical visit or online consultation",
+    },
+
+    scheduled_time: {
+      type: DataTypes.TIME,
+      allowNull: true,
+      comment: "Doctor sets the actual consultation time when confirming",
+    },
+
+    doctor_notes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "Notes from doctor when confirming (instructions for patient)",
+    },
+
+    meeting_link: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "Video call link for online consultations",
+    },
+
     payment_status: {
       type: DataTypes.ENUM("pending", "paid", "failed"),
       defaultValue: "pending",
@@ -85,6 +109,13 @@ const Appointment = sequelize.define(
     payment_reference: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+
+    qr_token: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+      comment: "Unique token for QR code verification",
     },
 
     created_at: {

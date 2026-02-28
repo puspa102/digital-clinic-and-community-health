@@ -455,9 +455,9 @@ export const appointmentAPI = {
     return response.data;
   },
 
-  // Confirm an appointment (Doctor)
-  confirmAppointment: async (appointmentId) => {
-    const response = await api.put(`/appointments/${appointmentId}/confirm`);
+  // Confirm an appointment with consultation details (Doctor)
+  confirmAppointment: async (appointmentId, data) => {
+    const response = await api.put(`/appointments/${appointmentId}/confirm`, data);
     return response.data;
   },
 
@@ -476,6 +476,12 @@ export const appointmentAPI = {
   // Cancel an appointment
   cancelAppointment: async (appointmentId, reason = "") => {
     const response = await api.put(`/appointments/${appointmentId}/cancel`, { reason });
+    return response.data;
+  },
+
+  // Verify appointment by QR token
+  verifyQrToken: async (qrToken) => {
+    const response = await api.get(`/appointments/verify-qr/${qrToken}`);
     return response.data;
   },
 };

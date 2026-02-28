@@ -11,6 +11,7 @@ import {
   completeAppointment,
   cancelAppointment,
   getAppointmentById,
+  getAppointmentByQrToken,
 } from "../controllers/appointment.controller.js";
 import { verifyToken, authorizeRoles } from "../middlewares/auth.middleware.js";
 import {
@@ -207,16 +208,26 @@ router.get(
 
 /**
  * @route   PUT /api/appointments/:appointment_id/confirm
- * @desc    Doctor confirms an assigned appointment
+ * @desc    Doctor confirms an assigned appointment with consultation details
  * @access  Private (Doctor, Admin)
  */
 router.put(
   "/:appointment_id/confirm",
   // #swagger.tags = ['Appointments']
   // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Confirm appointment (Doctor)'
-  // #swagger.description = 'Doctor confirms an appointment that has been assigned to them by the pharmacy. Moves status from assigned to confirmed.'
+  // #swagger.summary = 'Confirm appointment with consultation details (Doctor)'
+  // #swagger.description = 'Doctor confirms an appointment with consultation type (physical/online), scheduled time, and optional notes/meeting link. Sets doctor fee and generates QR code.'
   /* #swagger.parameters['appointment_id'] = { in: 'path', required: true, type: 'integer' } */
+  /* #swagger.parameters['body'] = {
+    in: 'body',
+    required: true,
+    schema: {
+      consultation_type: 'physical',
+      scheduled_time: '10:30',
+      doctor_notes: 'Please bring previous reports',
+      meeting_link: 'https://meet.google.com/abc-def-ghi'
+    }
+  } */
   verifyToken,
   authorizeRoles("Doctor", "Admin"),
   validateAppointmentIdParam,
@@ -292,6 +303,27 @@ router.put(
   verifyToken,
   validateAppointmentIdParam,
   cancelAppointment,
+);
+
+// ============================================
+// QR Code Verification
+// ============================================
+
+/**
+ * @route   GET /api/appointments/verify-qr/:qr_token
+ * @desc    Verify appointment by QR token
+ * @access  Private (Doctor, Pharmacy, Admin)
+ */
+router.get(
+  "/verify-qr/:qr_token",
+  // #swagger.tags = ['Appointments']
+  // #swagger.security = [{ "bearerAuth": [] }]
+  // #swagger.summary = 'Verify appointment by QR code token'
+  // #swagger.description = 'Scans and verifies an appointment QR code. Returns full appointment details.'
+  /* #swagger.parameters['qr_token'] = { in: 'path', required: true, type: 'string' } */
+  verifyToken,
+  authorizeRoles("Doctor", "Pharmacy", "Admin"),
+  getAppointmentByQrToken,
 );
 
 // ============================================

@@ -3,6 +3,7 @@ import Doctor from "../models/doctor.model.js";
 import Pharmacy from "../models/pharmacy.model.js";
 import User from "../models/user.model.js";
 import { Op } from "sequelize";
+import crypto from "crypto";
 import { sendPaymentRequestMail } from "../utils/mail.js";
 import {
   getPagination,
@@ -707,58 +708,6 @@ export const updateAppointmentStatus = async (req, res) => {
     appointment.status = status;
     await appointment.save();
 
-    // If doctor confirms appointment, send payment request to patient
-    if (
-      status === APPOINTMENT_STATUS.CONFIRMED &&
-      previousStatus === APPOINTMENT_STATUS.ASSIGNED
-    ) {
-      try {
-        // Fetch complete appointment details with patient, doctor info
-        const fullAppointment = await Appointment.findByPk(appointment_id, {
-          include: [
-            {
-              model: User,
-              as: "Patient",
-              attributes: ["user_id", "full_name", "email"],
-            },
-            {
-              model: Doctor,
-              include: {
-                model: User,
-                attributes: ["full_name"],
-              },
-            },
-          ],
-        });
-
-        if (
-          fullAppointment &&
-          fullAppointment.Patient &&
-          fullAppointment.Doctor
-        ) {
-          const paymentAmount = fullAppointment.Doctor.consultation_fee || 50;
-
-          // Update payment amount in appointment
-          fullAppointment.payment_amount = paymentAmount;
-          await fullAppointment.save();
-
-          // Send payment request email
-          await sendPaymentRequestMail(
-            fullAppointment.Patient.email,
-            fullAppointment.Patient.full_name,
-            fullAppointment.Doctor.User.full_name,
-            fullAppointment.appointment_date,
-            fullAppointment.appointment_time,
-            paymentAmount,
-            appointment_id,
-          );
-        }
-      } catch (mailErr) {
-        console.error("Error sending payment request email:", mailErr);
-        // Don't fail the status update if email fails
-      }
-    }
-
     return successResponse(
       res,
       HTTP_STATUS.OK,
@@ -781,7 +730,8 @@ export const updateAppointmentStatus = async (req, res) => {
 
 /**
  * Doctor confirms an assigned appointment
- * Shorthand for setting status to 'confirmed'
+ * Doctor chooses consultation type (physical/online), sets time, fee, notes, and meeting link.
+ * A QR token is generated for the patient.
  *
  * @route PUT /api/appointments/:appointment_id/confirm
  * @access Private (Doctor)
@@ -789,6 +739,34 @@ export const updateAppointmentStatus = async (req, res) => {
 export const confirmAppointment = async (req, res) => {
   try {
     const { appointment_id } = req.params;
+    const { consultation_type, scheduled_time, doctor_notes, meeting_link } = req.body;
+
+    // Validate consultation_type
+    if (!consultation_type || !["physical", "online"].includes(consultation_type)) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Consultation type is required and must be 'physical' or 'online'",
+      );
+    }
+
+    // Validate scheduled_time
+    if (!scheduled_time) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Scheduled time is required",
+      );
+    }
+
+    // For online, meeting_link is recommended
+    if (consultation_type === "online" && !meeting_link) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Meeting link is required for online consultations",
+      );
+    }
 
     const appointment = await Appointment.findByPk(appointment_id);
     if (!appointment) {
@@ -808,8 +786,9 @@ export const confirmAppointment = async (req, res) => {
     }
 
     // Check the doctor is the one assigned
+    let doctor;
     if (req.user.role !== "Admin") {
-      const doctor = await Doctor.findOne({ where: { user_id: req.user.id } });
+      doctor = await Doctor.findOne({ where: { user_id: req.user.id } });
       if (!doctor || doctor.doctor_id !== appointment.doctor_id) {
         return errorResponse(
           res,
@@ -817,10 +796,53 @@ export const confirmAppointment = async (req, res) => {
           "You can only confirm appointments assigned to you",
         );
       }
+    } else {
+      doctor = await Doctor.findByPk(appointment.doctor_id);
     }
 
+    // Generate unique QR token
+    const qrToken = `APT-${appointment_id}-${crypto.randomBytes(16).toString("hex")}`;
+
+    // Set consultation details
     appointment.status = APPOINTMENT_STATUS.CONFIRMED;
+    appointment.consultation_type = consultation_type;
+    appointment.scheduled_time = scheduled_time;
+    appointment.doctor_notes = doctor_notes || null;
+    appointment.meeting_link = consultation_type === "online" ? meeting_link : null;
+    appointment.payment_amount = doctor ? (doctor.consultation_fee || 0) : 0;
+    appointment.qr_token = qrToken;
     await appointment.save();
+
+    // Send payment request email to patient
+    try {
+      const fullAppointment = await Appointment.findByPk(appointment_id, {
+        include: [
+          {
+            model: User,
+            as: "Patient",
+            attributes: ["user_id", "full_name", "email"],
+          },
+          {
+            model: Doctor,
+            include: { model: User, attributes: ["full_name"] },
+          },
+        ],
+      });
+
+      if (fullAppointment?.Patient && fullAppointment?.Doctor) {
+        await sendPaymentRequestMail(
+          fullAppointment.Patient.email,
+          fullAppointment.Patient.full_name,
+          fullAppointment.Doctor.User.full_name,
+          fullAppointment.appointment_date,
+          scheduled_time,
+          fullAppointment.payment_amount,
+          appointment_id,
+        );
+      }
+    } catch (mailErr) {
+      console.error("Error sending payment request email:", mailErr);
+    }
 
     const updatedAppointment = await Appointment.findByPk(appointment_id, {
       include: fullAppointmentIncludes,
@@ -977,6 +999,44 @@ export const cancelAppointment = async (req, res) => {
     );
   } catch (error) {
     console.error("Cancel appointment error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
+ * Get appointment by QR token (for verification at pharmacy/doctor)
+ * @route GET /api/appointments/verify-qr/:qr_token
+ * @access Private (Doctor, Pharmacy, Admin)
+ */
+export const getAppointmentByQrToken = async (req, res) => {
+  try {
+    const { qr_token } = req.params;
+
+    const appointment = await Appointment.findOne({
+      where: { qr_token },
+      include: fullAppointmentIncludes,
+    });
+
+    if (!appointment) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        "Invalid QR code or appointment not found",
+      );
+    }
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Appointment verified successfully",
+      appointment,
+    );
+  } catch (error) {
+    console.error("QR verification error:", error);
     return errorResponse(
       res,
       HTTP_STATUS.INTERNAL_SERVER_ERROR,
