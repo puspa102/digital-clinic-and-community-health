@@ -128,6 +128,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
       },
       { label: "Orders", path: "/pharmacy/orders", icon: icons.orders },
       { label: "Reports", path: "/pharmacy/reports", icon: icons.chart },
+      { label: "Profile", path: "/pharmacy/profile", icon: icons.user },
       { label: "Settings", path: "/pharmacy/settings", icon: icons.settings },
     ],
   };

@@ -45,6 +45,7 @@ import PharmacyPrescriptions from "./pages/pharmacy/Prescriptions";
 import PharmacyInventory from "./pages/pharmacy/Inventory";
 import PharmacyOrders from "./pages/pharmacy/Orders";
 import PharmacyReports from "./pages/pharmacy/Reports";
+import PharmacyProfile from "./pages/pharmacy/Profile";
 import PharmacySettings from "./pages/pharmacy/Settings";
 
 // Shared Pages
@@ -347,6 +348,14 @@ function App() {
         element={
           <ProtectedRoute roles={["Pharmacy", "Admin"]}>
             <PharmacySettings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacy/profile"
+        element={
+          <ProtectedRoute roles={["Pharmacy", "Admin"]}>
+            <PharmacyProfile />
           </ProtectedRoute>
         }
       />
