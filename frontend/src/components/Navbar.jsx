@@ -208,38 +208,6 @@ const Navbar = ({ onMenuClick }) => {
         </div>
       </div>
 
-      {/* Role-specific sub-navigation bar for certain roles */}
-      {/* {isAuthenticated && user?.role === "Admin" && (
-        <div className="hidden lg:flex items-center gap-1 px-4 py-2 bg-gray-50 border-t">
-          <span className="text-xs text-gray-500 mr-2">Quick Stats:</span>
-          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-            12 New Users
-          </span>
-          <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded">
-            5 Pending Approvals
-          </span>
-          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
-            System: Online
-          </span>
-        </div>
-      )} */}
-
-      {/* {isAuthenticated && user?.role === "Doctor" && (
-        <div className="hidden lg:flex items-center gap-1 px-4 py-2 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-          <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
-            Today:
-          </span>
-          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-            8 Appointments
-          </span>
-          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
-            3 Completed
-          </span>
-          <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded">
-            2 Pending
-          </span>
-        </div>
-      )} */}
     </header>
   );
 };
