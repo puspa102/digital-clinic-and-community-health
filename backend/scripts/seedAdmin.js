@@ -25,10 +25,10 @@ export async function seedAdminIfNotExists() {
   await sequelize.query(
     `
     INSERT INTO users (
-      full_name, email, password_hash, phone, role, status, created_at
+      full_name, email, password_hash, phone, role, status, is_verified, created_at
     )
     VALUES (
-      :full_name, :email, :password_hash, :phone, 'Admin', 'approved', NOW()
+      :full_name, :email, :password_hash, :phone, 'Admin', 'approved', true, NOW()
     )
     `,
     {

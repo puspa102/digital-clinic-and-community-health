@@ -110,8 +110,15 @@ export const AuthProvider = ({ children }) => {
       };
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Login failed";
+      const errorCode = err.response?.data?.code || null;
+      const errorData = err.response?.data?.data || null;
       setError(errorMessage);
-      return { success: false, error: errorMessage };
+      return {
+        success: false,
+        error: errorMessage,
+        code: errorCode,
+        email: errorData?.email || null,
+      };
     }
   };
 

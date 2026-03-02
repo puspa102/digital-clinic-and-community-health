@@ -44,6 +44,11 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    is_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
     is_temp_password: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

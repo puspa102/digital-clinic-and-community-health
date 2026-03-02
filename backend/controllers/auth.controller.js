@@ -79,12 +79,14 @@ export const registerUser = async (req, res) => {
     const otp_expiry = getOtpExpiry(5);
 
     // Create patient user — role is always Patient, status is approved
+    // is_verified stays false until OTP is verified
     const user = await User.create({
       full_name,
       email,
       password_hash: hashedPassword,
       role: USER_ROLES.PATIENT,
       status: USER_STATUS.APPROVED,
+      is_verified: false,
       otp,
       otp_expiry,
       phone,
@@ -141,9 +143,10 @@ export const verifyOtp = async (req, res) => {
       );
     }
 
-    // Clear OTP and activate account if patient
+    // Clear OTP and mark account as verified
     user.otp = null;
     user.otp_expiry = null;
+    user.is_verified = true;
 
     if (user.role === USER_ROLES.PATIENT) {
       user.status = USER_STATUS.APPROVED;
@@ -243,6 +246,27 @@ export const loginUser = async (req, res) => {
         HTTP_STATUS.FORBIDDEN,
         "Your account is pending approval. Please wait for admin verification.",
       );
+    }
+
+    // Check if email is verified (OTP completed)
+    if (!user.is_verified) {
+      // Resend OTP so the user can verify
+      const otp = generateOtp();
+      const otp_expiry = getOtpExpiry(5);
+      user.otp = otp;
+      user.otp_expiry = otp_expiry;
+      await user.save();
+
+      // Send OTP email
+      await otpMail(user.email, otp);
+      console.log(`[DEV] OTP for ${user.email}: ${otp}`);
+
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        message: ERROR_MESSAGES.EMAIL_NOT_VERIFIED,
+        code: "EMAIL_NOT_VERIFIED",
+        data: { email: user.email },
+      });
     }
 
     // Verify password

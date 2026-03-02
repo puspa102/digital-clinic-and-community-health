@@ -212,6 +212,7 @@ export const ERROR_MESSAGES = {
   ONLY_PATIENT_REGISTRATION: "Public registration is only for patients. Pharmacies are created by Admin and Doctors are created by Pharmacies.",
   EMERGENCY_NOT_FOUND: "Emergency not found",
   EMERGENCY_ALREADY_ACCEPTED: "Emergency has already been accepted",
+  EMAIL_NOT_VERIFIED: "Your email is not verified. A new OTP has been sent to your email.",
   UNAUTHORIZED: "Unauthorized access",
   FORBIDDEN: "Access denied",
   TOKEN_REQUIRED: "Access token is required",

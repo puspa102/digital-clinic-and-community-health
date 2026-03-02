@@ -79,6 +79,12 @@ const Login = () => {
         // Normal login flow
         navigate(from, { replace: true });
       }
+    } else if (result.code === "EMAIL_NOT_VERIFIED" && result.email) {
+      // Redirect to OTP verification page
+      navigate("/verify-otp", {
+        replace: true,
+        state: { email: result.email },
+      });
     }
 
     setIsSubmitting(false);

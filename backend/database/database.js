@@ -132,6 +132,11 @@ const runMigrations = async () => {
     await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS doctor_notes TEXT;`);
     await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS meeting_link VARCHAR(255);`);
     await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS qr_token VARCHAR(255) UNIQUE;`);
+
+    // Add is_verified column to users table
+    await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT false;`);
+    // Mark existing approved users (admin, doctors, pharmacies) as verified
+    await sequelize.query(`UPDATE users SET is_verified = true WHERE is_verified = false AND (role != 'Patient' OR otp IS NULL);`);
     console.log("Migrations completed successfully");
   } catch (err) {
     console.error("Migration warning:", err.message);

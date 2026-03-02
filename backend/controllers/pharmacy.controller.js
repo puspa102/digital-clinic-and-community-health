@@ -96,6 +96,7 @@ export const createPharmacy = async (req, res) => {
       password_hash: hashedPassword,
       role: USER_ROLES.PHARMACY,
       status: USER_STATUS.APPROVED,
+      is_verified: true, // Admin-created users are pre-verified
       phone,
       is_temp_password: true, // Flag for password reset on first login
     });
@@ -477,6 +478,7 @@ export const createDoctor = async (req, res) => {
       password_hash: hashedPassword,
       role: USER_ROLES.DOCTOR,
       status: USER_STATUS.APPROVED,
+      is_verified: true, // Pharmacy-created users are pre-verified
       phone,
       is_temp_password: true, // Flag for password reset on first login
     });
