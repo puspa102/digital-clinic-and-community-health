@@ -232,7 +232,7 @@ const Dashboard = () => {
                   This Month
                 </p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
-                  ${stats.thisMonthEarnings.toFixed(2)}
+                  Rs. {stats.thisMonthEarnings.toFixed(2)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -240,7 +240,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="mt-4 flex items-center text-sm text-gray-600 dark:text-gray-400">
-              Total: ${stats.totalEarnings.toFixed(2)}
+              Total: Rs. {stats.totalEarnings.toFixed(2)}
             </div>
           </div>
         </div>

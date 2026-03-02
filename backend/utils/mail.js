@@ -184,7 +184,7 @@ export const sendPaymentRequestMail = async (
 
             <div class="payment-box">
               <h3 style="margin-top: 0; color: #92400e; text-align: center;">💳 Payment Required</h3>
-              <div class="amount">$${amount}</div>
+              <div class="amount">Rs. ${amount}</div>
               <p style="text-align: center; margin: 10px 0; color: #92400e;">
                 <strong>Please complete payment within 24 hours</strong>
               </p>

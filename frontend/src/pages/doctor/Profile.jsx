@@ -251,7 +251,7 @@ const Profile = () => {
                         Consultation Fee
                       </p>
                       <p className="text-gray-900 dark:text-gray-100">
-                        ${formData.consultation_fee}
+                        Rs. {formData.consultation_fee}
                       </p>
                     </div>
                   </div>
