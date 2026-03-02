@@ -151,6 +151,12 @@ export const authAPI = {
     const response = await api.get("/auth/patients", { params });
     return response.data;
   },
+
+  // Get doctor's patients (patients with appointments for this doctor)
+  getDoctorPatients: async (params = {}) => {
+    const response = await api.get("/doctors/my-patients", { params });
+    return response.data;
+  },
 };
 
 // ============================================

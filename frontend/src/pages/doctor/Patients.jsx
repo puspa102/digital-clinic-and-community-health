@@ -58,7 +58,8 @@ const Patients = () => {
       };
       if (search) params.search = search;
 
-      const response = await authAPI.getPatients(params);
+      // Use doctor-specific endpoint to get only their patients
+      const response = await authAPI.getDoctorPatients(params);
       setPatients(response.data || []);
       setPagination((prev) => ({
         ...prev,

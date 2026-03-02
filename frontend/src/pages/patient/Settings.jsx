@@ -3,15 +3,33 @@ import Layout from "../../components/Layout";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import authService from "../../services/authService";
-import { Sun, Moon, Bell, Shield, User, Mail, Lock, Heart } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Bell,
+  Shield,
+  User,
+  Mail,
+  Lock,
+  Phone,
+  Globe,
+  Clock,
+  Calendar,
+  Check,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Settings as SettingsIcon,
+  Palette,
+  Heart,
+  FileText,
+} from "lucide-react";
 
 const Settings = () => {
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
   const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("general");
-
-  // Notifications state
+  // Notification settings
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem("patientNotificationSettings");
     return saved
@@ -19,12 +37,12 @@ const Settings = () => {
       : {
           emailNotifications: true,
           appointmentReminders: true,
-          prescriptionUpdates: true,
+          prescriptionAlerts: true,
           healthTips: false,
         };
   });
 
-  // Preferences state
+  // Preferences
   const [preferences, setPreferences] = useState(() => {
     const saved = localStorage.getItem("patientPreferences");
     return saved
@@ -33,47 +51,45 @@ const Settings = () => {
           language: "en",
           timezone: "Asia/Kathmandu",
           dateFormat: "YYYY-MM-DD",
+          timeFormat: "12h",
         };
   });
 
-  // Save feedback state
-  const [saveSuccess, setSaveSuccess] = useState(null);
-
-  // Password change state
+  // Password state
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState(null);
   const [passwordSuccess, setPasswordSuccess] = useState(null);
 
-  const tabs = [
-    { id: "general", label: "General", icon: User },
-    { id: "appearance", label: "Appearance", icon: isDark ? Moon : Sun },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "security", label: "Security", icon: Shield },
-  ];
+  // Toast state
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleNotificationChange = (key) => {
-    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
+    const updated = { ...notifications, [key]: !notifications[key] };
+    setNotifications(updated);
+    localStorage.setItem("patientNotificationSettings", JSON.stringify(updated));
+    showToast("Notification settings updated");
   };
 
   const handlePreferenceChange = (key, value) => {
-    setPreferences((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSavePreferences = () => {
-    localStorage.setItem("patientPreferences", JSON.stringify(preferences));
-    setSaveSuccess("Preferences saved successfully!");
-    setTimeout(() => setSaveSuccess(null), 3000);
-  };
-
-  const handleSaveNotifications = () => {
-    localStorage.setItem("patientNotificationSettings", JSON.stringify(notifications));
-    setSaveSuccess("Notification settings saved successfully!");
-    setTimeout(() => setSaveSuccess(null), 3000);
+    const updated = { ...preferences, [key]: value };
+    setPreferences(updated);
+    localStorage.setItem("patientPreferences", JSON.stringify(updated));
+    showToast("Preferences updated");
   };
 
   const handlePasswordChange = async (e) => {
@@ -92,16 +108,24 @@ const Settings = () => {
     }
 
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordData.newPassword)) {
-      setPasswordError("Password must contain uppercase, lowercase, and a number");
+      setPasswordError(
+        "Password must contain uppercase, lowercase, and a number"
+      );
       return;
     }
 
     try {
       setPasswordLoading(true);
-      await authService.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      await authService.changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
       setPasswordSuccess("Password changed successfully!");
-      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setTimeout(() => setPasswordSuccess(null), 5000);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     } catch (err) {
       setPasswordError(err.message || "Failed to change password");
     } finally {
@@ -109,478 +133,448 @@ const Settings = () => {
     }
   };
 
+  const notificationOptions = [
+    {
+      key: "emailNotifications",
+      title: "Email Notifications",
+      description: "Receive important updates via email",
+      icon: Mail,
+    },
+    {
+      key: "appointmentReminders",
+      title: "Appointment Reminders",
+      description: "Get notified about upcoming appointments",
+      icon: Calendar,
+    },
+    {
+      key: "prescriptionAlerts",
+      title: "Prescription Alerts",
+      description: "Notifications for prescription updates",
+      icon: FileText,
+    },
+    {
+      key: "healthTips",
+      title: "Health Tips",
+      description: "Receive personalized health suggestions",
+      icon: Heart,
+    },
+  ];
+
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Settings
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Manage your account settings and preferences
-          </p>
-        </div>
-
-        {/* Save Success Toast */}
-        {saveSuccess && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-200">{saveSuccess}</p>
+      <div className="max-w-4xl mx-auto space-y-8 pb-8">
+        {/* Toast */}
+        {toast && (
+          <div
+            className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+              toast.type === "success"
+                ? "bg-blue-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            <Check className="w-4 h-4" />
+            <span className="text-sm font-medium">{toast.message}</span>
           </div>
         )}
 
-        {/* Settings Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-2 space-y-1">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      activeTab === tab.id
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+            <SettingsIcon className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Settings
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              Manage your account and preferences
+            </p>
+          </div>
+        </div>
+
+        {/* Profile Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-8">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                <User className="w-8 h-8 text-white" />
+              </div>
+              <div className="text-white">
+                <h2 className="text-xl font-semibold">{user?.full_name}</h2>
+                <p className="text-blue-100">{user?.role}</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <Mail className="w-5 h-5 text-gray-400" />
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {user?.email}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <Phone className="w-5 h-5 text-gray-400" />
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {user?.phone || "Not set"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <Palette className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Appearance
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Choose your preferred theme
+              </p>
             </div>
           </div>
 
-          {/* Content Area */}
-          <div className="lg:col-span-3">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => isDark && toggleTheme()}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                !isDark
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+              }`}
+            >
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-amber-100 rounded-xl">
+                <Sun className="w-6 h-6 text-amber-500" />
+              </div>
+              <p className="font-medium text-gray-900 dark:text-white">Light</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Clean & bright
+              </p>
+            </button>
 
-              {/* General Settings */}
-              {activeTab === "general" && (
-                <div className="p-6 space-y-6">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                      General Settings
-                    </h2>
-                  </div>
+            <button
+              onClick={() => !isDark && toggleTheme()}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                isDark
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+              }`}
+            >
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
+                <Moon className="w-6 h-6 text-indigo-500" />
+              </div>
+              <p className="font-medium text-gray-900 dark:text-white">Dark</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Easy on eyes
+              </p>
+            </button>
+          </div>
+        </div>
 
-                  {/* Profile Information */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-                        <Heart className="w-8 h-8 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">
-                          {user?.full_name || "Patient"}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {user?.email}
-                        </p>
-                        <span className="inline-block px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 rounded-full mt-1">
-                          Patient
-                        </span>
-                      </div>
+        {/* Preferences */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+              <Globe className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Preferences
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Regional and display settings
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Language
+              </label>
+              <select
+                value={preferences.language}
+                onChange={(e) => handlePreferenceChange("language", e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+              >
+                <option value="en">English</option>
+                <option value="ne">नेपाली (Nepali)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Timezone
+              </label>
+              <select
+                value={preferences.timezone}
+                onChange={(e) => handlePreferenceChange("timezone", e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+              >
+                <option value="Asia/Kathmandu">Nepal (UTC+5:45)</option>
+                <option value="UTC">UTC</option>
+                <option value="Asia/Kolkata">India (UTC+5:30)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Date Format
+              </label>
+              <select
+                value={preferences.dateFormat}
+                onChange={(e) => handlePreferenceChange("dateFormat", e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+              >
+                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Time Format
+              </label>
+              <select
+                value={preferences.timeFormat}
+                onChange={(e) => handlePreferenceChange("timeFormat", e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+              >
+                <option value="12h">12 Hour (AM/PM)</option>
+                <option value="24h">24 Hour</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+              <Bell className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Notifications
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Choose what you want to be notified about
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {notificationOptions.map((option) => {
+              const Icon = option.icon;
+              return (
+                <div
+                  key={option.key}
+                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white dark:bg-gray-600 rounded-lg shadow-sm">
+                      <Icon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                     </div>
-
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        defaultValue={user?.full_name || ""}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-gray-100 cursor-not-allowed"
-                        readOnly
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Email Address
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-5 h-5 text-gray-400" />
-                        <input
-                          type="email"
-                          defaultValue={user?.email || ""}
-                          className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-gray-100 cursor-not-allowed"
-                          readOnly
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Preferences */}
-                  <div className="pt-6 border-t border-gray-200 dark:border-gray-700 space-y-4">
-                    <h3 className="text-md font-semibold text-gray-900 dark:text-gray-100">
-                      Preferences
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Language
-                        </label>
-                        <select
-                          value={preferences.language}
-                          onChange={(e) => handlePreferenceChange("language", e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        >
-                          <option value="en">English</option>
-                          <option value="ne">Nepali</option>
-                          <option value="hi">Hindi</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Timezone
-                        </label>
-                        <select
-                          value={preferences.timezone}
-                          onChange={(e) => handlePreferenceChange("timezone", e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        >
-                          <option value="Asia/Kathmandu">Nepal Time (UTC+5:45)</option>
-                          <option value="Asia/Kolkata">India Time (UTC+5:30)</option>
-                          <option value="UTC">UTC</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Date Format
-                        </label>
-                        <select
-                          value={preferences.dateFormat}
-                          onChange={(e) => handlePreferenceChange("dateFormat", e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        >
-                          <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                          <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                          <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-4">
-                    <button
-                      onClick={handleSavePreferences}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Save Changes
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Appearance Settings */}
-              {activeTab === "appearance" && (
-                <div className="p-6 space-y-6">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                      Appearance
-                    </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Customize how the application looks
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">
-                      Theme
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <button
-                        onClick={() => isDark && toggleTheme()}
-                        className={`p-6 border-2 rounded-lg transition-all ${
-                          !isDark
-                            ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
-                            : "border-gray-300 dark:border-gray-600 hover:border-blue-400"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <Sun className="w-8 h-8 text-yellow-500" />
-                          {!isDark && (
-                            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                          Light Mode
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Clean and bright interface
-                        </p>
-                      </button>
-
-                      <button
-                        onClick={() => !isDark && toggleTheme()}
-                        className={`p-6 border-2 rounded-lg transition-all ${
-                          isDark
-                            ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
-                            : "border-gray-300 dark:border-gray-600 hover:border-blue-400"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <Moon className="w-8 h-8 text-indigo-500" />
-                          {isDark && (
-                            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                          Dark Mode
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Easy on the eyes at night
-                        </p>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        {isDark ? (
-                          <Moon className="w-5 h-5 text-indigo-500" />
-                        ) : (
-                          <Sun className="w-5 h-5 text-yellow-500" />
-                        )}
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            Current Theme
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {isDark ? "Dark Mode" : "Light Mode"}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={toggleTheme}
-                        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                          isDark ? "bg-blue-600" : "bg-gray-300"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                            isDark ? "translate-x-7" : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Notifications Settings */}
-              {activeTab === "notifications" && (
-                <div className="p-6 space-y-6">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                      Notifications
-                    </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Manage how you receive notifications
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    {[
-                      {
-                        key: "emailNotifications",
-                        label: "Email Notifications",
-                        desc: "Receive email notifications for important updates",
-                      },
-                      {
-                        key: "appointmentReminders",
-                        label: "Appointment Reminders",
-                        desc: "Get reminders before your upcoming appointments",
-                      },
-                      {
-                        key: "prescriptionUpdates",
-                        label: "Prescription Updates",
-                        desc: "Notifications when your prescriptions are updated",
-                      },
-                      {
-                        key: "healthTips",
-                        label: "Health Tips",
-                        desc: "Receive weekly health tips and wellness reminders",
-                      },
-                    ].map(({ key, label, desc }) => (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">{label}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{desc}</p>
-                        </div>
-                        <button
-                          onClick={() => handleNotificationChange(key)}
-                          className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                            notifications[key] ? "bg-blue-600" : "bg-gray-300"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                              notifications[key] ? "translate-x-7" : "translate-x-1"
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-end pt-4">
-                    <button
-                      onClick={handleSaveNotifications}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Save Notification Settings
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Security Settings */}
-              {activeTab === "security" && (
-                <div className="p-6 space-y-6">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                      Security
-                    </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Manage your security settings and password
-                    </p>
-                  </div>
-
-                  {/* Success / Error */}
-                  {passwordSuccess && (
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">{passwordSuccess}</p>
-                    </div>
-                  )}
-                  {passwordError && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                      <p className="text-sm text-red-800 dark:text-red-200">{passwordError}</p>
-                    </div>
-                  )}
-
-                  <form onSubmit={handlePasswordChange} className="space-y-4">
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">
-                      Change Password
-                    </h3>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Current Password
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="password"
-                          required
-                          value={passwordData.currentPassword}
-                          onChange={(e) =>
-                            setPasswordData({ ...passwordData, currentPassword: e.target.value })
-                          }
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                          placeholder="Enter current password"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        New Password
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="password"
-                          required
-                          value={passwordData.newPassword}
-                          onChange={(e) =>
-                            setPasswordData({ ...passwordData, newPassword: e.target.value })
-                          }
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                          placeholder="Enter new password"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Confirm New Password
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="password"
-                          required
-                          value={passwordData.confirmPassword}
-                          onChange={(e) =>
-                            setPasswordData({ ...passwordData, confirmPassword: e.target.value })
-                          }
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                          placeholder="Confirm new password"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        <strong>Password requirements:</strong> At least 8 characters,
-                        including uppercase, lowercase, and a number.
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {option.title}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {option.description}
                       </p>
                     </div>
-
-                    <div className="flex justify-end pt-4">
-                      <button
-                        type="submit"
-                        disabled={passwordLoading}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                      >
-                        {passwordLoading ? "Updating..." : "Update Password"}
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Two-Factor Authentication */}
-                  <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <h3 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
-                      Two-Factor Authentication
-                    </h3>
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          Enable 2FA
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Add an extra layer of security to your account
-                        </p>
-                      </div>
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Enable
-                      </button>
-                    </div>
                   </div>
+                  <button
+                    onClick={() => handleNotificationChange(option.key)}
+                    className={`relative w-12 h-7 rounded-full transition-colors ${
+                      notifications[option.key]
+                        ? "bg-blue-500"
+                        : "bg-gray-300 dark:bg-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                        notifications[option.key]
+                          ? "translate-x-6"
+                          : "translate-x-1"
+                      }`}
+                    />
+                  </button>
                 </div>
-              )}
+              );
+            })}
+          </div>
+        </div>
 
+        {/* Security */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Security
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Update your password
+              </p>
             </div>
           </div>
+
+          {passwordError && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {passwordError}
+              </p>
+            </div>
+          )}
+
+          {passwordSuccess && (
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+              <p className="text-sm text-green-600 dark:text-green-400">
+                {passwordSuccess}
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Current Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type={showPasswords.current ? "text" : "password"}
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      currentPassword: e.target.value,
+                    })
+                  }
+                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  placeholder="Enter current password"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPasswords({
+                      ...showPasswords,
+                      current: !showPasswords.current,
+                    })
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPasswords.current ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                New Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type={showPasswords.new ? "text" : "password"}
+                  value={passwordData.newPassword}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      newPassword: e.target.value,
+                    })
+                  }
+                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  placeholder="Enter new password"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPasswords({
+                      ...showPasswords,
+                      new: !showPasswords.new,
+                    })
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPasswords.new ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type={showPasswords.confirm ? "text" : "password"}
+                  value={passwordData.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  placeholder="Confirm new password"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPasswords({
+                      ...showPasswords,
+                      confirm: !showPasswords.confirm,
+                    })
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPasswords.confirm ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+              <p className="text-xs text-blue-600 dark:text-blue-400">
+                Password must be at least 8 characters with uppercase, lowercase,
+                and a number.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={passwordLoading}
+              className="w-full py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-medium rounded-xl transition-colors"
+            >
+              {passwordLoading ? "Updating..." : "Update Password"}
+            </button>
+          </form>
         </div>
       </div>
     </Layout>

@@ -7,6 +7,7 @@ import {
   deleteDoctor,
   getDoctorsBySpecialization,
   searchDoctors,
+  getMyPatients,
 } from "../controllers/doctor.controller.js";
 import { verifyToken, authorizeRoles } from "../middlewares/auth.middleware.js";
 import {
@@ -90,6 +91,25 @@ router.get(
   verifyToken,
   authorizeRoles("Doctor"),
   getMyDoctorProfile,
+);
+
+/**
+ * @route   GET /api/doctors/my-patients
+ * @desc    Get patients who have had appointments with the logged-in doctor
+ * @access  Private (Doctor)
+ */
+router.get(
+  "/my-patients",
+  // #swagger.tags = ['Doctors']
+  // #swagger.summary = 'Get my patients'
+  // #swagger.description = 'Returns patients who have had appointments with the logged-in doctor'
+  // #swagger.security = [{ "bearerAuth": [] }]
+  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
+  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
+  /* #swagger.parameters['search'] = { in: 'query', type: 'string', description: 'Search by name, email, or phone' } */
+  verifyToken,
+  authorizeRoles("Doctor"),
+  getMyPatients,
 );
 
 // ============================================

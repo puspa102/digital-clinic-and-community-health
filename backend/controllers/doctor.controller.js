@@ -1,6 +1,7 @@
 import Doctor from "../models/doctor.model.js";
 import Pharmacy from "../models/pharmacy.model.js";
 import User from "../models/user.model.js";
+import Appointment from "../models/appointment.model.js";
 import { Op } from "sequelize";
 import {
   getPagination,
@@ -456,6 +457,88 @@ export const deleteDoctor = async (req, res) => {
     );
   } catch (error) {
     console.error("Delete doctor error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
+ * Get patients for the logged-in doctor
+ * Returns only patients who have had appointments with this doctor
+ *
+ * @route GET /api/doctors/my-patients
+ * @access Private (Doctor)
+ */
+export const getMyPatients = async (req, res) => {
+  try {
+    const { limit, offset, page } = getPagination(req.query);
+    const { search } = req.query;
+
+    // First, get the doctor profile for the logged-in user
+    const doctor = await Doctor.findOne({ where: { user_id: req.user.id } });
+    if (!doctor) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.DOCTOR_NOT_FOUND,
+      );
+    }
+
+    // Get unique patient IDs from appointments with this doctor
+    const appointments = await Appointment.findAll({
+      where: { doctor_id: doctor.doctor_id },
+      attributes: ["patient_id"],
+      group: ["patient_id"],
+    });
+
+    const patientIds = appointments.map((apt) => apt.patient_id);
+
+    if (patientIds.length === 0) {
+      return successResponse(
+        res,
+        HTTP_STATUS.OK,
+        "Patients retrieved successfully",
+        formatPaginatedResponse([], 0, page, limit),
+      );
+    }
+
+    // Build where clause for patients
+    const where = {
+      user_id: { [Op.in]: patientIds },
+      role: USER_ROLES.PATIENT,
+    };
+
+    // Add search filter if provided
+    if (search) {
+      where[Op.or] = [
+        { full_name: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+        { phone: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    // Get paginated patients
+    const { count, rows: patients } = await User.findAndCountAll({
+      where,
+      attributes: ["user_id", "full_name", "email", "phone", "status", "created_at"],
+      limit,
+      offset,
+      order: [["created_at", "DESC"]],
+    });
+
+    const response = formatPaginatedResponse(patients, count, page, limit);
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Patients retrieved successfully",
+      response,
+    );
+  } catch (error) {
+    console.error("Get my patients error:", error);
     return errorResponse(
       res,
       HTTP_STATUS.INTERNAL_SERVER_ERROR,

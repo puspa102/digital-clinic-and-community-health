@@ -224,7 +224,7 @@ const Navbar = ({ onMenuClick }) => {
         </div>
       )} */}
 
-      {isAuthenticated && user?.role === "Doctor" && (
+      {/* {isAuthenticated && user?.role === "Doctor" && (
         <div className="hidden lg:flex items-center gap-1 px-4 py-2 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
           <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
             Today:
@@ -239,7 +239,7 @@ const Navbar = ({ onMenuClick }) => {
             2 Pending
           </span>
         </div>
-      )}
+      )} */}
     </header>
   );
 };
