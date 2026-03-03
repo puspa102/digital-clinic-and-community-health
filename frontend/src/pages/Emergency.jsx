@@ -1,498 +1,647 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { emergencyAPI, handleApiError } from "../services/api";
+import {
+  Phone,
+  MapPin,
+  Clock,
+  AlertTriangle,
+  Heart,
+  Pill,
+  Users,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  Plus,
+  Search,
+  Droplets,
+  Activity,
+  Stethoscope,
+  X,
+  Send,
+  HeartPulse,
+} from "lucide-react";
 
-/* ─── Design tokens matching the dark Critical Care Portal theme ──────────── */
-const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+const EMERGENCY_TYPES = {
+  BLOOD: "Blood",
+  MEDICINE: "Medicine",
+  DOCTOR: "Doctor",
+};
 
-  .portal-root {
-    --bg-primary:   #0d1117;
-    --bg-card:      #161b22;
-    --bg-card2:     #1c2230;
-    --bg-input:     #1e2533;
-    --border:       #2a3345;
-    --border-light: #30394d;
-    --text-primary: #e6edf3;
-    --text-secondary:#8b949e;
-    --text-muted:   #4a5568;
-    --accent-red:   #e53e3e;
-    --accent-red-soft:#fca5a5;
-    --accent-blue:  #3b82f6;
-    --accent-blue-soft:#93c5fd;
-    --accent-green: #22c55e;
-    --accent-green-soft:#86efac;
-    --accent-amber: #f59e0b;
-    --urgent-red:   #ef4444;
-    --urgent-orange:#f97316;
-    --live-dot:     #22c55e;
-    font-family: 'Inter', system-ui, sans-serif;
-  }
+const URGENCY_LEVELS = {
+  CRITICAL: "critical",
+  URGENT: "urgent",
+  NORMAL: "normal",
+};
 
-  .portal-root * { box-sizing: border-box; }
-
-  /* Live badge pulse */
-  @keyframes pulse-live {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.4; }
-  }
-  .live-dot { animation: pulse-live 1.6s ease-in-out infinite; }
-
-  /* Ticker scroll */
-  @keyframes ticker {
-    0%   { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  .ticker-track { animation: ticker 28s linear infinite; }
-
-  /* Card hover lift */
-  .care-card { transition: transform .18s ease, box-shadow .18s ease; }
-  .care-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0,0,0,.45);
-  }
-
-  /* Bloodtype button selected ring */
-  .bt-btn.selected {
-    background: var(--accent-red) !important;
-    color: #fff !important;
-    border-color: var(--accent-red) !important;
-    box-shadow: 0 0 0 3px rgba(229,62,62,.25);
-  }
-
-  /* Scrollbar */
-  .portal-root ::-webkit-scrollbar { width: 6px; }
-  .portal-root ::-webkit-scrollbar-track { background: var(--bg-primary); }
-  .portal-root ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
-
-  /* Input focus */
-  .dark-input:focus {
-    outline: none;
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(59,130,246,.15);
-  }
-
-  /* Tab active underline */
-  .main-tab.active {
-    color: var(--text-primary) !important;
-    border-bottom: 2px solid var(--accent-blue);
-  }
-`;
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
 const Emergency = () => {
-  useAuth();
+  const { user } = useAuth();
+  const { isDark } = useTheme();
+  
   const [activeTab, setActiveTab] = useState("blood");
   const [requestType, setRequestType] = useState("receive");
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  
+  // Emergency data from API
+  const [emergencies, setEmergencies] = useState([]);
+  const [myEmergencies, setMyEmergencies] = useState([]);
+  
+  // Form states
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedBloodType, setSelectedBloodType] = useState("A+");
+  const [formData, setFormData] = useState({
+    emergency_type: EMERGENCY_TYPES.BLOOD,
+    description: "",
+    units: "",
+    medicine_name: "",
+    quantity: "",
+    urgency: URGENCY_LEVELS.URGENT,
+    location: "",
+    contact: user?.phone || "",
+  });
 
-  /* ── Mock data ──────────────────────────────────────────────────────────── */
-  const bloodRequests = [
-    { id: 1, bloodType: "A+",  units: 2, hospital: "City General Hospital",    location: "Downtown, Block A",  urgency: "critical", postedBy: "Dr. Sarah Johnson", postedAt: "2 mins ago",  contact: "+1 234 567 890" },
-    { id: 2, bloodType: "O-",  units: 3, hospital: "Metro Medical Center",     location: "Uptown, Street 5",   urgency: "urgent",   postedBy: "Emergency Dept",    postedAt: "25 mins ago", contact: "+1 234 567 891" },
-    { id: 3, bloodType: "B+",  units: 1, hospital: "Community Health Clinic",  location: "Westside, Lane 12",  urgency: "normal",   postedBy: "Blood Bank",        postedAt: "1 hr ago",    contact: "+1 234 567 892" },
-    { id: 4, bloodType: "AB+", units: 2, hospital: "Regional Hospital",        location: "Eastside, Main Road",urgency: "critical", postedBy: "ICU Department",    postedAt: "5 mins ago",  contact: "+1 234 567 893" },
-  ];
+  // Stats
+  const [stats, setStats] = useState({
+    activeBloodRequests: 0,
+    activeMedicineRequests: 0,
+    resolvedRequests: 0,
+  });
 
-  const medicineRequests = [
-    { id: 1, medicineName: "Insulin (Lantus)",        quantity: "5 vials",   requiredFor: "Diabetic Patient",    location: "Central District",    urgency: "critical", postedBy: "Patient Family", postedAt: "15 mins ago", contact: "+1 234 567 894" },
-    { id: 2, medicineName: "Chemotherapy Drugs",      quantity: "1 course",  requiredFor: "Cancer Patient",      location: "North Hospital Area",  urgency: "urgent",   postedBy: "Oncology Dept",  postedAt: "2 hrs ago",   contact: "+1 234 567 895" },
-    { id: 3, medicineName: "Antibiotics (Amoxicillin)",quantity: "20 tablets",requiredFor: "Infection Treatment", location: "South Clinic",         urgency: "normal",   postedBy: "Local Clinic",   postedAt: "3 hrs ago",   contact: "+1 234 567 896" },
-  ];
+  // Fetch emergencies
+  const fetchEmergencies = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
 
+      const [allRes, myRes] = await Promise.all([
+        emergencyAPI.getAllEmergencies({ limit: 50 }).catch(() => ({ data: [] })),
+        user ? emergencyAPI.getMyEmergencies({ limit: 20 }).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+      ]);
+
+      const allEmergencies = allRes?.data || [];
+      setEmergencies(allEmergencies);
+      setMyEmergencies(myRes?.data || []);
+
+      // Calculate stats
+      const bloodRequests = allEmergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.BLOOD && e.status !== "resolved" && e.status !== "cancelled");
+      const medicineRequests = allEmergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.MEDICINE && e.status !== "resolved" && e.status !== "cancelled");
+      const resolved = allEmergencies.filter(e => e.status === "resolved");
+
+      setStats({
+        activeBloodRequests: bloodRequests.length,
+        activeMedicineRequests: medicineRequests.length,
+        resolvedRequests: resolved.length,
+      });
+    } catch (err) {
+      const errorInfo = handleApiError(err);
+      setError(errorInfo.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchEmergencies();
+  }, [fetchEmergencies]);
+
+  const handleRefresh = () => {
+    fetchEmergencies(true);
+  };
+
+  // Handle form input change
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Submit emergency request
+  const handleSubmitRequest = async (e) => {
+    e.preventDefault();
+    
+    if (!user) {
+      setError("Please log in to submit an emergency request");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const requestData = {
+        patient_id: user.user_id,
+        emergency_type: formData.emergency_type,
+        description: buildDescription(),
+      };
+
+      await emergencyAPI.createEmergency(requestData);
+      
+      setSuccess("Emergency request submitted successfully!");
+      setShowRequestModal(false);
+      setFormData({
+        emergency_type: EMERGENCY_TYPES.BLOOD,
+        description: "",
+        units: "",
+        medicine_name: "",
+        quantity: "",
+        urgency: URGENCY_LEVELS.URGENT,
+        location: "",
+        contact: user?.phone || "",
+      });
+      
+      fetchEmergencies();
+      
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      const errorInfo = handleApiError(err);
+      setError(errorInfo.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const buildDescription = () => {
+    if (formData.emergency_type === EMERGENCY_TYPES.BLOOD) {
+      return `Blood Type: ${selectedBloodType}, Units: ${formData.units || "N/A"}, Location: ${formData.location || "N/A"}, Contact: ${formData.contact || "N/A"}, Urgency: ${formData.urgency}`;
+    } else if (formData.emergency_type === EMERGENCY_TYPES.MEDICINE) {
+      return `Medicine: ${formData.medicine_name || "N/A"}, Quantity: ${formData.quantity || "N/A"}, Location: ${formData.location || "N/A"}, Contact: ${formData.contact || "N/A"}, Urgency: ${formData.urgency}`;
+    }
+    return formData.description;
+  };
+
+  // Parse emergency description for display
+  const parseDescription = (description) => {
+    const parts = {};
+    if (description) {
+      description.split(", ").forEach(part => {
+        const [key, value] = part.split(": ");
+        if (key && value) {
+          parts[key.toLowerCase().replace(" ", "_")] = value;
+        }
+      });
+    }
+    return parts;
+  };
+
+  // Get urgency styling
+  const getUrgencyStyle = (urgency) => {
+    switch (urgency?.toLowerCase()) {
+      case "critical":
+        return {
+          bg: "bg-red-100 dark:bg-red-900/30",
+          text: "text-red-700 dark:text-red-400",
+          border: "border-red-200 dark:border-red-800",
+          dot: "bg-red-500",
+        };
+      case "urgent":
+        return {
+          bg: "bg-orange-100 dark:bg-orange-900/30",
+          text: "text-orange-700 dark:text-orange-400",
+          border: "border-orange-200 dark:border-orange-800",
+          dot: "bg-orange-500",
+        };
+      default:
+        return {
+          bg: "bg-green-100 dark:bg-green-900/30",
+          text: "text-green-700 dark:text-green-400",
+          border: "border-green-200 dark:border-green-800",
+          dot: "bg-green-500",
+        };
+    }
+  };
+
+  // Get status styling
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+      case "accepted":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+      case "in_progress":
+        return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400";
+      case "resolved":
+        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+      case "cancelled":
+        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400";
+      default:
+        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400";
+    }
+  };
+
+  // Filter emergencies by type
+  const bloodEmergencies = emergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.BLOOD);
+  const medicineEmergencies = emergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.MEDICINE);
+
+  // Mock donors for display (in real app, this would come from API)
   const bloodDonors = [
-    { id: 1, name: "John Smith",    bloodType: "O+", lastDonation: "3 months ago", location: "Downtown Area", available: true,  contact: "+1 234 567 897" },
-    { id: 2, name: "Emily Davis",   bloodType: "A-", lastDonation: "6 months ago", location: "Westside",      available: true,  contact: "+1 234 567 898" },
-    { id: 3, name: "Michael Brown", bloodType: "B+", lastDonation: "1 month ago",  location: "Uptown",        available: false, contact: "+1 234 567 899" },
+    { id: 1, name: "John Smith", bloodType: "O+", lastDonation: "3 months ago", location: "Downtown Area", available: true, contact: "+1 234 567 897" },
+    { id: 2, name: "Emily Davis", bloodType: "A-", lastDonation: "6 months ago", location: "Westside", available: true, contact: "+1 234 567 898" },
+    { id: 3, name: "Michael Brown", bloodType: "B+", lastDonation: "1 month ago", location: "Uptown", available: false, contact: "+1 234 567 899" },
   ];
 
   const medicineDonors = [
-    { id: 1, name: "MedCare Pharmacy",     medicines: ["Insulin", "Antibiotics", "Pain Relief"], location: "Central Market", type: "Pharmacy", contact: "+1 234 567 900" },
-    { id: 2, name: "Health Foundation NGO",medicines: ["Cancer Drugs", "HIV Medications"],       location: "City Center",    type: "NGO",      contact: "+1 234 567 901" },
+    { id: 1, name: "MedCare Pharmacy", medicines: ["Insulin", "Antibiotics", "Pain Relief"], location: "Central Market", type: "Pharmacy", contact: "+1 234 567 900" },
+    { id: 2, name: "Health Foundation NGO", medicines: ["Cancer Drugs", "HIV Medications"], location: "City Center", type: "NGO", contact: "+1 234 567 901" },
   ];
 
-  /* ── Helpers ────────────────────────────────────────────────────────────── */
-  const urgencyConfig = {
-    critical: { label: "CRITICAL", bg: "rgba(239,68,68,.15)", color: "#ef4444", border: "rgba(239,68,68,.3)" },
-    urgent:   { label: "URGENT",   bg: "rgba(249,115,22,.15)",color: "#f97316", border: "rgba(249,115,22,.3)" },
-    normal:   { label: "NORMAL",   bg: "rgba(34,197,94,.15)", color: "#22c55e", border: "rgba(34,197,94,.3)" },
-  };
-
-  const UrgencyBadge = ({ urgency }) => {
-    const c = urgencyConfig[urgency] || urgencyConfig.normal;
+  if (loading && emergencies.length === 0) {
     return (
-      <span style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}`, borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em" }}>
-        {c.label}
-      </span>
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500 dark:text-gray-400">Loading emergency portal...</p>
+          </div>
+        </div>
+      </Layout>
     );
-  };
-
-  const bloodTypes = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
-
-  /* ── Shared card container ─────────────────────────────────────────────── */
-  const Card = ({ children, style = {} }) => (
-    <div className="care-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, ...style }}>
-      {children}
-    </div>
-  );
-
-  const DarkInput = ({ placeholder, style = {} }) => (
-    <input
-      className="dark-input"
-      placeholder={placeholder}
-      style={{ background: "var(--bg-input)", border: "1px solid var(--border-light)", borderRadius: 8, padding: "10px 14px", color: "var(--text-primary)", fontSize: 14, width: "100%", ...style }}
-    />
-  );
-
-  const PhoneIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-    </svg>
-  );
-
-  const PlusIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-
-  const tickerItems = [
-    "✓ A+ Blood matched in Chicago",
-    "✓ Insulin Glargine found for request in Austin",
-    "✓ 5 Units of O- Blood donated to NY General",
-    "✓ Amoxicillin donated in Dallas",
-    "✓ B+ Donor responded in Houston",
-    "✓ Critical request fulfilled at Metro Medical",
-  ];
+  }
 
   return (
     <Layout>
-      <style>{styles}</style>
-      <div className="portal-root" style={{ background: "var(--bg-primary)", minHeight: "100vh", color: "var(--text-primary)", padding: "24px", fontFamily: "Inter, system-ui, sans-serif" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-
-          {/* ── Page Header ─────────────────────────────────────────────── */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
-            <div>
-              <h1 style={{ fontSize: 28, fontWeight: 700, color: "var(--text-primary)", margin: 0, letterSpacing: "-0.02em" }}>Critical Care Portal</h1>
-              <p style={{ color: "var(--text-secondary)", margin: "4px 0 0", fontSize: 14 }}>Real-time emergency resource management and matching system.</p>
+      <div className="max-w-7xl mx-auto space-y-4 pb-6">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg">
+              <HeartPulse className="w-5 h-5 text-white" />
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,.1)", border: "1px solid rgba(34,197,94,.25)", borderRadius: 8, padding: "6px 14px" }}>
-                <span className="live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--live-dot)", display: "inline-block" }} />
-                <span style={{ color: "var(--accent-green)", fontSize: 13, fontWeight: 700, letterSpacing: "0.08em" }}>LIVE</span>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                Critical Care Portal
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Real-time emergency resource management
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-green-700 dark:text-green-400 text-sm font-semibold">LIVE</span>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm rounded-lg transition-colors font-medium"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Alerts */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">
+            <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <span className="text-red-700 dark:text-red-400">{error}</span>
+            <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+            <span className="text-green-700 dark:text-green-400">{success}</span>
+            <button onClick={() => setSuccess(null)} className="ml-auto text-green-500 hover:text-green-700">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                <Droplets className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
-              <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 14px", fontSize: 13, color: "var(--text-secondary)" }}>
-                <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>142</span> Active Requests
+              <div>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.activeBloodRequests}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Blood Requests</p>
               </div>
             </div>
           </div>
 
-          {/* ── Top 4 panels grid ───────────────────────────────────────── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 20, marginBottom: 20 }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <Pill className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.activeMedicineRequests}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Medicine Requests</p>
+              </div>
+            </div>
+          </div>
 
-            {/* Request Medicine */}
-            <Card>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, background: "rgba(34,197,94,.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2">
-                      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                    </svg>
-                  </div>
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>Request Medicine</span>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", color: "#f97316", background: "rgba(249,115,22,.1)", border: "1px solid rgba(249,115,22,.25)", borderRadius: 4, padding: "3px 8px" }}>URGENT</span>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                <div>
-                  <label style={{ fontSize: 11, letterSpacing: "0.07em", color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>MEDICINE NAME</label>
-                  <DarkInput placeholder="e.g. Remdesivir" />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, letterSpacing: "0.07em", color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>DOSAGE/FORM</label>
-                  <DarkInput placeholder="e.g. 100mg Vial" />
-                </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.resolvedRequests}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Resolved</p>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                <div>
-                  <label style={{ fontSize: 11, letterSpacing: "0.07em", color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>QUANTITY REQUIRED</label>
-                  <DarkInput placeholder="0" />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, letterSpacing: "0.07em", color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>URGENCY LEVEL</label>
-                  <select className="dark-input" style={{ background: "var(--bg-input)", border: "1px solid var(--border-light)", borderRadius: 8, padding: "10px 14px", color: "var(--text-primary)", fontSize: 14, width: "100%" }}>
-                    <option>Immediate (Critical)</option>
-                    <option>Urgent</option>
-                    <option>Normal</option>
-                  </select>
-                </div>
-              </div>
-              <button style={{ width: "100%", background: "var(--accent-blue)", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                </svg>
-                Submit Medical Request
-              </button>
-            </Card>
+            </div>
+          </div>
 
-            {/* Request Blood */}
-            <Card>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, background: "rgba(239,68,68,.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
-                      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
-                    </svg>
-                  </div>
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>Request Blood</span>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", color: "#ef4444", background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.25)", borderRadius: 4, padding: "3px 8px" }}>LIFE-SAVING</span>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
-              <label style={{ fontSize: 11, letterSpacing: "0.07em", color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 10 }}>SELECT BLOOD GROUP</label>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
-                {bloodTypes.map(bt => (
+              <div>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{bloodDonors.filter(d => d.available).length}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Available Donors</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Request Blood Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <Droplets className="w-5 h-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Request Blood</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Find blood donors nearby</p>
+                </div>
+              </div>
+              <span className="px-2 py-1 text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
+                LIFE-SAVING
+              </span>
+            </div>
+            
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
+                Select Blood Group
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {BLOOD_TYPES.map(bt => (
                   <button
                     key={bt}
-                    className={`bt-btn${selectedBloodType === bt ? " selected" : ""}`}
                     onClick={() => setSelectedBloodType(bt)}
-                    style={{ background: selectedBloodType === bt ? "var(--accent-red)" : "var(--bg-input)", border: `1px solid ${selectedBloodType === bt ? "var(--accent-red)" : "var(--border-light)"}`, borderRadius: 8, padding: "9px 0", color: selectedBloodType === bt ? "#fff" : "var(--text-primary)", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+                    className={`py-2 rounded-lg font-semibold text-sm transition-all ${
+                      selectedBloodType === bt
+                        ? "bg-red-500 text-white shadow-md"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    }`}
                   >
                     {bt}
                   </button>
                 ))}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                <div>
-                  <label style={{ fontSize: 11, letterSpacing: "0.07em", color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>UNITS REQUIRED</label>
-                  <DarkInput placeholder="Units" />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, letterSpacing: "0.07em", color: "var(--text-secondary)", fontWeight: 600, display: "block", marginBottom: 6 }}>LOCATION (CITY)</label>
-                  <DarkInput placeholder="Enter City" />
-                </div>
-              </div>
-              <button style={{ width: "100%", background: "var(--accent-blue)", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                </svg>
-                Find Matching Donors
-              </button>
-            </Card>
+            </div>
 
-            {/* Donate Medicine */}
-            <Card>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, background: "rgba(34,197,94,.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 8v8M8 12h8" />
-                    </svg>
-                  </div>
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>Donate Medicine</span>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", color: "#22c55e", background: "rgba(34,197,94,.1)", border: "1px solid rgba(34,197,94,.25)", borderRadius: 4, padding: "3px 8px" }}>CONTRIBUTE</span>
-              </div>
-
-              <div style={{ background: "var(--bg-card2)", border: "1px solid var(--border)", borderRadius: 10, padding: 16, marginBottom: 12 }}>
-                <p style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600, marginBottom: 12, letterSpacing: "0.05em" }}>AVAILABLE SURPLUS MEDICINES</p>
-                {[
-                  { name: "Paracetamol 500mg", exp: "Exp: 12/2025 • 20 Units" },
-                  { name: "Amoxicillin 250mg", exp: "Exp: 08/2024 • 5 Units" },
-                ].map((med, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-input)", borderRadius: 8, padding: "10px 14px", marginBottom: i === 0 ? 8 : 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 8, height: 8, background: "var(--accent-green)", borderRadius: "50%" }} />
-                      <div>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{med.name}</p>
-                        <p style={{ margin: 0, fontSize: 11, color: "var(--text-secondary)" }}>{med.exp}</p>
-                      </div>
-                    </div>
-                    <button style={{ background: "transparent", border: "none", color: "var(--accent-blue)", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.05em" }}>EDIT</button>
-                  </div>
-                ))}
-              </div>
-
-              <button style={{ width: "100%", background: "transparent", border: "2px dashed var(--border-light)", borderRadius: 8, padding: "12px", color: "var(--text-secondary)", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" />
-                </svg>
-                LIST NEW SURPLUS MEDICINE
-              </button>
-            </Card>
-
-            {/* Donate Blood */}
-            <Card>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, background: "rgba(239,68,68,.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
-                      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                    </svg>
-                  </div>
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>Donate Blood</span>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", color: "#ef4444", background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.25)", borderRadius: 4, padding: "3px 8px" }}>BE A HERO</span>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-                {/* Map placeholder */}
-                <div style={{ background: "var(--bg-card2)", borderRadius: 10, overflow: "hidden", position: "relative", minHeight: 130, display: "flex", alignItems: "flex-end", border: "1px solid var(--border)" }}>
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a2744 0%, #0d1b2a 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ width: 36, height: 36, background: "rgba(239,68,68,.2)", border: "2px solid rgba(239,68,68,.4)", borderRadius: "50%", margin: "0 auto 4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: 10, height: 10, background: "#ef4444", borderRadius: "50%" }} />
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ position: "relative", zIndex: 1, background: "rgba(22,27,34,.85)", width: "100%", padding: "8px 12px", backdropFilter: "blur(4px)" }}>
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>Central Hospital Camp</p>
-                    <p style={{ margin: 0, fontSize: 11, color: "var(--text-secondary)" }}>0.8 miles away • Open until 8 PM</p>
-                  </div>
-                </div>
-
-                {/* Urgent matches */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <p style={{ fontSize: 11, letterSpacing: "0.07em", color: "var(--text-secondary)", fontWeight: 600, margin: 0 }}>URGENT MATCHES FOR YOU</p>
-                  <div style={{ background: "var(--bg-card2)", border: "1px solid rgba(239,68,68,.3)", borderRadius: 8, padding: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,.1)", borderRadius: 4, padding: "2px 6px" }}>URGENT (O+)</span>
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>2 mins ago</span>
-                    </div>
-                    <p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>St. Jude's Pediatric Unit requires 2 units.</p>
-                    <button style={{ width: "100%", background: "#ef4444", color: "#fff", border: "none", borderRadius: 6, padding: "7px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Respond</button>
-                  </div>
-                  <div style={{ background: "var(--bg-input)", borderRadius: 8, padding: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>General (O+)</span>
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>1 hr ago</span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>City Blood Bank replenishment.</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <button
+              onClick={() => {
+                setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.BLOOD }));
+                setShowRequestModal(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+            >
+              <Search className="w-4 h-4" />
+              Find Matching Donors
+            </button>
           </div>
 
-          {/* ── Stats bar ────────────────────────────────────────────────── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
-            {[
-              { label: "Active Blood Requests", value: "24", color: "#ef4444", bg: "rgba(239,68,68,.1)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" /></svg> },
-              { label: "Registered Donors",    value: "156", color: "#22c55e", bg: "rgba(34,197,94,.1)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg> },
-              { label: "Medicine Requests",    value: "18",  color: "#3b82f6", bg: "rgba(59,130,246,.1)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg> },
-              { label: "Lives Saved",          value: "89",  color: "#a78bfa", bg: "rgba(167,139,250,.1)", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg> },
-            ].map((s, i) => (
-              <div key={i} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 38, height: 38, background: s.bg, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {s.icon}
+          {/* Request Medicine Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Pill className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p style={{ margin: 0, fontSize: 24, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</p>
-                  <p style={{ margin: "3px 0 0", fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.3 }}>{s.label}</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Request Medicine</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Get help with urgent medication</p>
                 </div>
               </div>
-            ))}
-          </div>
+              <span className="px-2 py-1 text-xs font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded">
+                URGENT
+              </span>
+            </div>
 
-          {/* ── Main tabs content ────────────────────────────────────────── */}
-          <Card style={{ marginBottom: 20 }}>
-            {/* Tab bar */}
-            <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 24, gap: 0 }}>
-              {[
-                { key: "blood",    label: "Blood Requests" },
-                { key: "medicine", label: "Medicine Requests" },
-                { key: "donors",   label: "Donors" },
-              ].map(t => (
-                <button
-                  key={t.key}
-                  className={`main-tab${activeTab === t.key ? " active" : ""}`}
-                  onClick={() => setActiveTab(t.key)}
-                  style={{ background: "transparent", border: "none", borderBottom: activeTab === t.key ? "2px solid var(--accent-blue)" : "2px solid transparent", padding: "10px 20px", color: activeTab === t.key ? "var(--text-primary)" : "var(--text-secondary)", fontWeight: 600, fontSize: 14, cursor: "pointer", marginBottom: -1 }}
-                >
-                  {t.label}
-                </button>
-              ))}
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8, paddingBottom: 8 }}>
-                <button
-                  onClick={() => setRequestType("receive")}
-                  style={{ background: requestType === "receive" ? "rgba(59,130,246,.15)" : "transparent", border: `1px solid ${requestType === "receive" ? "var(--accent-blue)" : "var(--border)"}`, borderRadius: 8, padding: "6px 14px", color: requestType === "receive" ? "var(--accent-blue)" : "var(--text-secondary)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
-                >
-                  I Need Help
-                </button>
-                <button
-                  onClick={() => setRequestType("donate")}
-                  style={{ background: requestType === "donate" ? "rgba(34,197,94,.15)" : "transparent", border: `1px solid ${requestType === "donate" ? "var(--accent-green)" : "var(--border)"}`, borderRadius: 8, padding: "6px 14px", color: requestType === "donate" ? "var(--accent-green)" : "var(--text-secondary)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}
-                >
-                  I Want to Donate
-                </button>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
+                  Medicine Name
+                </label>
+                <input
+                  type="text"
+                  name="medicine_name"
+                  value={formData.medicine_name}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Insulin, Antibiotics"
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
             </div>
 
-            {/* ── Blood requests list ─────────────────────────────────── */}
+            <button
+              onClick={() => {
+                setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.MEDICINE }));
+                setShowRequestModal(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors"
+            >
+              <Send className="w-4 h-4" />
+              Submit Medical Request
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content Tabs */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          {/* Tab Header */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700">
+            {[
+              { key: "blood", label: "Blood Requests", icon: Droplets },
+              { key: "medicine", label: "Medicine Requests", icon: Pill },
+              { key: "donors", label: "Donors", icon: Users },
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 -mb-px"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+            
+            <div className="ml-auto flex items-center gap-2 pr-4">
+              <button
+                onClick={() => setRequestType("receive")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  requestType === "receive"
+                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                I Need Help
+              </button>
+              <button
+                onClick={() => setRequestType("donate")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  requestType === "donate"
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                I Want to Donate
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className="p-4">
+            {/* Blood Requests Tab */}
             {activeTab === "blood" && requestType === "receive" && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Urgent Blood Requests</h2>
-                  <button style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    <PlusIcon /> Post Blood Request
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-gray-900 dark:text-white">Urgent Blood Requests</h2>
+                  <button
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.BLOOD }));
+                      setShowRequestModal(true);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Post Request
                   </button>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {bloodRequests.map(r => (
-                    <div key={r.id} style={{ background: "var(--bg-card2)", border: "1px solid var(--border)", borderLeft: `3px solid ${r.urgency === "critical" ? "#ef4444" : r.urgency === "urgent" ? "#f97316" : "#22c55e"}`, borderRadius: 10, padding: 18, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <div style={{ width: 52, height: 52, background: "#ef4444", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-                          {r.bloodType}
-                        </div>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                            <span style={{ fontWeight: 700, fontSize: 15 }}>{r.units} Units Required</span>
-                            <UrgencyBadge urgency={r.urgency} />
+
+                {bloodEmergencies.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Droplets className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400">No active blood requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {bloodEmergencies.map(emergency => {
+                      const details = parseDescription(emergency.description);
+                      const urgencyStyle = getUrgencyStyle(details.urgency || emergency.priority);
+                      
+                      return (
+                        <div
+                          key={emergency.emergency_id}
+                          className={`p-4 rounded-xl border-l-4 ${urgencyStyle.border} bg-gray-50 dark:bg-gray-700/50`}
+                          style={{ borderLeftColor: urgencyStyle.dot.replace("bg-", "") }}
+                        >
+                          <div className="flex items-start justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 bg-red-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                {details.blood_type || "?"}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-gray-900 dark:text-white">
+                                    {details.units || "?"} Units Required
+                                  </span>
+                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${urgencyStyle.bg} ${urgencyStyle.text}`}>
+                                    {(details.urgency || emergency.priority || "normal").toUpperCase()}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  <MapPin className="w-3 h-3 inline mr-1" />
+                                  {details.location || "Location not specified"}
+                                </p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  <Clock className="w-3 h-3 inline mr-1" />
+                                  {new Date(emergency.created_at).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {details.contact && (
+                                <a
+                                  href={`tel:${details.contact}`}
+                                  className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
+                                >
+                                  <Phone className="w-4 h-4" />
+                                  Contact
+                                </a>
+                              )}
+                              <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                I Can Donate
+                              </button>
+                            </div>
                           </div>
-                          <p style={{ margin: 0, fontSize: 13, color: "var(--text-primary)" }}>{r.hospital}</p>
-                          <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>{r.location}</p>
-                          <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-muted)" }}>Posted by {r.postedBy} • {r.postedAt}</p>
                         </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <a href={`tel:${r.contact}`} style={{ background: "#22c55e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-                          <PhoneIcon /> Contact
-                        </a>
-                        <button style={{ background: "transparent", color: "var(--text-secondary)", border: "1px solid var(--border-light)", borderRadius: 8, padding: "8px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                          I Can Donate
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* ── Blood donors list ───────────────────────────────────── */}
+            {/* Blood Donors Tab */}
             {(activeTab === "blood" && requestType === "donate") || activeTab === "donors" ? (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Available Blood Donors</h2>
-                  <button style={{ background: "#22c55e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    <PlusIcon /> Register as Donor
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-gray-900 dark:text-white">Available Blood Donors</h2>
+                  <button className="flex items-center gap-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors">
+                    <Plus className="w-4 h-4" />
+                    Register as Donor
                   </button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-                  {bloodDonors.map(d => (
-                    <div key={d.id} style={{ background: "var(--bg-card2)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                        <div style={{ width: 44, height: 44, background: "#ef4444", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "#fff" }}>{d.bloodType}</div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {bloodDonors.map(donor => (
+                    <div
+                      key={donor.id}
+                      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                          {donor.bloodType}
+                        </div>
                         <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontWeight: 700, fontSize: 14 }}>{d.name}</span>
-                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: d.available ? "#22c55e" : "#4a5568", display: "inline-block" }} />
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-gray-900 dark:text-white">{donor.name}</span>
+                            <span className={`w-2 h-2 rounded-full ${donor.available ? "bg-green-500" : "bg-gray-400"}`}></span>
                           </div>
-                          <p style={{ margin: 0, fontSize: 12, color: "var(--text-secondary)" }}>{d.location}</p>
-                          <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--text-muted)" }}>Last donation: {d.lastDonation}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{donor.location}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">Last donation: {donor.lastDonation}</p>
                         </div>
                       </div>
-                      <a href={`tel:${d.contact}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", background: d.available ? "#22c55e" : "var(--bg-input)", color: d.available ? "#fff" : "var(--text-muted)", border: "none", borderRadius: 8, padding: "8px", fontWeight: 700, fontSize: 13, cursor: d.available ? "pointer" : "not-allowed", textDecoration: "none" }}>
-                        <PhoneIcon />{d.available ? "Contact" : "Unavailable"}
+                      <a
+                        href={donor.available ? `tel:${donor.contact}` : undefined}
+                        className={`flex items-center justify-center gap-2 w-full py-2 rounded-lg font-medium transition-colors ${
+                          donor.available
+                            ? "bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+                            : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        <Phone className="w-4 h-4" />
+                        {donor.available ? "Contact" : "Unavailable"}
                       </a>
                     </div>
                   ))}
@@ -500,138 +649,360 @@ const Emergency = () => {
               </div>
             ) : null}
 
-            {/* ── Medicine requests ───────────────────────────────────── */}
+            {/* Medicine Requests Tab */}
             {activeTab === "medicine" && requestType === "receive" && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Medicine Requests</h2>
-                  <button style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    <PlusIcon /> Post Medicine Request
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-gray-900 dark:text-white">Medicine Requests</h2>
+                  <button
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.MEDICINE }));
+                      setShowRequestModal(true);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Post Request
                   </button>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {medicineRequests.map(r => (
-                    <div key={r.id} style={{ background: "var(--bg-card2)", border: "1px solid var(--border)", borderLeft: `3px solid ${r.urgency === "critical" ? "#ef4444" : r.urgency === "urgent" ? "#f97316" : "#22c55e"}`, borderRadius: 10, padding: 18, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                        <div style={{ width: 52, height: 52, background: "rgba(59,130,246,.15)", border: "1px solid rgba(59,130,246,.3)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
-                            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                            <span style={{ fontWeight: 700, fontSize: 15 }}>{r.medicineName}</span>
-                            <UrgencyBadge urgency={r.urgency} />
+
+                {medicineEmergencies.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Pill className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400">No active medicine requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {medicineEmergencies.map(emergency => {
+                      const details = parseDescription(emergency.description);
+                      const urgencyStyle = getUrgencyStyle(details.urgency || emergency.priority);
+                      
+                      return (
+                        <div
+                          key={emergency.emergency_id}
+                          className={`p-4 rounded-xl border-l-4 ${urgencyStyle.border} bg-gray-50 dark:bg-gray-700/50`}
+                        >
+                          <div className="flex items-start justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center justify-center">
+                                <Pill className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-gray-900 dark:text-white">
+                                    {details.medicine || "Medicine Request"}
+                                  </span>
+                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${urgencyStyle.bg} ${urgencyStyle.text}`}>
+                                    {(details.urgency || emergency.priority || "normal").toUpperCase()}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  Qty: {details.quantity || "N/A"}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  <MapPin className="w-3 h-3 inline mr-1" />
+                                  {details.location || "Location not specified"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {details.contact && (
+                                <a
+                                  href={`tel:${details.contact}`}
+                                  className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
+                                >
+                                  <Phone className="w-4 h-4" />
+                                  Contact
+                                </a>
+                              )}
+                              <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                I Can Help
+                              </button>
+                            </div>
                           </div>
-                          <p style={{ margin: 0, fontSize: 13, color: "var(--text-primary)" }}>Qty: {r.quantity} • {r.requiredFor}</p>
-                          <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--text-secondary)" }}>{r.location}</p>
-                          <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-muted)" }}>Posted by {r.postedBy} • {r.postedAt}</p>
                         </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <a href={`tel:${r.contact}`} style={{ background: "#22c55e", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-                          <PhoneIcon /> Contact
-                        </a>
-                        <button style={{ background: "transparent", color: "var(--text-secondary)", border: "1px solid var(--border-light)", borderRadius: 8, padding: "8px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                          I Can Help
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* ── Medicine donors ─────────────────────────────────────── */}
+            {/* Medicine Donors Tab */}
             {activeTab === "medicine" && requestType === "donate" && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Medicine Donors & Pharmacies</h2>
-                  <button style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                    <PlusIcon /> Register as Medicine Donor
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-gray-900 dark:text-white">Medicine Donors & Pharmacies</h2>
+                  <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors">
+                    <Plus className="w-4 h-4" />
+                    Register as Donor
                   </button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
-                  {medicineDonors.map(d => (
-                    <div key={d.id} style={{ background: "var(--bg-card2)", border: "1px solid var(--border)", borderRadius: 10, padding: 18 }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
-                        <div style={{ width: 44, height: 44, background: "rgba(59,130,246,.15)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
-                            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                          </svg>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {medicineDonors.map(donor => (
+                    <div
+                      key={donor.id}
+                      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Pill className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                            <span style={{ fontWeight: 700, fontSize: 15 }}>{d.name}</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", background: "rgba(167,139,250,.1)", borderRadius: 4, padding: "2px 7px" }}>{d.type}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-gray-900 dark:text-white">{donor.name}</span>
+                            <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded">
+                              {donor.type}
+                            </span>
                           </div>
-                          <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--text-secondary)" }}>{d.location}</p>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                            {d.medicines.map((m, i) => (
-                              <span key={i} style={{ fontSize: 11, background: "var(--bg-input)", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 8px", color: "var(--text-secondary)" }}>{m}</span>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{donor.location}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {donor.medicines.map((med, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded"
+                              >
+                                {med}
+                              </span>
                             ))}
                           </div>
                         </div>
                       </div>
-                      <a href={`tel:${d.contact}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, padding: "9px", fontWeight: 700, fontSize: 13, cursor: "pointer", textDecoration: "none" }}>
-                        <PhoneIcon /> Contact
+                      <a
+                        href={`tel:${donor.contact}`}
+                        className="flex items-center justify-center gap-2 w-full py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+                      >
+                        <Phone className="w-4 h-4" />
+                        Contact
                       </a>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </Card>
+          </div>
+        </div>
 
-          {/* ── Emergency tips ───────────────────────────────────────────── */}
-          <Card style={{ marginBottom: 20 }}>
-            <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700 }}>Emergency Tips</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-              {[
-                { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" /></svg>, bg: "rgba(239,68,68,.1)", title: "Blood Donation Eligibility", text: "You can donate blood if you're 18–65 years old, weigh at least 50kg, and are in good health." },
-                { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>, bg: "rgba(59,130,246,.1)", title: "Response Time",               text: "In critical emergencies, every minute counts. Contact multiple donors simultaneously." },
-                { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>, bg: "rgba(34,197,94,.1)", title: "Verify Before Use",           text: "Always verify medicine expiry dates and proper storage conditions before accepting donations." },
-              ].map((tip, i) => (
-                <div key={i} style={{ background: "var(--bg-card2)", border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-                  <div style={{ width: 36, height: 36, background: tip.bg, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>{tip.icon}</div>
-                  <p style={{ margin: "0 0 6px", fontWeight: 700, fontSize: 14, color: "var(--text-primary)" }}>{tip.title}</p>
-                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{tip.text}</p>
+        {/* Emergency Tips */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Emergency Tips</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                icon: Droplets,
+                iconColor: "text-red-500",
+                bgColor: "bg-red-100 dark:bg-red-900/30",
+                title: "Blood Donation Eligibility",
+                text: "You can donate blood if you're 18-65 years old, weigh at least 50kg, and are in good health.",
+              },
+              {
+                icon: Clock,
+                iconColor: "text-blue-500",
+                bgColor: "bg-blue-100 dark:bg-blue-900/30",
+                title: "Response Time",
+                text: "In critical emergencies, every minute counts. Contact multiple donors simultaneously.",
+              },
+              {
+                icon: CheckCircle,
+                iconColor: "text-green-500",
+                bgColor: "bg-green-100 dark:bg-green-900/30",
+                title: "Verify Before Use",
+                text: "Always verify medicine expiry dates and proper storage conditions before accepting donations.",
+              },
+            ].map((tip, i) => (
+              <div key={i} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <div className={`w-10 h-10 ${tip.bgColor} rounded-lg flex items-center justify-center mb-3`}>
+                  <tip.icon className={`w-5 h-5 ${tip.iconColor}`} />
                 </div>
-              ))}
-            </div>
-          </Card>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{tip.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{tip.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
-          {/* ── Emergency hotline bar ────────────────────────────────────── */}
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderLeft: "3px solid #ef4444", borderRadius: 12, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <div style={{ width: 38, height: 38, background: "rgba(239,68,68,.1)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <PhoneIcon />
+        {/* Emergency Hotline */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-red-500 border border-gray-100 dark:border-gray-700 p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                <Phone className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: 11, color: "var(--text-secondary)", letterSpacing: "0.05em" }}>24/7 EMERGENCY HOTLINE</p>
-                <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>1-800-EMERGENCY</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">24/7 Emergency Hotline</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">1-800-EMERGENCY</p>
               </div>
             </div>
-            <button style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-              <PhoneIcon /> Call Now
-            </button>
+            <a
+              href="tel:1800363743629"
+              className="flex items-center gap-2 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+            >
+              <Phone className="w-4 h-4" />
+              Call Now
+            </a>
           </div>
-
-          {/* ── Live ticker ──────────────────────────────────────────────── */}
-          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 0", overflow: "hidden" }}>
-            <div className="ticker-track" style={{ display: "flex", width: "200%", whiteSpace: "nowrap" }}>
-              {[...tickerItems, ...tickerItems].map((item, i) => (
-                <span key={i} style={{ fontSize: 13, color: "var(--text-secondary)", padding: "0 32px", flexShrink: 0 }}>
-                  <span style={{ color: "#22c55e", marginRight: 6 }}>●</span>
-                  <span style={{ fontWeight: 600, color: "var(--accent-green-soft)" }}>LIVE SUCCESS</span>
-                  {" "}{item.replace("✓ ", "")}
-                </span>
-              ))}
-            </div>
-          </div>
-
         </div>
       </div>
+
+      {/* Request Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {formData.emergency_type === EMERGENCY_TYPES.BLOOD ? "Blood Request" : "Medicine Request"}
+              </h3>
+              <button
+                onClick={() => setShowRequestModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmitRequest} className="p-4 space-y-4">
+              {formData.emergency_type === EMERGENCY_TYPES.BLOOD ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Blood Type
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {BLOOD_TYPES.map(bt => (
+                        <button
+                          key={bt}
+                          type="button"
+                          onClick={() => setSelectedBloodType(bt)}
+                          className={`py-2 rounded-lg font-semibold text-sm transition-all ${
+                            selectedBloodType === bt
+                              ? "bg-red-500 text-white"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {bt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Units Required
+                    </label>
+                    <input
+                      type="number"
+                      name="units"
+                      value={formData.units}
+                      onChange={handleInputChange}
+                      placeholder="Number of units"
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Medicine Name
+                    </label>
+                    <input
+                      type="text"
+                      name="medicine_name"
+                      value={formData.medicine_name}
+                      onChange={handleInputChange}
+                      placeholder="e.g. Insulin, Antibiotics"
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Quantity
+                    </label>
+                    <input
+                      type="text"
+                      name="quantity"
+                      value={formData.quantity}
+                      onChange={handleInputChange}
+                      placeholder="e.g. 5 vials, 20 tablets"
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  placeholder="City, Area"
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Contact Number
+                </label>
+                <input
+                  type="tel"
+                  name="contact"
+                  value={formData.contact}
+                  onChange={handleInputChange}
+                  placeholder="+1 234 567 890"
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Urgency Level
+                </label>
+                <select
+                  name="urgency"
+                  value={formData.urgency}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                >
+                  <option value={URGENCY_LEVELS.CRITICAL}>Critical (Immediate)</option>
+                  <option value={URGENCY_LEVELS.URGENT}>Urgent</option>
+                  <option value={URGENCY_LEVELS.NORMAL}>Normal</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRequestModal(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors ${
+                    formData.emergency_type === EMERGENCY_TYPES.BLOOD
+                      ? "bg-red-500 hover:bg-red-600 text-white"
+                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                  } disabled:opacity-50`}
+                >
+                  {loading ? "Submitting..." : "Submit Request"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
