@@ -240,7 +240,7 @@ const Reports = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg">
+            <div className="p-2.5 bg-linear-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -340,7 +340,7 @@ const Reports = () => {
 
         {/* User Distribution Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-3 text-white">
+          <div className="bg-linear-to-r from-blue-500 to-blue-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 text-xs">Patients</p>
@@ -350,7 +350,7 @@ const Reports = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-3 text-white">
+          <div className="bg-linear-to-r from-green-500 to-green-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-xs">Doctors</p>
@@ -360,7 +360,7 @@ const Reports = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-3 text-white">
+          <div className="bg-linear-to-r from-orange-500 to-orange-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-100 text-xs">Pharmacies</p>
@@ -370,7 +370,7 @@ const Reports = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-3 text-white">
+          <div className="bg-linear-to-r from-purple-500 to-purple-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-xs">Admins</p>
@@ -609,7 +609,7 @@ const Reports = () => {
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all"
+                  className="bg-linear-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all"
                   style={{
                     width: `${getPercentage(
                       appointmentStats.completed,
