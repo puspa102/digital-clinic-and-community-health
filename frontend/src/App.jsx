@@ -35,6 +35,7 @@ import AdminPharmacies from "./pages/admin/Pharmacies";
 import AdminDoctors from "./pages/admin/Doctors";
 import AdminAppointments from "./pages/admin/Appointments";
 import AdminReports from "./pages/admin/Reports";
+import AdminProfile from "./pages/admin/Profile";
 import AdminSettings from "./pages/admin/Settings";
 
 // Pharmacy Pages
@@ -266,6 +267,14 @@ function App() {
         element={
           <ProtectedRoute roles={["Admin"]}>
             <AdminReports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/profile"
+        element={
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminProfile />
           </ProtectedRoute>
         }
       />
