@@ -1,4 +1,6 @@
 import User from "../models/user.model.js";
+import Appointment from "../models/appointment.model.js";
+import Prescription from "../models/prescription.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -735,4 +737,188 @@ export const deleteUser = async (req, res) => {
       ERROR_MESSAGES.SERVER_ERROR,
     );
   }
+};
+
+/**
+ * Get patient dashboard statistics
+ * @route GET /api/auth/patient-stats
+ * @access Private (Patient)
+ */
+export const getPatientDashboardStats = async (req, res) => {
+  try {
+    const patientId = req.user.id;
+
+    // Verify user is a patient
+    const user = await User.findByPk(patientId);
+    if (!user || user.role !== USER_ROLES.PATIENT) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        "Only patients can access this endpoint",
+      );
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split("T")[0];
+
+    // Get start of current month
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfMonthStr = startOfMonth.toISOString().split("T")[0];
+
+    // Get all appointments for this patient
+    const allAppointments = await Appointment.findAll({
+      where: { patient_id: patientId },
+      attributes: [
+        "appointment_id",
+        "doctor_id",
+        "pharmacy_id",
+        "appointment_date",
+        "status",
+        "payment_status",
+        "payment_amount",
+        "created_at",
+      ],
+      order: [["appointment_date", "DESC"]],
+    });
+
+    // Get all prescriptions for this patient
+    const allPrescriptions = await Prescription.findAll({
+      where: { patient_id: patientId },
+      attributes: [
+        "prescription_id",
+        "status",
+        "created_at",
+      ],
+    });
+
+    // Upcoming appointments
+    const upcomingAppointments = allAppointments.filter(
+      (apt) =>
+        apt.appointment_date >= todayStr &&
+        ["requested", "assigned", "confirmed"].includes(apt.status)
+    );
+
+    // Completed appointments
+    const completedAppointments = allAppointments.filter(
+      (apt) => apt.status === "completed"
+    );
+
+    // This month's appointments
+    const thisMonthAppointments = allAppointments.filter(
+      (apt) => apt.appointment_date >= startOfMonthStr
+    );
+
+    // Unique doctors consulted
+    const uniqueDoctors = new Set(
+      allAppointments
+        .filter((apt) => apt.doctor_id)
+        .map((apt) => apt.doctor_id)
+    );
+
+    // Unique pharmacies visited
+    const uniquePharmacies = new Set(
+      allAppointments.map((apt) => apt.pharmacy_id)
+    );
+
+    // Payment stats
+    const totalSpent = allAppointments
+      .filter((apt) => apt.payment_status === "paid")
+      .reduce((sum, apt) => sum + (parseFloat(apt.payment_amount) || 0), 0);
+
+    const pendingPayments = allAppointments
+      .filter((apt) => apt.payment_status !== "paid" && apt.payment_amount > 0)
+      .reduce((sum, apt) => sum + (parseFloat(apt.payment_amount) || 0), 0);
+
+    // Prescription stats
+    const activePrescriptions = allPrescriptions.filter(
+      (p) => p.status === "pending" || p.status === "dispensed"
+    ).length;
+
+    const completedPrescriptions = allPrescriptions.filter(
+      (p) => p.status === "completed"
+    ).length;
+
+    // Status breakdown
+    const statusBreakdown = {
+      requested: allAppointments.filter((apt) => apt.status === "requested").length,
+      assigned: allAppointments.filter((apt) => apt.status === "assigned").length,
+      confirmed: allAppointments.filter((apt) => apt.status === "confirmed").length,
+      completed: completedAppointments.length,
+      cancelled: allAppointments.filter((apt) => apt.status === "cancelled").length,
+      no_show: allAppointments.filter((apt) => apt.status === "no_show").length,
+    };
+
+    // Recent activity (last 5 appointments)
+    const recentAppointments = allAppointments.slice(0, 5);
+
+    const stats = {
+      // Summary
+      totalAppointments: allAppointments.length,
+      upcomingAppointments: upcomingAppointments.length,
+      completedAppointments: completedAppointments.length,
+      thisMonthAppointments: thisMonthAppointments.length,
+
+      // Healthcare providers
+      doctorsConsulted: uniqueDoctors.size,
+      pharmaciesVisited: uniquePharmacies.size,
+
+      // Prescriptions
+      totalPrescriptions: allPrescriptions.length,
+      activePrescriptions,
+      completedPrescriptions,
+
+      // Finances
+      totalSpent,
+      pendingPayments,
+
+      // Breakdown
+      statusBreakdown,
+
+      // Health profile completion
+      profileCompletion: calculateProfileCompletion(user),
+
+      // Recent activity
+      recentActivity: recentAppointments.map((apt) => ({
+        id: apt.appointment_id,
+        date: apt.appointment_date,
+        status: apt.status,
+        type: "appointment",
+      })),
+    };
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Patient dashboard statistics retrieved successfully",
+      stats,
+    );
+  } catch (error) {
+    console.error("Get patient dashboard stats error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
+ * Calculate profile completion percentage
+ */
+const calculateProfileCompletion = (user) => {
+  const fields = [
+    "full_name",
+    "email",
+    "phone",
+    "date_of_birth",
+    "address",
+    "emergency_contact",
+    "blood_group",
+  ];
+
+
+
+  const filledFields = fields.filter((field) => user[field] && user[field].toString().trim() !== "");
+  return Math.round((filledFields.length / fields.length) * 100);
 };

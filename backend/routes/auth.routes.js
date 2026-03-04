@@ -13,6 +13,7 @@ import {
   getUserById,
   updateUserStatus,
   deleteUser,
+  getPatientDashboardStats,
 } from "../controllers/auth.controller.js";
 import {
   verifyToken,
@@ -290,6 +291,22 @@ router.put(
   verifyToken,
   authLimiter,
   changePassword,
+);
+
+/**
+ * @route   GET /api/auth/patient-stats
+ * @desc    Get patient dashboard statistics
+ * @access  Private (Patient)
+ */
+router.get(
+  "/patient-stats",
+  // #swagger.tags = ['Authentication']
+  // #swagger.summary = 'Get patient dashboard statistics'
+  // #swagger.description = 'Returns comprehensive statistics for the patient dashboard including appointments, prescriptions, and health data'
+  // #swagger.security = [{ "bearerAuth": [] }]
+  verifyToken,
+  authorizeRoles("Patient"),
+  getPatientDashboardStats,
 );
 
 // ============================================
