@@ -546,3 +546,143 @@ export const getMyPatients = async (req, res) => {
     );
   }
 };
+
+/**
+ * Get dashboard statistics for the logged-in doctor
+ * @route GET /api/doctors/dashboard-stats
+ * @access Private (Doctor)
+ */
+export const getDoctorDashboardStats = async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ where: { user_id: req.user.id } });
+    if (!doctor) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.DOCTOR_NOT_FOUND,
+      );
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split("T")[0];
+
+    // Get start of current week (Sunday)
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const startOfWeekStr = startOfWeek.toISOString().split("T")[0];
+
+    // Get start of current month
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfMonthStr = startOfMonth.toISOString().split("T")[0];
+
+    // Get all appointments for this doctor
+    const allAppointments = await Appointment.findAll({
+      where: { doctor_id: doctor.doctor_id },
+      attributes: [
+        "appointment_id",
+        "patient_id",
+        "appointment_date",
+        "status",
+        "payment_status",
+        "payment_amount",
+      ],
+    });
+
+    // Today's appointments
+    const todayAppointments = allAppointments.filter(
+      (apt) => apt.appointment_date === todayStr
+    );
+
+    // This week's appointments
+    const thisWeekAppointments = allAppointments.filter(
+      (apt) => apt.appointment_date >= startOfWeekStr && apt.appointment_date <= todayStr
+    );
+
+    // This month's appointments
+    const thisMonthAppointments = allAppointments.filter(
+      (apt) => apt.appointment_date >= startOfMonthStr
+    );
+
+    // Unique patients
+    const uniquePatients = new Set(allAppointments.map((apt) => apt.patient_id));
+
+    // Pending appointments (assigned or confirmed)
+    const pendingAppointments = allAppointments.filter(
+      (apt) => apt.status === "assigned" || apt.status === "confirmed"
+    );
+
+    // Completed appointments
+    const completedAppointments = allAppointments.filter(
+      (apt) => apt.status === "completed"
+    );
+
+    // Calculate earnings
+    const totalEarnings = allAppointments
+      .filter((apt) => apt.payment_status === "paid")
+      .reduce((sum, apt) => sum + (parseFloat(apt.payment_amount) || 0), 0);
+
+    const thisMonthEarnings = thisMonthAppointments
+      .filter((apt) => apt.payment_status === "paid")
+      .reduce((sum, apt) => sum + (parseFloat(apt.payment_amount) || 0), 0);
+
+    const thisWeekEarnings = thisWeekAppointments
+      .filter((apt) => apt.payment_status === "paid")
+      .reduce((sum, apt) => sum + (parseFloat(apt.payment_amount) || 0), 0);
+
+    // Status breakdown
+    const statusBreakdown = {
+      requested: allAppointments.filter((apt) => apt.status === "requested").length,
+      assigned: allAppointments.filter((apt) => apt.status === "assigned").length,
+      confirmed: allAppointments.filter((apt) => apt.status === "confirmed").length,
+      completed: completedAppointments.length,
+      cancelled: allAppointments.filter((apt) => apt.status === "cancelled").length,
+      no_show: allAppointments.filter((apt) => apt.status === "no_show").length,
+    };
+
+    const stats = {
+      // Today
+      todayAppointments: todayAppointments.length,
+      completedToday: todayAppointments.filter((apt) => apt.status === "completed").length,
+      pendingToday: todayAppointments.filter(
+        (apt) => apt.status === "assigned" || apt.status === "confirmed"
+      ).length,
+
+      // This week
+      thisWeekAppointments: thisWeekAppointments.length,
+      thisWeekCompleted: thisWeekAppointments.filter((apt) => apt.status === "completed").length,
+
+      // This month
+      thisMonthAppointments: thisMonthAppointments.length,
+      thisMonthCompleted: thisMonthAppointments.filter((apt) => apt.status === "completed").length,
+
+      // Overall
+      totalAppointments: allAppointments.length,
+      totalPatients: uniquePatients.size,
+      pendingAppointments: pendingAppointments.length,
+      completedAppointments: completedAppointments.length,
+
+      // Earnings
+      totalEarnings,
+      thisMonthEarnings,
+      thisWeekEarnings,
+
+      // Status breakdown
+      statusBreakdown,
+    };
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Dashboard statistics retrieved successfully",
+      stats,
+    );
+  } catch (error) {
+    console.error("Get doctor dashboard stats error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};

@@ -8,6 +8,7 @@ import {
   getDoctorsBySpecialization,
   searchDoctors,
   getMyPatients,
+  getDoctorDashboardStats,
 } from "../controllers/doctor.controller.js";
 import { verifyToken, authorizeRoles } from "../middlewares/auth.middleware.js";
 import {
@@ -91,6 +92,22 @@ router.get(
   verifyToken,
   authorizeRoles("Doctor"),
   getMyDoctorProfile,
+);
+
+/**
+ * @route   GET /api/doctors/dashboard-stats
+ * @desc    Get dashboard statistics for the logged-in doctor
+ * @access  Private (Doctor)
+ */
+router.get(
+  "/dashboard-stats",
+  // #swagger.tags = ['Doctors']
+  // #swagger.summary = 'Get doctor dashboard statistics'
+  // #swagger.description = 'Returns comprehensive statistics for the doctor dashboard including appointments, patients, and earnings data'
+  // #swagger.security = [{ "bearerAuth": [] }]
+  verifyToken,
+  authorizeRoles("Doctor"),
+  getDoctorDashboardStats,
 );
 
 /**
