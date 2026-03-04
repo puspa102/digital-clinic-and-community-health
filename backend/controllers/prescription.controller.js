@@ -3,7 +3,7 @@ import Doctor from "../models/doctor.model.js";
 import User from "../models/user.model.js";
 import Appointment from "../models/appointment.model.js";
 import Pharmacy from "../models/pharmacy.model.js";
-import sequelize from "../database/database.js";
+import sequelize from "../config/db.js";
 import { Op } from "sequelize";
 import {
   getPagination,

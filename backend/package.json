@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "swagger": "node swagger.js",
     "build": "npm run swagger",
-    "seed:admin": "node scripts/seedAdmin.js"
+    "seed:admin": "node utils/seedAdmin.js"
   },
   "keywords": [
     "healthcare",

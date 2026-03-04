@@ -9,7 +9,7 @@ import { createRequire } from "module";
 import dotenv from "dotenv";
 
 // Database
-import { connectDB } from "./database/database.js";
+import { connectDB } from "./config/db.js";
 
 // Configuration
 import corsOptions from "./config/cors.config.js";
@@ -33,7 +33,7 @@ import inventoryRoutes from "./routes/inventory.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import prescriptionRoutes from "./routes/prescription.routes.js";
 
-import { seedAdminIfNotExists } from "./scripts/seedAdmin.js";
+import { seedAdminIfNotExists } from "./utils/seedAdmin.js";
 
 // Load environment variables
 dotenv.config();

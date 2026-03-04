@@ -1,7 +1,7 @@
 import { Order, OrderItem } from "../models/order.model.js";
 import InventoryItem from "../models/inventory.model.js";
 import Pharmacy from "../models/pharmacy.model.js";
-import sequelize from "../database/database.js";
+import sequelize from "../config/db.js";
 import { Op } from "sequelize";
 import {
   getPagination,

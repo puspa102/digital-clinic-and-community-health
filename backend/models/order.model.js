@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../database/database.js";
+import sequelize from "../config/db.js";
 import Pharmacy from "./pharmacy.model.js";
 import InventoryItem from "./inventory.model.js";
 

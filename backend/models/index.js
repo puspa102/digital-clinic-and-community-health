@@ -3,7 +3,7 @@
  * Exports all models and sets up associations
  */
 
-import sequelize from "../database/database.js";
+import sequelize from "../config/db.js";
 import User from "./user.model.js";
 import Pharmacy from "./pharmacy.model.js";
 import Doctor from "./doctor.model.js";

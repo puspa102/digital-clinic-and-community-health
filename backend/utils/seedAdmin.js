@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { QueryTypes } from "sequelize";
-import sequelize from "../database/database.js";
+import sequelize from "../config/db.js";
 
 export async function seedAdminIfNotExists() {
   const DEFAULT_ADMIN = {

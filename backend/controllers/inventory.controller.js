@@ -1,7 +1,7 @@
 import InventoryItem from "../models/inventory.model.js";
 import Pharmacy from "../models/pharmacy.model.js";
 import { Op } from "sequelize";
-import sequelize from "../database/database.js";
+import sequelize from "../config/db.js";
 import {
   getPagination,
   formatPaginatedResponse,
