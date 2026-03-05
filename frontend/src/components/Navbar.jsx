@@ -558,55 +558,93 @@ const Navbar = ({ onMenuClick }) => {
   };
 
   // Get role-specific colors
-  const getRoleColor = () => {
-    const colors = {
-      Admin: "bg-purple-600",
-      Doctor: "bg-green-600",
-      Patient: "bg-blue-600",
-      Pharmacy: "bg-orange-600",
+  const getRoleConfig = () => {
+    const configs = {
+      Admin: {
+        bg: "bg-purple-600",
+        text: "text-purple-600",
+        ring: "ring-purple-500/20",
+        badge: "bg-purple-500",
+      },
+      Doctor: {
+        bg: "bg-green-600",
+        text: "text-green-600",
+        ring: "ring-green-500/20",
+        badge: "bg-green-500",
+      },
+      Patient: {
+        bg: "bg-blue-600",
+        text: "text-blue-600",
+        ring: "ring-blue-500/20",
+        badge: "bg-blue-500",
+      },
+      Pharmacy: {
+        bg: "bg-orange-600",
+        text: "text-orange-600",
+        ring: "ring-orange-500/20",
+        badge: "bg-orange-500",
+      },
     };
-    return colors[user?.role] || "bg-blue-600";
+    return configs[user?.role] || configs.Patient;
   };
 
-  const roleColor = getRoleColor();
+  const roleConfig = getRoleConfig();
+
+  // Profile dropdown state
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileRef = useRef(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between px-4 py-3">
-        {/* Mobile menu button */}
-        <button
-          onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <Menu className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-        </button>
+    <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <div className="flex items-center justify-between h-16 px-4">
+        {/* Left section */}
+        <div className="flex items-center gap-4">
+          {/* Mobile menu button */}
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden p-2 -ml-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Menu size={22} className="text-gray-600 dark:text-gray-300" />
+          </button>
 
-        {/* Page title - Mobile */}
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 lg:hidden">
-          Digital Clinic
-        </h1>
+          {/* Page title - Mobile */}
+          <h1 className="text-[15px] font-bold text-gray-900 dark:text-white lg:hidden">
+            Digital Clinic
+          </h1>
+        </div>
 
         {/* Search bar - Desktop only */}
         {isAuthenticated && (
-          <div className="hidden lg:flex flex-1 max-w-md" ref={searchRef}>
-            <div className="relative w-full">
+          <div className="hidden lg:flex flex-1 max-w-lg mx-8" ref={searchRef}>
+            <div className="relative w-full group">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onFocus={() => searchQuery.length >= 2 && setShowSearch(true)}
-                placeholder="Search..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                placeholder="Search doctors, patients, appointments..."
+                className="w-full h-10 pl-10 pr-4 text-[13px] border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
 
               {/* Search Results Dropdown */}
               {showSearch && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   {searchLoading ? (
-                    <div className="p-4 text-center">
+                    <div className="p-6 text-center">
                       <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Searching...</p>
+                      <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-3">Searching...</p>
                     </div>
                   ) : searchResults.length > 0 ? (
                     <div className="py-2">
@@ -616,20 +654,20 @@ const Navbar = ({ onMenuClick }) => {
                           <button
                             key={result.id}
                             onClick={() => handleResultClick(result.link)}
-                            className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                            className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
                           >
                             <div className={`p-2 rounded-lg ${getResultColor(result.color)}`}>
-                              <Icon className="w-4 h-4" />
+                              <Icon size={16} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                              <p className="text-[13px] font-medium text-gray-900 dark:text-gray-100 truncate">
                                 {result.title}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                                 {result.subtitle}
                               </p>
                             </div>
-                            <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded capitalize">
+                            <span className="text-[10px] px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md capitalize font-medium">
                               {result.type}
                             </span>
                           </button>
@@ -637,10 +675,12 @@ const Navbar = ({ onMenuClick }) => {
                       })}
                     </div>
                   ) : (
-                    <div className="p-4 text-center">
-                      <Search className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">No results found</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Try a different search term</p>
+                    <div className="p-6 text-center">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Search size={18} className="text-gray-400" />
+                      </div>
+                      <p className="text-[13px] font-medium text-gray-600 dark:text-gray-300">No results found</p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Try a different search term</p>
                     </div>
                   )}
                 </div>
@@ -650,19 +690,19 @@ const Navbar = ({ onMenuClick }) => {
         )}
 
         {/* Right side actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
           {isAuthenticated ? (
             <>
               {/* Theme Switcher */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
                 {isDark ? (
-                  <Sun className="w-6 h-6 text-yellow-500" />
+                  <Sun size={20} className="text-amber-500" />
                 ) : (
-                  <Moon className="w-6 h-6 text-gray-600" />
+                  <Moon size={20} className="text-gray-500" />
                 )}
               </button>
 
@@ -670,11 +710,11 @@ const Navbar = ({ onMenuClick }) => {
               <div className="relative" ref={notificationRef}>
                 <button 
                   onClick={handleNotificationClick}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+                  className="p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative"
                 >
-                  <Bell className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                  <Bell size={20} className="text-gray-500 dark:text-gray-400" />
                   {unseenCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-semibold px-1">
+                    <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1 ring-2 ring-white dark:ring-gray-900">
                       {unseenCount > 9 ? "9+" : unseenCount}
                     </span>
                   )}
@@ -682,33 +722,36 @@ const Navbar = ({ onMenuClick }) => {
 
                 {/* Notifications Dropdown */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800">
+                      <h3 className="text-[13px] font-semibold text-gray-900 dark:text-white">
                         Notifications
                       </h3>
                       {notifications.length > 0 && (
                         <button
                           onClick={clearAllNotifications}
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                          className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                         >
                           Clear all
                         </button>
                       )}
                     </div>
 
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-[320px] overflow-y-auto">
                       {loadingNotifications ? (
-                        <div className="p-6 text-center">
-                          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <div className="p-8 text-center">
+                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
                         </div>
                       ) : notifications.length === 0 ? (
-                        <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-                          <Bell className="w-10 h-10 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-                          <p className="text-sm">No notifications</p>
+                        <div className="p-8 text-center">
+                          <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Bell size={20} className="text-gray-400" />
+                          </div>
+                          <p className="text-[13px] font-medium text-gray-600 dark:text-gray-300">No notifications</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">You're all caught up!</p>
                         </div>
                       ) : (
-                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                        <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
                           {notifications.map((notif) => {
                             const Icon = notif.icon;
                             return (
@@ -716,24 +759,24 @@ const Navbar = ({ onMenuClick }) => {
                                 key={notif.id}
                                 to={notif.link}
                                 onClick={() => setShowNotifications(false)}
-                                className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
+                                className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group"
                               >
-                                <div className={`p-2 rounded-lg ${getNotificationColorClasses(notif.color)}`}>
-                                  <Icon className="w-4 h-4" />
+                                <div className={`p-2 rounded-lg shrink-0 ${getNotificationColorClasses(notif.color)}`}>
+                                  <Icon size={14} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                  <p className="text-[13px] font-medium text-gray-900 dark:text-white">
                                     {notif.title}
                                   </p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                                     {notif.message}
                                   </p>
                                 </div>
                                 <button
                                   onClick={(e) => clearNotification(notif.id, e)}
-                                  className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-all"
                                 >
-                                  <X className="w-3 h-3 text-gray-400" />
+                                  <X size={12} className="text-gray-400" />
                                 </button>
                               </Link>
                             );
@@ -743,14 +786,12 @@ const Navbar = ({ onMenuClick }) => {
                     </div>
 
                     {notifications.length > 0 && (
-                      <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                      <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800">
                         <button
-                          onClick={() => {
-                            fetchNotifications();
-                          }}
-                          className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          onClick={() => fetchNotifications()}
+                          className="w-full text-center text-[12px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors"
                         >
-                          Refresh notifications
+                          Refresh
                         </button>
                       </div>
                     )}
@@ -761,88 +802,93 @@ const Navbar = ({ onMenuClick }) => {
               {/* Messages - for Doctor and Patient */}
               {(user?.role === "Doctor" || user?.role === "Patient") && (
                 <button 
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+                  className="p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative"
                   title="Messages"
                   onClick={() => setShowChat(true)}
                 >
-                  <MessageSquare className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                  <MessageSquare size={20} className="text-gray-500 dark:text-gray-400" />
                   {unreadMessages > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
+                    <span className={`absolute top-1.5 right-1.5 min-w-[16px] h-4 ${roleConfig.badge} rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1 ring-2 ring-white dark:ring-gray-900`}>
                       {unreadMessages > 9 ? "9+" : unreadMessages}
                     </span>
                   )}
                 </button>
               )}
 
-              {/* Admin Quick Actions */}
-              {user?.role === "Admin" && (
-                <div className="hidden lg:flex items-center gap-2">
-                  <Link
-                    to="/admin/users"
-                    className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  >
-                    Users
-                  </Link>
-                  {/* <Link
-                    to="/admin/reports"
-                    className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    Reports
-                  </Link>*/}
-                </div>
-              )}
+              {/* Divider */}
+              <div className="hidden lg:block w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
               {/* Profile Dropdown - Desktop */}
-              <div className="hidden lg:flex items-center gap-3 ml-2">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {user?.full_name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {user?.role}
-                  </p>
-                </div>
-                <div className="relative group">
-                  <button
-                    className={`w-10 h-10 ${roleColor} rounded-full flex items-center justify-center text-white font-semibold`}
-                  >
+              <div className="hidden lg:flex items-center gap-2.5 ml-1 relative" ref={profileRef}>
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <div className={`w-8 h-8 ${roleConfig.bg} rounded-lg flex items-center justify-center text-white text-[12px] font-bold ring-2 ${roleConfig.ring}`}>
                     {user?.full_name?.charAt(0)?.toUpperCase() || "U"}
-                  </button>
+                  </div>
+                  <div className="text-left hidden xl:block">
+                    <p className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+                      {user?.full_name?.split(' ')[0]}
+                    </p>
+                    <p className={`text-[10px] font-medium ${roleConfig.text}`}>
+                      {user?.role}
+                    </p>
+                  </div>
+                  <ChevronDown size={14} className={`text-gray-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
+                </button>
 
-                  {/* Dropdown menu */}
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                    <div className="py-2">
+                {/* Dropdown menu */}
+                {showProfileMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {/* Profile header */}
+                    <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-[13px] font-semibold text-gray-900 dark:text-white truncate">
+                        {user?.full_name}
+                      </p>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                        {user?.email}
+                      </p>
+                    </div>
+                    <div className="py-1.5">
                       <Link
                         to={`/${user?.role?.toLowerCase()}/profile`}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       >
-                        <User className="w-4 h-4" />
+                        <User size={16} />
                         My Profile
                       </Link>
                       <Link
                         to={`/${user?.role?.toLowerCase()}/settings`}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       >
-                        <Settings className="w-4 h-4" />
+                        <Settings size={16} />
                         Settings
                       </Link>
-                      <hr className="my-2" />
+                    </div>
+                    <hr className="border-gray-100 dark:border-gray-700" />
+                    <div className="py-1.5">
                       <button
-                        onClick={logout}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left"
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          logout();
+                        }}
+                        className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left transition-colors"
                       >
-                        <LogOut className="w-4 h-4" />
+                        <LogOut size={16} />
                         Logout
                       </button>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Mobile Profile Avatar */}
               <div className="lg:hidden">
                 <div
-                  className={`w-10 h-10 ${roleColor} rounded-full flex items-center justify-center text-white font-semibold`}
+                  className={`w-9 h-9 ${roleConfig.bg} rounded-xl flex items-center justify-center text-white text-[12px] font-bold`}
                 >
                   {user?.full_name?.charAt(0)?.toUpperCase() || "U"}
                 </div>
@@ -854,26 +900,26 @@ const Navbar = ({ onMenuClick }) => {
               {/* Theme Switcher for guests */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
                 {isDark ? (
-                  <Sun className="w-6 h-6 text-yellow-500" />
+                  <Sun size={20} className="text-amber-500" />
                 ) : (
-                  <Moon className="w-6 h-6 text-gray-600" />
+                  <Moon size={20} className="text-gray-500" />
                 )}
               </button>
 
-              <div className="hidden lg:flex items-center gap-3">
+              <div className="hidden lg:flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-medium"
+                  className="px-4 py-2 text-[13px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="px-4 py-2 text-[13px] font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
                 >
                   Register
                 </Link>
@@ -882,7 +928,7 @@ const Navbar = ({ onMenuClick }) => {
               {/* Mobile - just show login button */}
               <Link
                 to="/login"
-                className="lg:hidden px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
+                className="lg:hidden px-4 py-2 bg-blue-600 text-white rounded-xl text-[13px] font-medium shadow-sm"
               >
                 Login
               </Link>

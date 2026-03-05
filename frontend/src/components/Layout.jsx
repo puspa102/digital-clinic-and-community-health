@@ -38,7 +38,7 @@ const Layout = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
       {/* Sidebar Component */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -53,7 +53,7 @@ const Layout = ({ children }) => {
       {/* Main content area */}
       <div
         className={`transition-all duration-300 ${
-          sidebarMinimized ? "lg:pl-20" : "lg:pl-64"
+          sidebarMinimized ? "lg:pl-16" : "lg:pl-60"
         }`}
       >
         {/* Navbar Component */}

@@ -2,12 +2,12 @@ import rateLimit from "express-rate-limit";
 
 /**
  * General API rate limiter
- * Limits each IP to 100 requests per 15 minutes
+ * Limits each IP to 500 requests per 15 minutes (dev-friendly)
  * Skips chat routes as they use WebSocket for real-time updates
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 500, // Limit each IP to 500 requests per windowMs
   message: {
     success: false,
     message: "Too many requests, please try again later.",
@@ -19,29 +19,29 @@ export const apiLimiter = rateLimit({
 
 /**
  * Strict rate limiter for authentication endpoints
- * Limits each IP to 5 requests per 15 minutes
+ * Limits each IP to 20 requests per 15 minutes
  * Helps prevent brute force attacks
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: 20, // Limit each IP to 20 requests per windowMs
   message: {
     success: false,
     message: "Too many authentication attempts, please try again after 15 minutes.",
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: false, // Count all requests
+  skipSuccessfulRequests: true, // Only count failed attempts
 });
 
 /**
  * Refresh token rate limiter
  * More lenient than auth limiter since refresh is automatic
- * Limits each IP to 20 requests per 5 minutes
+ * Limits each IP to 50 requests per 5 minutes
  */
 export const refreshTokenLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 20, // Limit each IP to 20 requests per windowMs
+  max: 50, // Limit each IP to 50 requests per windowMs
   message: {
     success: false,
     message: "Too many token refresh attempts, please try again after 5 minutes.",

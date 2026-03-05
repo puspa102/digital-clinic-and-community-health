@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard,
@@ -21,115 +21,56 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  HelpCircle,
+  LogOut,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActivePath = (path) => location.pathname === path;
 
-  const icons = {
-    dashboard: <LayoutDashboard className="w-5 h-5 shrink-0" />,
-    home: <Home className="w-5 h-5 shrink-0" />,
-    login: <LogIn className="w-5 h-5 shrink-0" />,
-    register: <UserPlus className="w-5 h-5 shrink-0" />,
-    calendar: <Calendar className="w-5 h-5 shrink-0" />,
-    file: <FileText className="w-5 h-5 shrink-0" />,
-    search: <Search className="w-5 h-5 shrink-0" />,
-    users: <Users className="w-5 h-5 shrink-0" />,
-    user: <User className="w-5 h-5 shrink-0" />,
-    clock: <Clock className="w-5 h-5 shrink-0" />,
-    chart: <BarChart3 className="w-5 h-5 shrink-0" />,
-    settings: <Settings className="w-5 h-5 shrink-0" />,
-    orders: <ShoppingBag className="w-5 h-5 shrink-0" />,
-    inventory: <Package className="w-5 h-5 shrink-0" />,
-    dispense: <Tablet className="w-5 h-5 shrink-0" />,
-    prescription: <FileCheck className="w-5 h-5 shrink-0" />,
-    verify: <CheckCircle className="w-5 h-5 shrink-0" />,
-    emergency: <Activity className="w-5 h-5 shrink-0" />,
-    chevronLeft: <ChevronLeft className="w-4 h-4 shrink-0" />,
-    chevronRight: <ChevronRight className="w-4 h-4 shrink-0" />,
-  };
-
   const navigationConfig = {
     guest: [
-      { label: "Home", path: "/", icon: icons.home },
-      { label: "Login", path: "/login", icon: icons.login },
-      { label: "Register", path: "/register", icon: icons.register },
+      { label: "Home", path: "/", icon: Home },
+      { label: "Login", path: "/login", icon: LogIn },
+      { label: "Register", path: "/register", icon: UserPlus },
     ],
 
     Patient: [
-      { label: "Dashboard", path: "/patient/dashboard", icon: icons.dashboard },
-      {
-        label: "Find Pharmacies",
-        path: "/patient/pharmacies",
-        icon: icons.search,
-      },
-      {
-        label: "My Appointments",
-        path: "/patient/appointments",
-        icon: icons.calendar,
-      },
-      { label: "Emergency", path: "/emergency", icon: icons.emergency },
-      { label: "Medical History", path: "/patient/history", icon: icons.file },
-      { label: "Profile", path: "/patient/profile", icon: icons.user },
-      { label: "Settings", path: "/patient/settings", icon: icons.settings },
+      { label: "Dashboard", path: "/patient/dashboard", icon: LayoutDashboard },
+      { label: "Find Pharmacies", path: "/patient/pharmacies", icon: Search },
+      { label: "My Appointments", path: "/patient/appointments", icon: Calendar },
+      { label: "Emergency", path: "/emergency", icon: Activity },
+      { label: "Medical History", path: "/patient/history", icon: FileText },
     ],
 
     Doctor: [
-      { label: "Dashboard", path: "/doctor/dashboard", icon: icons.dashboard },
-      {
-        label: "My Appointments",
-        path: "/doctor/appointments",
-        icon: icons.calendar,
-      },
-      { label: "Patients", path: "/doctor/patients", icon: icons.users },
-      { label: "Schedule", path: "/doctor/schedule", icon: icons.clock },
-      {
-        label: "Prescriptions",
-        path: "/doctor/prescriptions",
-        icon: icons.prescription,
-      },
-      { label: "Profile", path: "/doctor/profile", icon: icons.user },
-      { label: "Settings", path: "/doctor/settings", icon: icons.settings },
+      { label: "Dashboard", path: "/doctor/dashboard", icon: LayoutDashboard },
+      { label: "My Appointments", path: "/doctor/appointments", icon: Calendar },
+      { label: "Patients", path: "/doctor/patients", icon: Users },
+      { label: "Schedule", path: "/doctor/schedule", icon: Clock },
+      { label: "Prescriptions", path: "/doctor/prescriptions", icon: FileCheck },
     ],
 
     Admin: [
-      { label: "Dashboard", path: "/admin/dashboard", icon: icons.dashboard },
-      { label: "Users", path: "/admin/users", icon: icons.users },
-      { label: "Doctors", path: "/admin/doctors", icon: icons.verify },
-      {
-        label: "Appointments",
-        path: "/admin/appointments",
-        icon: icons.calendar,
-      },
-      { label: "Pharmacies", path: "/admin/pharmacies", icon: icons.orders },
-      { label: "Reports", path: "/admin/reports", icon: icons.chart },
-      { label: "Settings", path: "/admin/settings", icon: icons.settings },
+      { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Users", path: "/admin/users", icon: Users },
+      { label: "Doctors", path: "/admin/doctors", icon: CheckCircle },
+      { label: "Appointments", path: "/admin/appointments", icon: Calendar },
+      { label: "Pharmacies", path: "/admin/pharmacies", icon: ShoppingBag },
+      { label: "Reports", path: "/admin/reports", icon: BarChart3 },
     ],
 
     Pharmacy: [
-      {
-        label: "Dashboard",
-        path: "/pharmacy/dashboard",
-        icon: icons.dashboard,
-      },
-      {
-        label: "Appointments",
-        path: "/pharmacy/appointments",
-        icon: icons.calendar,
-      },
-      { label: "Doctors", path: "/pharmacy/doctors", icon: icons.users },
-      {
-        label: "Inventory",
-        path: "/pharmacy/inventory",
-        icon: icons.inventory,
-      },
-      { label: "Orders", path: "/pharmacy/orders", icon: icons.orders },
-      { label: "Reports", path: "/pharmacy/reports", icon: icons.chart },
-      { label: "Profile", path: "/pharmacy/profile", icon: icons.user },
-      { label: "Settings", path: "/pharmacy/settings", icon: icons.settings },
+      { label: "Dashboard", path: "/pharmacy/dashboard", icon: LayoutDashboard },
+      { label: "Appointments", path: "/pharmacy/appointments", icon: Calendar },
+      { label: "Doctors", path: "/pharmacy/doctors", icon: Users },
+      { label: "Inventory", path: "/pharmacy/inventory", icon: Package },
+      { label: "Orders", path: "/pharmacy/orders", icon: ShoppingBag },
+      { label: "Reports", path: "/pharmacy/reports", icon: BarChart3 },
     ],
   };
 
@@ -142,44 +83,60 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
 
   const navItems = getNavItems();
 
-  const getRoleColor = () => {
-    const colors = {
+  const getRoleConfig = () => {
+    const configs = {
       Admin: {
-        primary: "bg-purple-600",
-        light: "bg-purple-100",
-        text: "text-purple-600",
-        hover: "hover:bg-purple-50",
-        active: "bg-purple-100 text-purple-700",
+        color: "bg-purple-600",
+        textColor: "text-purple-600",
+        activeColor: "bg-purple-100 dark:bg-purple-900/30",
+        activeText: "text-purple-700 dark:text-purple-400",
+        indicator: "bg-purple-600",
       },
       Doctor: {
-        primary: "bg-green-600",
-        light: "bg-green-100",
-        text: "text-green-600",
-        hover: "hover:bg-green-50",
-        active: "bg-green-100 text-green-700",
+        color: "bg-green-600",
+        textColor: "text-green-600",
+        activeColor: "bg-green-100 dark:bg-green-900/30",
+        activeText: "text-green-700 dark:text-green-400",
+        indicator: "bg-green-600",
       },
       Patient: {
-        primary: "bg-blue-600",
-        light: "bg-blue-100",
-        text: "text-blue-600",
-        hover: "hover:bg-blue-50",
-        active: "bg-blue-100 text-blue-700",
+        color: "bg-blue-600",
+        textColor: "text-blue-600",
+        activeColor: "bg-blue-100 dark:bg-blue-900/30",
+        activeText: "text-blue-700 dark:text-blue-400",
+        indicator: "bg-blue-600",
       },
       Pharmacy: {
-        primary: "bg-orange-600",
-        light: "bg-orange-100",
-        text: "text-orange-600",
-        hover: "hover:bg-orange-50",
-        active: "bg-orange-100 text-orange-700",
+        color: "bg-orange-600",
+        textColor: "text-orange-600",
+        activeColor: "bg-orange-100 dark:bg-orange-900/30",
+        activeText: "text-orange-700 dark:text-orange-400",
+        indicator: "bg-orange-600",
       },
     };
-    return colors[user?.role] || colors.Patient;
+    return configs[user?.role] || configs.Patient;
   };
 
-  const roleColors = getRoleColor();
+  const roleConfig = getRoleConfig();
+
+  const getProfilePath = () => {
+    if (!isAuthenticated || !user) return "/login";
+    return `/${user.role.toLowerCase()}/profile`;
+  };
+
+  const getSettingsPath = () => {
+    if (!isAuthenticated || !user) return "/login";
+    return `/${user.role.toLowerCase()}/settings`;
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <>
+      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -188,100 +145,202 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
       )}
 
       <aside
-        className={`fixed top-0 left-0 z-50 h-full bg-white dark:bg-gray-800 shadow-lg border-r border-gray-200 dark:border-gray-700 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-screen flex flex-col z-50 transition-all duration-300 ease-in-out bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-sm transform lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } ${isMinimized ? "lg:w-20" : "w-64"}`}
+        } ${isMinimized ? "lg:w-16" : "w-60"}`}
       >
-        {/* Logo */}
-        <div
-          className={`flex items-center ${
-            isMinimized ? "justify-center" : "gap-3"
-          } p-4 border-b border-gray-200 dark:border-gray-700 relative`}
-        >
-          <div
-            className={`w-10 h-10 ${roleColors.primary} rounded-lg flex items-center justify-center`}
-          >
-            <Activity className="w-6 h-6 text-white" />
+        {/* Logo / Brand */}
+        <div className="flex items-center gap-3 px-4 h-16 shrink-0 border-b border-gray-100 dark:border-gray-800">
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${roleConfig.color}`}>
+            <Activity size={20} className="text-white" />
           </div>
-
           {!isMinimized && (
-            <div className="flex-1">
-              <h1 className="font-bold text-gray-900 dark:text-gray-100">
+            <div className="overflow-hidden">
+              <h1 className="text-[15px] font-bold leading-tight tracking-tight whitespace-nowrap text-gray-900 dark:text-white">
                 Digital Clinic
               </h1>
-              {isAuthenticated ? (
-                <span className={`text-xs ${roleColors.text} font-medium`}>
-                  {user?.role} Portal
-                </span>
-              ) : (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Welcome
-                </span>
+              {isAuthenticated && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${roleConfig.indicator}`} />
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${roleConfig.textColor}`}>
+                    {user?.role}
+                  </span>
+                </div>
               )}
             </div>
           )}
+        </div>
 
+        {/* User Profile */}
+        {isAuthenticated && (
+          <Link
+            to={getProfilePath()}
+            onClick={onClose}
+            className={`flex items-center gap-3 mx-3 mt-4 mb-1 px-3 py-2.5 rounded-xl cursor-pointer transition-colors bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+              isMinimized ? "justify-center px-0" : ""
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${roleConfig.color} text-white`}>
+              {user?.full_name?.charAt(0)?.toUpperCase() || "U"}
+            </div>
+            {!isMinimized && (
+              <div className="overflow-hidden flex-1 min-w-0">
+                <p className="text-[13px] font-semibold truncate leading-tight text-gray-900 dark:text-white">
+                  {user?.full_name}
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                  {user?.email}
+                </p>
+              </div>
+            )}
+          </Link>
+        )}
+
+        {/* Menu Label */}
+        {!isMinimized && (
+          <div className="px-5 pt-5 pb-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
+              Menu
+            </span>
+          </div>
+        )}
+        {isMinimized && <div className="pt-4" />}
+
+        {/* Navigation Items */}
+        <nav className={`flex-1 px-3 space-y-0.5 ${isMinimized ? "overflow-hidden" : "overflow-y-auto"}`}>
+          {navItems.map((item) => {
+            const isActive = isActivePath(item.path);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={onClose}
+                title={isMinimized ? item.label : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all duration-200 group relative ${
+                  isMinimized ? "justify-center" : ""
+                } ${
+                  isActive
+                    ? `${roleConfig.activeColor} ${roleConfig.activeText}`
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                {/* Active indicator bar */}
+                {isActive && (
+                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full ${roleConfig.indicator}`} />
+                )}
+                <Icon
+                  size={19}
+                  className={`shrink-0 transition-colors ${isActive ? roleConfig.activeText : ""}`}
+                />
+                {!isMinimized && <span className="whitespace-nowrap">{item.label}</span>}
+
+                {/* Tooltip for collapsed state */}
+                {isMinimized && (
+                  <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
+                    {item.label}
+                  </div>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Divider */}
+        <div className="mx-4 border-t border-gray-100 dark:border-gray-800" />
+
+        {/* Support Label */}
+        {!isMinimized && isAuthenticated && (
+          <div className="px-5 pt-4 pb-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
+              Support
+            </span>
+          </div>
+        )}
+        {isMinimized && isAuthenticated && <div className="pt-3" />}
+
+        {/* Bottom Items */}
+        {isAuthenticated && (
+          <div className="px-3 pb-2 space-y-0.5">
+            {/* Settings */}
+            <Link
+              to={getSettingsPath()}
+              onClick={onClose}
+              title={isMinimized ? "Settings" : undefined}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all group relative text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white ${
+                isMinimized ? "justify-center" : ""
+              }`}
+            >
+              <Settings size={18} className="shrink-0 transition-colors" />
+              {!isMinimized && <span className="whitespace-nowrap">Settings</span>}
+              {isMinimized && (
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
+                  Settings
+                </div>
+              )}
+            </Link>
+
+            {/* Help */}
+            <button
+              title={isMinimized ? "Help & Support" : undefined}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all group relative text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white ${
+                isMinimized ? "justify-center" : ""
+              }`}
+            >
+              <HelpCircle size={18} className="shrink-0 transition-colors" />
+              {!isMinimized && <span className="whitespace-nowrap">Help & Support</span>}
+              {isMinimized && (
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
+                  Help & Support
+                </div>
+              )}
+            </button>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              title={isMinimized ? "Logout" : undefined}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all group relative text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 ${
+                isMinimized ? "justify-center" : ""
+              }`}
+            >
+              <LogOut size={18} className="shrink-0" />
+              {!isMinimized && <span className="whitespace-nowrap">Logout</span>}
+              {isMinimized && (
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
+                  Logout
+                </div>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Collapse Toggle */}
+        <div className="hidden lg:block px-3 py-3 border-t border-gray-100 dark:border-gray-800">
           <button
             onClick={onToggleMinimize}
-            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full items-center justify-center shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium cursor-pointer transition-all text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white ${
+              isMinimized ? "justify-center" : ""
+            }`}
           >
-            {isMinimized ? icons.chevronRight : icons.chevronLeft}
+            {isMinimized ? (
+              <ChevronRight size={16} className="shrink-0" />
+            ) : (
+              <>
+                <ChevronLeft size={16} className="shrink-0" />
+                <span className="whitespace-nowrap">Collapse</span>
+              </>
+            )}
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="p-2 space-y-1 overflow-y-auto max-h-[calc(100vh-140px)]">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={onClose}
-              className={`flex items-center ${
-                isMinimized ? "justify-center" : "gap-3"
-              } px-4 py-3 rounded-lg transition-all ${
-                isActivePath(item.path)
-                  ? roleColors.active
-                  : `text-gray-600 dark:text-gray-300 ${roleColors.hover} dark:hover:bg-gray-700`
-              }`}
-              title={isMinimized ? item.label : undefined}
-            >
-              {item.icon}
-              {!isMinimized && (
-                <span className="font-medium">{item.label}</span>
-              )}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        {/* {isAuthenticated ? (
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
-            {!isMinimized && (
-              <p className="text-center text-xs text-gray-400">
-                {user?.role} Portal
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
-            <div className="space-y-2">
-              <Link
-                to="/login"
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                {icons.login}
-                <span>Login</span>
-              </Link>
-              <Link
-                to="/register"
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                {icons.register}
-                <span>Register</span>
-              </Link>
-            </div>
-          </div>
-        )} */}
+        {/* Mobile Close Button */}
+        <button
+          onClick={onClose}
+          className="lg:hidden absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <ChevronLeft size={20} className="text-gray-500 dark:text-gray-400" />
+        </button>
       </aside>
     </>
   );
