@@ -4,6 +4,9 @@ import { useAuth } from "./context/AuthContext";
 // Components
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// Public Pages
+import Home from "./pages/Home";
+
 // Auth Pages
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -380,10 +383,10 @@ function App() {
       />
 
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Home />} />
 
-      {/* Catch all - redirect to login */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Catch all - redirect to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
