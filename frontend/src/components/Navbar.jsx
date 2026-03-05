@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import api, { handleApiError, formatDate, formatTime, APPOINTMENT_STATUS } from "../services/api";
+import api, { handleApiError, formatDate, formatTime, APPOINTMENT_STATUS, chatAPI } from "../services/api";
+import Chat from "./Chat";
 import {
   Menu,
   Search,
@@ -37,6 +39,10 @@ const Navbar = ({ onMenuClick }) => {
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const notificationRef = useRef(null);
 
+  // Chat state
+  const [showChat, setShowChat] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -44,6 +50,40 @@ const Navbar = ({ onMenuClick }) => {
   const [searchLoading, setSearchLoading] = useState(false);
   const searchRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const socketRef = useRef(null);
+
+  // Socket connection for real-time message notifications  
+  useEffect(() => {
+    if (!isAuthenticated || !["Doctor", "Patient"].includes(user?.role)) return;
+    
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    // Fetch initial unread count
+    chatAPI.getUnreadCount().then(response => {
+      if (response.success) {
+        setUnreadMessages(response.data.unread_count || 0);
+      }
+    }).catch(() => {});
+
+    // Setup socket for real-time updates
+    const SOCKET_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"],
+    });
+    socketRef.current = socket;
+
+    socket.on("message_notification", () => {
+      // Update unread count when new message arrives
+      setUnreadMessages(prev => prev + 1);
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [isAuthenticated, user?.role]);
 
   // Close notification dropdown when clicking outside
   useEffect(() => {
@@ -720,9 +760,17 @@ const Navbar = ({ onMenuClick }) => {
 
               {/* Messages - for Doctor and Patient */}
               {(user?.role === "Doctor" || user?.role === "Patient") && (
-                <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative">
+                <button 
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+                  title="Messages"
+                  onClick={() => setShowChat(true)}
+                >
                   <MessageSquare className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </span>
+                  )}
                 </button>
               )}
 
@@ -843,6 +891,14 @@ const Navbar = ({ onMenuClick }) => {
         </div>
       </div>
 
+      {/* Chat Modal */}
+      {(user?.role === "Doctor" || user?.role === "Patient") && (
+        <Chat 
+          isOpen={showChat} 
+          onClose={() => setShowChat(false)}
+          onUnreadChange={setUnreadMessages}
+        />
+      )}
     </header>
   );
 };

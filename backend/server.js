@@ -7,6 +7,9 @@ import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import { createRequire } from "module";
 import dotenv from "dotenv";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
 
 // Database
 import { connectDB } from "./config/db.js";
@@ -32,6 +35,7 @@ import emergencyRoutes from "./routes/emergency.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import prescriptionRoutes from "./routes/prescription.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
 
 import { seedAdminIfNotExists } from "./utils/seedAdmin.js";
 
@@ -52,6 +56,98 @@ try {
 
 // Initialize Express app
 const app = express();
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CORS_ORIGINS?.split(",") || ["http://localhost:5173"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Socket.io authentication middleware
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error("Authentication error"));
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.userId = decoded.id;
+    socket.userRole = decoded.role;
+    next();
+  } catch (err) {
+    next(new Error("Authentication error"));
+  }
+});
+
+// Store connected users
+const connectedUsers = new Map();
+
+io.on("connection", (socket) => {
+  console.log(`User connected: ${socket.userId}`);
+  connectedUsers.set(socket.userId, socket.id);
+
+  // Join a personal room for direct messages
+  socket.join(`user_${socket.userId}`);
+
+  // Handle joining a conversation room
+  socket.on("join_conversation", (conversationId) => {
+    socket.join(`conversation_${conversationId}`);
+  });
+
+  // Handle leaving a conversation room
+  socket.on("leave_conversation", (conversationId) => {
+    socket.leave(`conversation_${conversationId}`);
+  });
+
+  // Handle sending messages
+  socket.on("send_message", (data) => {
+    const { conversationId, message, recipientId } = data;
+    
+    // Emit to the conversation room
+    socket.to(`conversation_${conversationId}`).emit("new_message", {
+      conversationId,
+      message,
+    });
+
+    // Also emit to recipient's personal room for notification
+    socket.to(`user_${recipientId}`).emit("message_notification", {
+      conversationId,
+      message,
+    });
+  });
+
+  // Handle typing indicator
+  socket.on("typing", (data) => {
+    const { conversationId, isTyping } = data;
+    socket.to(`conversation_${conversationId}`).emit("user_typing", {
+      userId: socket.userId,
+      isTyping,
+    });
+  });
+
+  // Handle read receipt
+  socket.on("mark_read", (data) => {
+    const { conversationId, recipientId } = data;
+    socket.to(`user_${recipientId}`).emit("messages_read", {
+      conversationId,
+      readBy: socket.userId,
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`User disconnected: ${socket.userId}`);
+    connectedUsers.delete(socket.userId);
+  });
+});
+
+// Make io accessible in routes
+app.set("io", io);
 
 // Trust proxy (important for rate limiting behind reverse proxy)
 app.set("trust proxy", 1);
@@ -188,6 +284,9 @@ app.use("/api/orders", orderRoutes);
 // Prescription routes (Doctor)
 app.use("/api/prescriptions", prescriptionRoutes);
 
+// Chat routes (Doctor, Patient)
+app.use("/api/chat", chatRoutes);
+
 // ============================================
 // API Documentation
 // ============================================
@@ -234,13 +333,14 @@ const startServer = async () => {
     const PORT = config.app.port;
     const HOST = config.app.host;
 
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log("\n========================================");
       console.log(`🏥 ${config.app.name}`);
       console.log("========================================");
       console.log(`📡 Server:      http://${HOST}:${PORT}`);
       console.log(`📚 API Docs:    http://${HOST}:${PORT}/api-docs`);
       console.log(`❤️  Health:      http://${HOST}:${PORT}/health`);
+      console.log(`💬 WebSocket:   ws://${HOST}:${PORT}`);
       console.log(`🌍 Environment: ${config.app.env}`);
       console.log("========================================\n");
     });

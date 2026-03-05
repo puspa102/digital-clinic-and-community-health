@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 /**
  * General API rate limiter
  * Limits each IP to 100 requests per 15 minutes
+ * Skips chat routes as they use WebSocket for real-time updates
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -13,6 +14,7 @@ export const apiLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req) => req.path.startsWith("/chat"), // Skip chat routes
 });
 
 /**

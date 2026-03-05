@@ -574,6 +574,61 @@ export const emergencyAPI = {
 };
 
 // ============================================
+// Chat API endpoints
+// ============================================
+export const chatAPI = {
+  // Get available chat contacts
+  getContacts: async (search = "") => {
+    const response = await api.get("/chat/contacts", { params: { search } });
+    return response.data;
+  },
+
+  // Get unread message count
+  getUnreadCount: async () => {
+    const response = await api.get("/chat/unread-count");
+    return response.data;
+  },
+
+  // Get all conversations
+  getConversations: async (params = {}) => {
+    const response = await api.get("/chat/conversations", { params });
+    return response.data;
+  },
+
+  // Get or create a conversation
+  getOrCreateConversation: async (participantId) => {
+    const response = await api.post("/chat/conversations", {
+      participant_id: participantId,
+    });
+    return response.data;
+  },
+
+  // Get messages in a conversation
+  getMessages: async (conversationId, params = {}) => {
+    const response = await api.get(
+      `/chat/conversations/${conversationId}/messages`,
+      { params }
+    );
+    return response.data;
+  },
+
+  // Send a message
+  sendMessage: async (conversationId, content, messageType = "text") => {
+    const response = await api.post(
+      `/chat/conversations/${conversationId}/messages`,
+      { content, message_type: messageType }
+    );
+    return response.data;
+  },
+
+  // Mark messages as read
+  markAsRead: async (conversationId) => {
+    const response = await api.put(`/chat/conversations/${conversationId}/read`);
+    return response.data;
+  },
+};
+
+// ============================================
 // Utility functions
 // ============================================
 export const handleApiError = (error) => {

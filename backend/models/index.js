@@ -12,6 +12,7 @@ import Emergency from "./emergency.model.js";
 import InventoryItem from "./inventory.model.js";
 import { Order, OrderItem } from "./order.model.js";
 import { Prescription, PrescriptionItem } from "./prescription.model.js";
+import { Conversation, Message } from "./chat.model.js";
 
 // Export models object
 const models = {
@@ -25,13 +26,15 @@ const models = {
   OrderItem,
   Prescription,
   PrescriptionItem,
+  Conversation,
+  Message,
 };
 
 // Export sequelize instance
 export { sequelize };
 
 // Export individual models
-export { User, Pharmacy, Doctor, Appointment, Emergency, InventoryItem, Order, OrderItem, Prescription, PrescriptionItem };
+export { User, Pharmacy, Doctor, Appointment, Emergency, InventoryItem, Order, OrderItem, Prescription, PrescriptionItem, Conversation, Message };
 
 // Default export with all models
 export default models;
