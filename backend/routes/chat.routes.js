@@ -61,10 +61,6 @@ const validateSendMessage = [
  */
 router.get(
   "/contacts",
-  // #swagger.tags = ['Chat']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get chat contacts'
-  // #swagger.description = 'Get list of users available to chat with (doctors for patients, patients for doctors)'
   verifyToken,
   authorizeRoles("Doctor", "Patient"),
   getChatContacts
@@ -77,9 +73,6 @@ router.get(
  */
 router.get(
   "/unread-count",
-  // #swagger.tags = ['Chat']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get unread message count'
   verifyToken,
   authorizeRoles("Doctor", "Patient"),
   getUnreadCount
@@ -92,9 +85,6 @@ router.get(
  */
 router.get(
   "/conversations",
-  // #swagger.tags = ['Chat']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get all conversations'
   verifyToken,
   authorizeRoles("Doctor", "Patient"),
   getConversations
@@ -107,16 +97,6 @@ router.get(
  */
 router.post(
   "/conversations",
-  // #swagger.tags = ['Chat']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Start or get conversation'
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      participant_id: 1
-    }
-  } */
   verifyToken,
   authorizeRoles("Doctor", "Patient"),
   validateCreateConversation,
@@ -130,9 +110,6 @@ router.post(
  */
 router.get(
   "/conversations/:conversationId/messages",
-  // #swagger.tags = ['Chat']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get messages in conversation'
   verifyToken,
   authorizeRoles("Doctor", "Patient"),
   validateConversationId,
@@ -146,17 +123,6 @@ router.get(
  */
 router.post(
   "/conversations/:conversationId/messages",
-  // #swagger.tags = ['Chat']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Send a message'
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      content: 'Hello, how can I help you?',
-      message_type: 'text'
-    }
-  } */
   verifyToken,
   authorizeRoles("Doctor", "Patient"),
   validateSendMessage,
@@ -170,9 +136,6 @@ router.post(
  */
 router.put(
   "/conversations/:conversationId/read",
-  // #swagger.tags = ['Chat']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Mark messages as read'
   verifyToken,
   authorizeRoles("Doctor", "Patient"),
   validateConversationId,

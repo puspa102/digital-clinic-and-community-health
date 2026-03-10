@@ -536,9 +536,15 @@ export const emergencyAPI = {
     return response.data;
   },
 
-  // Get all emergencies
+  // Get all emergencies (Admin, Doctor, Pharmacy only)
   getAllEmergencies: async (params = {}) => {
     const response = await api.get("/emergencies", { params });
+    return response.data;
+  },
+
+  // Get public emergencies (all authenticated users)
+  getPublicEmergencies: async (params = {}) => {
+    const response = await api.get("/emergencies/public", { params });
     return response.data;
   },
 
@@ -555,8 +561,8 @@ export const emergencyAPI = {
   },
 
   // Accept emergency (Doctor, Pharmacy)
-  acceptEmergency: async (emergencyId) => {
-    const response = await api.put(`/emergencies/${emergencyId}/accept`);
+  acceptEmergency: async (emergencyId, acceptedBy) => {
+    const response = await api.put(`/emergencies/${emergencyId}/accept`, { accepted_by: acceptedBy });
     return response.data;
   },
 
@@ -569,6 +575,12 @@ export const emergencyAPI = {
   // Get nearby emergencies (Doctor, Pharmacy)
   getNearbyEmergencies: async (params = {}) => {
     const response = await api.get("/emergencies/nearby", { params });
+    return response.data;
+  },
+
+  // Cancel my emergency
+  cancelEmergency: async (emergencyId) => {
+    const response = await api.put(`/emergencies/${emergencyId}/cancel`);
     return response.data;
   },
 };

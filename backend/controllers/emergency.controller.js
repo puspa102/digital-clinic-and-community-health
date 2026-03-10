@@ -25,8 +25,11 @@ export const createEmergency = async (req, res) => {
     const { patient_id, emergency_type, description, latitude, longitude } =
       req.body;
 
+    // Use provided patient_id or default to logged-in user
+    const effectivePatientId = patient_id || req.user.id;
+
     // Verify patient exists
-    const patient = await User.findByPk(patient_id);
+    const patient = await User.findByPk(effectivePatientId);
     if (!patient) {
       return errorResponse(
         res,
@@ -47,7 +50,7 @@ export const createEmergency = async (req, res) => {
     // Check for existing active emergency from same patient
     const existingEmergency = await Emergency.findOne({
       where: {
-        patient_id,
+        patient_id: effectivePatientId,
         status: {
           [Op.in]: [
             EMERGENCY_STATUS.PENDING,
@@ -66,13 +69,13 @@ export const createEmergency = async (req, res) => {
       );
     }
 
-    // Create emergency
+    // Create emergency with optional coordinates (default to 0,0 if not provided)
     const emergency = await Emergency.create({
-      patient_id,
+      patient_id: effectivePatientId,
       emergency_type,
       description,
-      latitude,
-      longitude,
+      latitude: latitude || 0,
+      longitude: longitude || 0,
       status: EMERGENCY_STATUS.PENDING,
       priority: "HIGH",
     });
@@ -147,6 +150,97 @@ export const getAllEmergencies = async (req, res) => {
     );
   } catch (error) {
     console.error("Get all emergencies error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
+ * Get current user's emergencies
+ * @route GET /api/emergencies/my-emergencies
+ */
+export const getMyEmergencies = async (req, res) => {
+  try {
+    const { limit, offset, page } = getPagination(req.query);
+    const { status } = req.query;
+
+    // Build where clause for user's emergencies
+    const where = { patient_id: req.user.id };
+    if (status) where.status = status;
+
+    const { count, rows: emergencies } = await Emergency.findAndCountAll({
+      where,
+      include: {
+        model: User,
+        attributes: ["full_name", "email", "phone"],
+      },
+      limit,
+      offset,
+      order: [["created_at", "DESC"]],
+    });
+
+    const response = formatPaginatedResponse(emergencies, count, page, limit);
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Your emergencies retrieved successfully",
+      response,
+    );
+  } catch (error) {
+    console.error("Get my emergencies error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
+ * Get all public emergencies (viewable by all authenticated users)
+ * @route GET /api/emergencies/public
+ */
+export const getPublicEmergencies = async (req, res) => {
+  try {
+    const { limit, offset, page } = getPagination(req.query);
+    const { type } = req.query;
+
+    // Only show pending emergencies publicly
+    const where = {
+      status: {
+        [Op.in]: [EMERGENCY_STATUS.PENDING, EMERGENCY_STATUS.ACCEPTED],
+      },
+    };
+    if (type) where.emergency_type = type;
+
+    const { count, rows: emergencies } = await Emergency.findAndCountAll({
+      where,
+      include: {
+        model: User,
+        attributes: ["full_name", "phone"],
+      },
+      limit,
+      offset,
+      order: [
+        ["priority", "DESC"],
+        ["created_at", "DESC"],
+      ],
+    });
+
+    const response = formatPaginatedResponse(emergencies, count, page, limit);
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Public emergencies retrieved successfully",
+      response,
+    );
+  } catch (error) {
+    console.error("Get public emergencies error:", error);
     return errorResponse(
       res,
       HTTP_STATUS.INTERNAL_SERVER_ERROR,
@@ -545,6 +639,67 @@ export const resolveEmergency = async (req, res) => {
     );
   } catch (error) {
     console.error("Resolve emergency error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
+ * Cancel own emergency request (Patient only)
+ * @route PUT /api/emergencies/:id/cancel
+ */
+export const cancelEmergency = async (req, res) => {
+  try {
+    const emergency = await Emergency.findByPk(req.params.id);
+
+    if (!emergency) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.EMERGENCY_NOT_FOUND,
+      );
+    }
+
+    // Check if user owns this emergency
+    if (emergency.patient_id !== req.user.id && req.user.role !== "Admin") {
+      return errorResponse(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        "You can only cancel your own emergency requests",
+      );
+    }
+
+    // Check if can be cancelled
+    if (
+      emergency.status === EMERGENCY_STATUS.RESOLVED ||
+      emergency.status === EMERGENCY_STATUS.EXPIRED
+    ) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        `Cannot cancel emergency that is already ${emergency.status}`,
+      );
+    }
+
+    const previousStatus = emergency.status;
+    emergency.status = EMERGENCY_STATUS.EXPIRED;
+    await emergency.save();
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Emergency request cancelled successfully",
+      {
+        emergency_id: emergency.emergency_id,
+        previous_status: previousStatus,
+        new_status: emergency.status,
+      },
+    );
+  } catch (error) {
+    console.error("Cancel emergency error:", error);
     return errorResponse(
       res,
       HTTP_STATUS.INTERNAL_SERVER_ERROR,

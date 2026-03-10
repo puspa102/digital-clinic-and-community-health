@@ -74,20 +74,6 @@ const validateCreateAppointment = [
  */
 router.post(
   "/",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Book appointment at pharmacy (Patient only)'
-  // #swagger.description = 'Patient books an appointment at a specific pharmacy. The pharmacy will later assign a doctor.'
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      pharmacy_id: 1,
-      appointment_date: '2026-02-10',
-      appointment_time: '10:30',
-      reason: 'Regular checkup'
-    }
-  } */
   verifyToken,
   authorizeRoles("Patient"),
   validateCreateAppointment,
@@ -101,14 +87,6 @@ router.post(
  */
 router.get(
   "/my-appointments",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get my appointments (Patient)'
-  // #swagger.description = 'Returns all appointments for the currently logged-in patient'
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['status'] = { in: 'query', type: 'string', description: 'Filter by status (requested, assigned, confirmed, completed, cancelled, no_show)' } */
-  /* #swagger.parameters['upcoming'] = { in: 'query', type: 'string', description: 'Set to "true" to show only upcoming appointments' } */
   verifyToken,
   authorizeRoles("Patient"),
   getMyAppointments,
@@ -121,15 +99,6 @@ router.get(
  */
 router.get(
   "/my-doctor-appointments",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get my appointments (Doctor)'
-  // #swagger.description = 'Returns all appointments assigned to the currently logged-in doctor'
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['status'] = { in: 'query', type: 'string', description: 'Filter by status' } */
-  /* #swagger.parameters['date_from'] = { in: 'query', type: 'string', description: 'Filter from date (YYYY-MM-DD)' } */
-  /* #swagger.parameters['date_to'] = { in: 'query', type: 'string', description: 'Filter to date (YYYY-MM-DD)' } */
   verifyToken,
   authorizeRoles("Doctor"),
   getMyDoctorAppointments,
@@ -146,15 +115,6 @@ router.get(
  */
 router.get(
   "/",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get all appointments (Admin only)'
-  // #swagger.description = 'Retrieves all appointments with pagination and filters'
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['status'] = { in: 'query', type: 'string', description: 'Filter by status' } */
-  /* #swagger.parameters['payment_status'] = { in: 'query', type: 'string', description: 'Filter by payment status' } */
-  /* #swagger.parameters['pharmacy_id'] = { in: 'query', type: 'integer', description: 'Filter by pharmacy' } */
   verifyToken,
   authorizeRoles("Admin"),
   getAllAppointments,
@@ -167,15 +127,6 @@ router.get(
  */
 router.get(
   "/patient/:patient_id",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get patient appointments by patient ID'
-  // #swagger.description = 'Retrieves all appointments for a specific patient (Admin or patient themselves)'
-  /* #swagger.parameters['patient_id'] = { in: 'path', required: true, type: 'integer' } */
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['status'] = { in: 'query', type: 'string', description: 'Filter by status' } */
-  /* #swagger.parameters['upcoming'] = { in: 'query', type: 'string', description: 'Set to "true" to show only upcoming' } */
   verifyToken,
   validatePatientIdParam,
   getPatientAppointments,
@@ -188,14 +139,6 @@ router.get(
  */
 router.get(
   "/doctor/:doctor_id",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get doctor appointments by doctor ID'
-  // #swagger.description = 'Retrieves all appointments for a specific doctor'
-  /* #swagger.parameters['doctor_id'] = { in: 'path', required: true, type: 'integer' } */
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['status'] = { in: 'query', type: 'string', description: 'Filter by status' } */
   verifyToken,
   authorizeRoles("Doctor", "Pharmacy", "Admin"),
   validateDoctorIdParam,
@@ -213,21 +156,6 @@ router.get(
  */
 router.put(
   "/:appointment_id/confirm",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Confirm appointment with consultation details (Doctor)'
-  // #swagger.description = 'Doctor confirms an appointment with consultation type (physical/online), scheduled time, and optional notes/meeting link. Sets doctor fee and generates QR code.'
-  /* #swagger.parameters['appointment_id'] = { in: 'path', required: true, type: 'integer' } */
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      consultation_type: 'physical',
-      scheduled_time: '10:30',
-      doctor_notes: 'Please bring previous reports',
-      meeting_link: 'https://meet.google.com/abc-def-ghi'
-    }
-  } */
   verifyToken,
   authorizeRoles("Doctor", "Admin"),
   validateAppointmentIdParam,
@@ -241,11 +169,6 @@ router.put(
  */
 router.put(
   "/:appointment_id/complete",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Complete appointment (Doctor)'
-  // #swagger.description = 'Doctor marks a confirmed appointment as completed'
-  /* #swagger.parameters['appointment_id'] = { in: 'path', required: true, type: 'integer' } */
   verifyToken,
   authorizeRoles("Doctor", "Admin"),
   validateAppointmentIdParam,
@@ -263,18 +186,6 @@ router.put(
  */
 router.put(
   "/:appointment_id/status",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Update appointment status'
-  // #swagger.description = 'Updates appointment status with transition validation. Valid transitions: requested->assigned/cancelled, assigned->confirmed/cancelled, confirmed->completed/cancelled/no_show'
-  /* #swagger.parameters['appointment_id'] = { in: 'path', required: true, type: 'integer' } */
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      status: 'confirmed'
-    }
-  } */
   verifyToken,
   authorizeRoles("Doctor", "Pharmacy", "Admin"),
   validateAppointmentStatus,
@@ -288,18 +199,6 @@ router.put(
  */
 router.put(
   "/:appointment_id/cancel",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Cancel appointment'
-  // #swagger.description = 'Cancels an appointment. Patients can cancel their own, doctors can cancel ones assigned to them, pharmacies can cancel ones in their pharmacy, admins can cancel any.'
-  /* #swagger.parameters['appointment_id'] = { in: 'path', required: true, type: 'integer' } */
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: false,
-    schema: {
-      reason: 'Unable to attend'
-    }
-  } */
   verifyToken,
   validateAppointmentIdParam,
   cancelAppointment,
@@ -316,11 +215,6 @@ router.put(
  */
 router.get(
   "/verify-qr/:qr_token",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Verify appointment by QR code token'
-  // #swagger.description = 'Scans and verifies an appointment QR code. Returns full appointment details.'
-  /* #swagger.parameters['qr_token'] = { in: 'path', required: true, type: 'string' } */
   verifyToken,
   authorizeRoles("Doctor", "Pharmacy", "Admin"),
   getAppointmentByQrToken,
@@ -337,11 +231,6 @@ router.get(
  */
 router.get(
   "/:appointment_id",
-  // #swagger.tags = ['Appointments']
-  // #swagger.security = [{ "bearerAuth": [] }]
-  // #swagger.summary = 'Get appointment by ID'
-  // #swagger.description = 'Retrieves a specific appointment. Accessible by the patient, assigned doctor, owning pharmacy, or admin.'
-  /* #swagger.parameters['appointment_id'] = { in: 'path', required: true, type: 'integer' } */
   verifyToken,
   validateAppointmentIdParam,
   getAppointmentById,

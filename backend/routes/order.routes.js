@@ -90,9 +90,6 @@ const validateIdParam = [
  */
 router.get(
   "/stats",
-  // #swagger.tags = ['Orders']
-  // #swagger.summary = 'Get order statistics'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   getOrderStats
@@ -105,13 +102,6 @@ router.get(
  */
 router.get(
   "/",
-  // #swagger.tags = ['Orders']
-  // #swagger.summary = 'Get pharmacy orders'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['status'] = { in: 'query', type: 'string', description: 'Filter by status' } */
-  /* #swagger.parameters['search'] = { in: 'query', type: 'string', description: 'Search by supplier name' } */
   verifyToken,
   authorizeRoles("Pharmacy"),
   getOrders
@@ -124,9 +114,6 @@ router.get(
  */
 router.post(
   "/",
-  // #swagger.tags = ['Orders']
-  // #swagger.summary = 'Create new order'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateCreateOrder,
@@ -140,9 +127,6 @@ router.post(
  */
 router.get(
   "/:id",
-  // #swagger.tags = ['Orders']
-  // #swagger.summary = 'Get order by ID'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateIdParam,
@@ -156,9 +140,6 @@ router.get(
  */
 router.put(
   "/:id",
-  // #swagger.tags = ['Orders']
-  // #swagger.summary = 'Update order details'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateIdParam,
@@ -172,9 +153,6 @@ router.put(
  */
 router.put(
   "/:id/status",
-  // #swagger.tags = ['Orders']
-  // #swagger.summary = 'Update order status'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateIdParam,
@@ -189,9 +167,6 @@ router.put(
  */
 router.delete(
   "/:id",
-  // #swagger.tags = ['Orders']
-  // #swagger.summary = 'Delete order'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateIdParam,

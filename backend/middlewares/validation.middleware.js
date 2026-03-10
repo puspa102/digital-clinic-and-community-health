@@ -218,8 +218,7 @@ export const validateAppointmentStatus = [
  */
 export const validateEmergency = [
   body("patient_id")
-    .notEmpty()
-    .withMessage("Patient ID is required")
+    .optional()
     .isInt({ min: 1 })
     .withMessage("Invalid patient ID"),
   body("emergency_type")
@@ -233,13 +232,11 @@ export const validateEmergency = [
     .isLength({ max: 1000 })
     .withMessage("Description must be less than 1000 characters"),
   body("latitude")
-    .notEmpty()
-    .withMessage("Latitude is required")
+    .optional()
     .isFloat({ min: -90, max: 90 })
     .withMessage("Invalid latitude"),
   body("longitude")
-    .notEmpty()
-    .withMessage("Longitude is required")
+    .optional()
     .isFloat({ min: -180, max: 180 })
     .withMessage("Invalid longitude"),
   handleValidationErrors,

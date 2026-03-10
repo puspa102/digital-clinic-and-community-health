@@ -166,30 +166,6 @@ const validateAssignDoctor = [
  */
 router.post(
   "/",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Create a new pharmacy (Admin only)'
-  // #swagger.description = 'Admin creates a pharmacy account. This creates both the User (role=Pharmacy) and the Pharmacy profile in one step.'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      full_name: 'Pharmacy Owner Name',
-      email: 'pharmacy@example.com',
-      phone: '+977-9812345678',
-      pharmacy_name: 'City Health Pharmacy',
-      address: 'Kathmandu, Thamel',
-      license_number: 'PH-NEP-12345',
-      latitude: 27.7172,
-      longitude: 85.3240,
-      opening_time: '08:00',
-      closing_time: '20:00',
-      description: 'A trusted pharmacy in the heart of Thamel'
-    }
-  } */
-  /* #swagger.responses[201] = {
-    description: 'Pharmacy created successfully. A temporary password will be generated and sent via email to the pharmacy owner.'
-  } */
   verifyToken,
   authorizeRoles("Admin"),
   validateCreatePharmacy,
@@ -203,12 +179,6 @@ router.post(
  */
 router.get(
   "/",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Get all pharmacies'
-  // #swagger.description = 'Retrieves all approved pharmacies with pagination'
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number (default: 1)' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page (default: 10)' } */
-  /* #swagger.parameters['search'] = { in: 'query', type: 'string', description: 'Search by pharmacy name or address' } */
   getAllPharmacies,
 );
 
@@ -219,10 +189,6 @@ router.get(
  */
 router.get(
   "/me",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Get my pharmacy profile'
-  // #swagger.description = 'Returns the pharmacy profile and associated doctors for the logged-in pharmacy user'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   getMyPharmacy,
@@ -239,29 +205,6 @@ router.get(
  */
 router.post(
   "/doctors",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Create a doctor (Pharmacy only)'
-  // #swagger.description = 'Pharmacy creates a new doctor account. This creates both the User (role=Doctor) and the Doctor profile linked to this pharmacy.'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      full_name: 'Dr. Ram Sharma',
-      email: 'doctor@example.com',
-      phone: '+977-9812345679',
-      specialization: 'Cardiologist',
-      license_number: 'DOC-NEP-12345',
-      experience_years: 8,
-      hospital_name: 'City Health Pharmacy',
-      bio: 'Heart specialist with 8 years of experience',
-      consultation_fee: 500,
-      availability_json: { "mon": ["10:00","12:00"], "tue": ["14:00","16:00"] }
-    }
-  } */
-  /* #swagger.responses[201] = {
-    description: 'Doctor created successfully. A temporary password will be generated and sent via email to the doctor.'
-  } */
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateCreateDoctor,
@@ -275,13 +218,6 @@ router.post(
  */
 router.get(
   "/my-doctors",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Get my pharmacy doctors'
-  // #swagger.description = 'Returns all doctors belonging to the currently logged-in pharmacy'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['specialization'] = { in: 'query', type: 'string', description: 'Filter by specialization' } */
   verifyToken,
   authorizeRoles("Pharmacy"),
   getMyDoctors,
@@ -298,15 +234,6 @@ router.get(
  */
 router.get(
   "/my-appointments",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Get my pharmacy appointments'
-  // #swagger.description = 'Returns all appointments made to the currently logged-in pharmacy'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['status'] = { in: 'query', type: 'string', description: 'Filter by status (requested, assigned, confirmed, completed, cancelled, no_show)' } */
-  /* #swagger.parameters['date_from'] = { in: 'query', type: 'string', description: 'Filter from date (YYYY-MM-DD)' } */
-  /* #swagger.parameters['date_to'] = { in: 'query', type: 'string', description: 'Filter to date (YYYY-MM-DD)' } */
   verifyToken,
   authorizeRoles("Pharmacy"),
   getMyAppointments,
@@ -319,23 +246,6 @@ router.get(
  */
 router.put(
   "/appointments/:appointment_id/assign-doctor",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Assign doctor to appointment (Pharmacy only)'
-  // #swagger.description = 'Pharmacy picks one of their doctors and assigns them to a pending appointment. Moves status from requested to assigned.'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['appointment_id'] = {
-    in: 'path',
-    required: true,
-    type: 'integer',
-    description: 'Appointment ID'
-  } */
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      doctor_id: 5
-    }
-  } */
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateAssignDoctor,
@@ -353,16 +263,6 @@ router.put(
  */
 router.get(
   "/:id/doctors",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Get pharmacy doctors (public)'
-  // #swagger.description = 'Returns all approved doctors belonging to a specific pharmacy'
-  /* #swagger.parameters['id'] = {
-    in: 'path',
-    required: true,
-    type: 'integer',
-    description: 'Pharmacy ID'
-  } */
-  /* #swagger.parameters['specialization'] = { in: 'query', type: 'string', description: 'Filter by specialization' } */
   validateIdParam,
   getPharmacyDoctors,
 );
@@ -374,15 +274,6 @@ router.get(
  */
 router.get(
   "/:id",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Get pharmacy by ID'
-  // #swagger.description = 'Retrieves a specific pharmacy by ID, including its doctors'
-  /* #swagger.parameters['id'] = {
-    in: 'path',
-    required: true,
-    type: 'integer',
-    description: 'Pharmacy ID'
-  } */
   validateIdParam,
   getPharmacyById,
 );
@@ -394,25 +285,6 @@ router.get(
  */
 router.put(
   "/:id",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Update pharmacy profile'
-  // #swagger.description = 'Updates an existing pharmacy profile. Only the pharmacy owner or an admin can update.'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['id'] = {
-    in: 'path',
-    required: true,
-    type: 'integer',
-    description: 'Pharmacy ID'
-  } */
-  /* #swagger.parameters['body'] = {
-    in: 'body',
-    required: true,
-    schema: {
-      pharmacy_name: 'Updated Pharmacy Name',
-      address: 'New Address',
-      description: 'Updated description'
-    }
-  } */
   verifyToken,
   authorizeRoles("Pharmacy", "Admin"),
   validateIdParam,
@@ -426,16 +298,6 @@ router.put(
  */
 router.delete(
   "/:id",
-  // #swagger.tags = ['Pharmacies']
-  // #swagger.summary = 'Delete pharmacy (Admin only)'
-  // #swagger.description = 'Permanently deletes a pharmacy profile and its associated user account'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['id'] = {
-    in: 'path',
-    required: true,
-    type: 'integer',
-    description: 'Pharmacy ID'
-  } */
   verifyToken,
   authorizeRoles("Admin"),
   validateIdParam,

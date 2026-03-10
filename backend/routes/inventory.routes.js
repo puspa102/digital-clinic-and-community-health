@@ -90,9 +90,6 @@ const validateIdParam = [
  */
 router.get(
   "/stats",
-  // #swagger.tags = ['Inventory']
-  // #swagger.summary = 'Get inventory statistics'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   getInventoryStats
@@ -105,15 +102,6 @@ router.get(
  */
 router.get(
   "/",
-  // #swagger.tags = ['Inventory']
-  // #swagger.summary = 'Get pharmacy inventory'
-  // #swagger.security = [{ "bearerAuth": [] }]
-  /* #swagger.parameters['page'] = { in: 'query', type: 'integer', description: 'Page number' } */
-  /* #swagger.parameters['limit'] = { in: 'query', type: 'integer', description: 'Items per page' } */
-  /* #swagger.parameters['search'] = { in: 'query', type: 'string', description: 'Search by medicine name, generic name, manufacturer, or batch number' } */
-  /* #swagger.parameters['category'] = { in: 'query', type: 'string', description: 'Filter by category' } */
-  /* #swagger.parameters['low_stock'] = { in: 'query', type: 'string', description: 'Set to true to show only low stock items' } */
-  /* #swagger.parameters['expired'] = { in: 'query', type: 'string', description: 'Set to true to show only expired items' } */
   verifyToken,
   authorizeRoles("Pharmacy"),
   getInventory
@@ -126,9 +114,6 @@ router.get(
  */
 router.post(
   "/",
-  // #swagger.tags = ['Inventory']
-  // #swagger.summary = 'Add new inventory item'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateCreateInventoryItem,
@@ -142,9 +127,6 @@ router.post(
  */
 router.get(
   "/:id",
-  // #swagger.tags = ['Inventory']
-  // #swagger.summary = 'Get inventory item by ID'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateIdParam,
@@ -158,9 +140,6 @@ router.get(
  */
 router.put(
   "/:id",
-  // #swagger.tags = ['Inventory']
-  // #swagger.summary = 'Update inventory item'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateIdParam,
@@ -174,9 +153,6 @@ router.put(
  */
 router.delete(
   "/:id",
-  // #swagger.tags = ['Inventory']
-  // #swagger.summary = 'Delete inventory item'
-  // #swagger.security = [{ "bearerAuth": [] }]
   verifyToken,
   authorizeRoles("Pharmacy"),
   validateIdParam,

@@ -4,12 +4,11 @@ import helmet from "helmet";
 import compression from "compression";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-import swaggerUi from "swagger-ui-express";
-import { createRequire } from "module";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
+
 
 // Database
 import { connectDB } from "./config/db.js";
@@ -41,18 +40,6 @@ import { seedAdminIfNotExists } from "./utils/seedAdmin.js";
 
 // Load environment variables
 dotenv.config();
-
-// Import swagger file
-const require = createRequire(import.meta.url);
-let swaggerFile;
-try {
-  swaggerFile = require("./swagger-output.json");
-} catch (error) {
-  console.warn(
-    "⚠️  Swagger file not found. Run 'npm run swagger' to generate it.",
-  );
-  swaggerFile = { info: { title: "Digital Clinic API", version: "1.0.0" } };
-}
 
 // Initialize Express app
 const app = express();
@@ -174,7 +161,7 @@ app.use(
         imgSrc: ["'self'", "data:", "https:"],
       },
     },
-    crossOriginEmbedderPolicy: false, // Allow Swagger UI to load
+    crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" },
   }),
 );
@@ -286,25 +273,6 @@ app.use("/api/prescriptions", prescriptionRoutes);
 
 // Chat routes (Doctor, Patient)
 app.use("/api/chat", chatRoutes);
-
-// ============================================
-// API Documentation
-// ============================================
-
-// Swagger UI
-app.use(
-  "/api-docs",
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerFile, {
-    explorer: true,
-    customCss: ".swagger-ui .topbar { display: none }",
-    customSiteTitle: "Digital Clinic API Documentation",
-    swaggerOptions: {
-      persistAuthorization: true,
-      displayRequestDuration: true,
-    },
-  }),
-);
 
 // ============================================
 // Error Handling
