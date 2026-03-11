@@ -173,7 +173,7 @@ const Home = () => {
                 How it Works
               </a>
               <a href="#testimonials" className="text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                Testimonials
+                Reviews
               </a>
               <a href="#contact" className="text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 Contact
@@ -495,7 +495,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <span className="inline-block px-4 py-2 bg-purple-50 dark:bg-purple-900/20 rounded-full text-[12px] font-semibold text-purple-600 dark:text-purple-400 mb-4">
-              Testimonials
+              Reviews
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               What People Say
