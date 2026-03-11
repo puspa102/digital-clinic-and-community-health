@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -163,53 +163,53 @@ const Records = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="bg-sky-600 dark:bg-sky-700 rounded-lg shadow p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Calendar className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Total Visits</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xs text-sky-100">Total Visits</p>
+                <p className="text-xl font-bold text-white">
                   {stats.totalAppointments}
                 </p>
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="bg-emerald-600 dark:bg-emerald-700 rounded-lg shadow p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Activity className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Activity className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Completed</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xs text-emerald-100">Completed</p>
+                <p className="text-xl font-bold text-white">
                   {stats.completedAppointments}
                 </p>
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="bg-violet-600 dark:bg-violet-700 rounded-lg shadow p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 bg-white/20 rounded-lg">
+                <FileText className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Prescriptions</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xs text-violet-100">Prescriptions</p>
+                <p className="text-xl font-bold text-white">
                   {stats.totalPrescriptions}
                 </p>
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <div className="bg-amber-500 dark:bg-amber-600 rounded-lg shadow p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Pill className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Pill className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Active Rx</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-xs text-amber-100">Active Rx</p>
+                <p className="text-xl font-bold text-white">
                   {stats.activePrescriptions}
                 </p>
               </div>
@@ -224,7 +224,7 @@ const Records = () => {
               onClick={() => setActiveTab("appointments")}
               className={`flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 -mb-px transition-colors ${
                 activeTab === "appointments"
-                  ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                  ? "border-teal-600 text-teal-600 dark:text-teal-400"
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
@@ -237,7 +237,7 @@ const Records = () => {
               onClick={() => setActiveTab("prescriptions")}
               className={`flex-1 px-4 py-3 text-sm font-medium text-center border-b-2 -mb-px transition-colors ${
                 activeTab === "prescriptions"
-                  ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                  ? "border-teal-600 text-teal-600 dark:text-teal-400"
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
@@ -261,7 +261,7 @@ const Records = () => {
                       setApptStatusFilter(e.target.value);
                       setApptPagination((prev) => ({ ...prev, page: 1 }));
                     }}
-                    className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="">All Statuses</option>
                     <option value="pending">Pending</option>
@@ -281,7 +281,7 @@ const Records = () => {
                 {/* Loading */}
                 {apptLoading ? (
                   <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600"></div>
                   </div>
                 ) : appointments.length === 0 ? (
                   <div className="text-center py-12">
@@ -300,12 +300,12 @@ const Records = () => {
                     {appointments.map((appt) => (
                       <div
                         key={appt.appointment_id}
-                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-teal-300 dark:hover:border-teal-700 transition-colors"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
-                            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg mt-0.5">
-                              <Stethoscope className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg mt-0.5">
+                              <Stethoscope className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
@@ -397,7 +397,7 @@ const Records = () => {
                       setPrescStatusFilter(e.target.value);
                       setPrescPagination((prev) => ({ ...prev, page: 1 }));
                     }}
-                    className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500"
                   >
                     <option value="">All Statuses</option>
                     <option value="active">Active</option>
@@ -416,7 +416,7 @@ const Records = () => {
                 {/* Loading */}
                 {prescLoading ? (
                   <div className="flex justify-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600"></div>
                   </div>
                 ) : prescriptions.length === 0 ? (
                   <div className="text-center py-12">
@@ -435,7 +435,7 @@ const Records = () => {
                     {prescriptions.map((presc) => (
                       <div
                         key={presc.prescription_id}
-                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-teal-300 dark:hover:border-teal-700 transition-colors"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
@@ -466,7 +466,7 @@ const Records = () => {
                                     {presc.PrescriptionItems.map((item, idx) => (
                                       <span
                                         key={idx}
-                                        className="px-2 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded"
+                                        className="px-2 py-0.5 text-xs bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 rounded"
                                       >
                                         {item.medicine_name}
                                       </span>
@@ -485,7 +485,7 @@ const Records = () => {
                             </span>
                             <button
                               onClick={() => setViewPrescription(presc)}
-                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                              className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg"
                               title="View Details"
                             >
                               <Eye className="w-4 h-4" />
@@ -621,7 +621,7 @@ const Records = () => {
                             className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3"
                           >
                             <div className="flex items-center gap-2 mb-1">
-                              <Pill className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              <Pill className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                               <span className="font-medium text-gray-900 dark:text-gray-100">
                                 {item.medicine_name}
                               </span>

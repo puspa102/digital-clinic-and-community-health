@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import Layout from "../../components/Layout";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
@@ -168,7 +168,7 @@ const Settings = () => {
           <div
             className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
               toast.type === "success"
-                ? "bg-blue-500 text-white"
+                ? "bg-teal-500 text-white"
                 : "bg-red-500 text-white"
             }`}
           >
@@ -179,7 +179,7 @@ const Settings = () => {
 
         {/* Header */}
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+          <div className="p-3 bg-linear-to-br from-teal-500 to-teal-600 rounded-xl shadow-lg">
             <SettingsIcon className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -194,14 +194,14 @@ const Settings = () => {
 
         {/* Profile Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-8">
+          <div className="bg-linear-to-r from-teal-500 to-emerald-600 px-6 py-8">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
                 <User className="w-8 h-8 text-white" />
               </div>
               <div className="text-white">
                 <h2 className="text-xl font-semibold">{user?.full_name}</h2>
-                <p className="text-blue-100">{user?.role}</p>
+                <p className="text-teal-100">{user?.role}</p>
               </div>
             </div>
           </div>
@@ -248,7 +248,7 @@ const Settings = () => {
               onClick={() => isDark && toggleTheme()}
               className={`p-4 rounded-xl border-2 transition-all ${
                 !isDark
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20"
                   : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
               }`}
             >
@@ -265,12 +265,12 @@ const Settings = () => {
               onClick={() => !isDark && toggleTheme()}
               className={`p-4 rounded-xl border-2 transition-all ${
                 isDark
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20"
                   : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
               }`}
             >
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
-                <Moon className="w-6 h-6 text-indigo-500" />
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
+                <Moon className="w-6 h-6 text-emerald-500" />
               </div>
               <p className="font-medium text-gray-900 dark:text-white">Dark</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -304,7 +304,7 @@ const Settings = () => {
               <select
                 value={preferences.language}
                 onChange={(e) => handlePreferenceChange("language", e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white"
               >
                 <option value="en">English</option>
                 <option value="ne">नेपाली (Nepali)</option>
@@ -318,7 +318,7 @@ const Settings = () => {
               <select
                 value={preferences.timezone}
                 onChange={(e) => handlePreferenceChange("timezone", e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white"
               >
                 <option value="Asia/Kathmandu">Nepal (UTC+5:45)</option>
                 <option value="UTC">UTC</option>
@@ -333,7 +333,7 @@ const Settings = () => {
               <select
                 value={preferences.dateFormat}
                 onChange={(e) => handlePreferenceChange("dateFormat", e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white"
               >
                 <option value="YYYY-MM-DD">YYYY-MM-DD</option>
                 <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -348,7 +348,7 @@ const Settings = () => {
               <select
                 value={preferences.timeFormat}
                 onChange={(e) => handlePreferenceChange("timeFormat", e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white"
               >
                 <option value="12h">12 Hour (AM/PM)</option>
                 <option value="24h">24 Hour</option>
@@ -398,7 +398,7 @@ const Settings = () => {
                     onClick={() => handleNotificationChange(option.key)}
                     className={`relative w-12 h-7 rounded-full transition-colors ${
                       notifications[option.key]
-                        ? "bg-blue-500"
+                        ? "bg-teal-500"
                         : "bg-gray-300 dark:bg-gray-600"
                     }`}
                   >
@@ -464,7 +464,7 @@ const Settings = () => {
                       currentPassword: e.target.value,
                     })
                   }
-                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white"
                   placeholder="Enter current password"
                 />
                 <button
@@ -501,7 +501,7 @@ const Settings = () => {
                       newPassword: e.target.value,
                     })
                   }
-                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white"
                   placeholder="Enter new password"
                 />
                 <button
@@ -538,7 +538,7 @@ const Settings = () => {
                       confirmPassword: e.target.value,
                     })
                   }
-                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white"
                   placeholder="Confirm new password"
                 />
                 <button
@@ -560,8 +560,8 @@ const Settings = () => {
               </div>
             </div>
 
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-              <p className="text-xs text-blue-600 dark:text-blue-400">
+            <div className="p-3 bg-teal-50 dark:bg-teal-900/20 rounded-xl">
+              <p className="text-xs text-teal-600 dark:text-teal-400">
                 Password must be at least 8 characters with uppercase, lowercase,
                 and a number.
               </p>
@@ -570,7 +570,7 @@ const Settings = () => {
             <button
               type="submit"
               disabled={passwordLoading}
-              className="w-full py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-medium rounded-xl transition-colors"
+              className="w-full py-2.5 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-300 text-white font-medium rounded-xl transition-colors"
             >
               {passwordLoading ? "Updating..." : "Update Password"}
             </button>

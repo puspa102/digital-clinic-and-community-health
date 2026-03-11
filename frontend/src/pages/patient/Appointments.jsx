@@ -129,12 +129,12 @@ const Appointments = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
-            <p className="text-gray-500">View and manage your appointments</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Appointments</h1>
+            <p className="text-gray-500 dark:text-gray-400">View and manage your appointments</p>
           </div>
           <Link
             to="/patient/pharmacies"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -146,26 +146,26 @@ const Appointments = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500">
-            <p className="text-2xl font-bold text-blue-600">{stats.upcoming}</p>
-            <p className="text-sm text-gray-500">Upcoming</p>
+          <div className="bg-sky-600 dark:bg-sky-700 rounded-xl p-4 shadow-md">
+            <p className="text-2xl font-bold text-white">{stats.upcoming}</p>
+            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Upcoming</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500">
-            <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-            <p className="text-sm text-gray-500">Completed</p>
+          <div className="bg-emerald-600 dark:bg-emerald-700 rounded-xl p-4 shadow-md">
+            <p className="text-2xl font-bold text-white">{stats.completed}</p>
+            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Completed</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-red-500">
-            <p className="text-2xl font-bold text-red-600">{stats.cancelled}</p>
-            <p className="text-sm text-gray-500">Cancelled</p>
+          <div className="bg-rose-600 dark:bg-rose-700 rounded-xl p-4 shadow-md">
+            <p className="text-2xl font-bold text-white">{stats.cancelled}</p>
+            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Cancelled</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-purple-500">
-            <p className="text-2xl font-bold text-purple-600">{stats.total}</p>
-            <p className="text-sm text-gray-500">Total Shown</p>
+          <div className="bg-violet-600 dark:bg-violet-700 rounded-xl p-4 shadow-md">
+            <p className="text-2xl font-bold text-white">{stats.total}</p>
+            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Total Shown</p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
           <div className="flex flex-wrap gap-4 items-center">
             <select
               value={statusFilter}
@@ -173,7 +173,7 @@ const Appointments = () => {
                 setStatusFilter(e.target.value);
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               {statusOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -189,9 +189,9 @@ const Appointments = () => {
                   setShowUpcoming(e.target.checked);
                   setPagination((prev) => ({ ...prev, page: 1 }));
                 }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
               />
-              <span className="text-sm text-gray-600">Upcoming only</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Upcoming only</span>
             </label>
             {(statusFilter || showUpcoming) && (
               <button
@@ -210,22 +210,22 @@ const Appointments = () => {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
             {error}
           </div>
         )}
 
         {/* Appointments List */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-8 text-center">
-              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-500">Loading appointments...</p>
+              <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500 dark:text-gray-400">Loading appointments...</p>
             </div>
           ) : appointments.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
+            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               <svg
-                className="w-16 h-16 mx-auto mb-4 text-gray-300"
+                className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -239,24 +239,24 @@ const Appointments = () => {
               <p>No appointments found</p>
               <Link
                 to="/patient/pharmacies"
-                className="mt-4 inline-block text-blue-600 hover:underline"
+                className="mt-4 inline-block text-teal-600 hover:underline"
               >
                 Book your first appointment
               </Link>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {appointments.map((appointment) => (
-                <div key={appointment.appointment_id} className="p-4 hover:bg-gray-50 transition-colors">
+                <div key={appointment.appointment_id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     {/* Left: Info */}
                     <div className="flex items-start gap-4">
                       {/* Date Box */}
-                      <div className="flex-shrink-0 w-16 h-16 bg-blue-50 rounded-lg flex flex-col items-center justify-center">
-                        <span className="text-xs font-medium text-blue-600 uppercase">
+                      <div className="shrink-0 w-16 h-16 bg-teal-50 rounded-lg flex flex-col items-center justify-center">
+                        <span className="text-xs font-medium text-teal-600 uppercase">
                           {new Date(appointment.appointment_date).toLocaleDateString("en-US", { month: "short" })}
                         </span>
-                        <span className="text-xl font-bold text-blue-700">
+                        <span className="text-xl font-bold text-teal-700">
                           {new Date(appointment.appointment_date).getDate()}
                         </span>
                       </div>
@@ -264,7 +264,7 @@ const Appointments = () => {
                       {/* Details */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
                             {appointment.Pharmacy?.pharmacy_name || "Pharmacy"}
                           </h3>
                           <span
@@ -280,12 +280,12 @@ const Appointments = () => {
                                 ? "bg-purple-100 text-purple-700"
                                 : "bg-teal-100 text-teal-700"
                             }`}>
-                              {appointment.consultation_type === "online" ? "🎥 Online" : "🏥 Physical"}
+                              {appointment.consultation_type === "online" ? "?? Online" : "?? Physical"}
                             </span>
                           )}
                         </div>
                         <p className="text-sm text-gray-500 mt-1">
-                          {formatTime(appointment.scheduled_time || appointment.appointment_time)} •{" "}
+                          {formatTime(appointment.scheduled_time || appointment.appointment_time)} �{" "}
                           {appointment.Pharmacy?.address || ""}
                         </p>
                         {appointment.Doctor ? (
@@ -304,14 +304,14 @@ const Appointments = () => {
                           </p>
                         )}
                         {appointment.doctor_notes && (
-                          <p className="text-sm text-blue-600 mt-1">
+                          <p className="text-sm text-teal-600 mt-1">
                             <span className="font-medium">Doctor's Note:</span> {appointment.doctor_notes}
                           </p>
                         )}
 
                         {/* Doctor Fee - shown when confirmed */}
                         {appointment.payment_amount > 0 && appointment.status !== APPOINTMENT_STATUS.REQUESTED && (
-                          <div className="mt-2 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
+                          <div className="mt-2 inline-flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-1.5">
                             <svg className="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <line x1="12" y1="1" x2="12" y2="23" />
                               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -353,7 +353,7 @@ const Appointments = () => {
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-2 md:flex-shrink-0">
+                    <div className="flex items-center gap-2 md:shrink-0">
                       {/* QR Code Button - for confirmed/completed appointments */}
                       {appointment.qr_token && [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.COMPLETED].includes(appointment.status) && (
                         <button
@@ -361,7 +361,7 @@ const Appointments = () => {
                             setQrAppointment(appointment);
                             setShowQrModal(true);
                           }}
-                          className="px-3 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2 text-sm font-medium"
+                          className="px-3 py-2 border border-teal-200 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2 text-sm font-medium"
                         >
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <rect x="3" y="3" width="7" height="7" />
@@ -396,8 +396,8 @@ const Appointments = () => {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="px-6 py-4 border-t flex items-center justify-between">
-              <p className="text-sm text-gray-500">
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
                 {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
                 {pagination.total}
@@ -408,7 +408,7 @@ const Appointments = () => {
                     setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
                   }
                   disabled={pagination.page === 1}
-                  className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Previous
                 </button>
@@ -417,7 +417,7 @@ const Appointments = () => {
                     setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
                   }
                   disabled={pagination.page === pagination.totalPages}
-                  className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Next
                 </button>
@@ -427,39 +427,39 @@ const Appointments = () => {
         </div>
 
         {/* Status Flow Explanation */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">How It Works</h3>
           <div className="flex flex-wrap gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 font-semibold text-xs">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 font-semibold text-xs">
                 1
               </div>
-              <span className="text-gray-600">
-                <strong>Requested</strong> — You book at a pharmacy
+              <span className="text-gray-600 dark:text-gray-400">
+                <strong>Requested</strong> � You book at a pharmacy
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-semibold text-xs">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 font-semibold text-xs">
                 2
               </div>
-              <span className="text-gray-600">
-                <strong>Assigned</strong> — Pharmacy assigns a doctor
+              <span className="text-gray-600 dark:text-gray-400">
+                <strong>Assigned</strong> � Pharmacy assigns a doctor
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-700 font-semibold text-xs">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold text-xs">
                 3
               </div>
-              <span className="text-gray-600">
-                <strong>Confirmed</strong> — Doctor sets time & type, fee shown + QR generated
+              <span className="text-gray-600 dark:text-gray-400">
+                <strong>Confirmed</strong> � Doctor sets time & type, fee shown + QR generated
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-700 font-semibold text-xs">
+              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-xs">
                 4
               </div>
-              <span className="text-gray-600">
-                <strong>Completed</strong> — Done!
+              <span className="text-gray-600 dark:text-gray-400">
+                <strong>Completed</strong> � Done!
               </span>
             </div>
           </div>
@@ -468,13 +468,13 @@ const Appointments = () => {
 
       {/* QR Code Modal */}
       {showQrModal && qrAppointment && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Appointment QR Code</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Appointment QR Code</h2>
               <button
                 onClick={() => { setShowQrModal(false); setQrAppointment(null); }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:text-gray-400"
               >
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -504,27 +504,27 @@ const Appointments = () => {
               {/* Appointment Details */}
               <div className="w-full space-y-2 text-sm">
                 <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Pharmacy</span>
-                  <span className="font-medium text-gray-900">{qrAppointment.Pharmacy?.pharmacy_name}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Pharmacy</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{qrAppointment.Pharmacy?.pharmacy_name}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Doctor</span>
-                  <span className="font-medium text-gray-900">{qrAppointment.Doctor?.User?.full_name || "—"}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Doctor</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{qrAppointment.Doctor?.User?.full_name || "�"}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Date</span>
-                  <span className="font-medium text-gray-900">{formatDate(qrAppointment.appointment_date)}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Date</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatDate(qrAppointment.appointment_date)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Time</span>
-                  <span className="font-medium text-gray-900">{formatTime(qrAppointment.scheduled_time || qrAppointment.appointment_time)}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Time</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatTime(qrAppointment.scheduled_time || qrAppointment.appointment_time)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Type</span>
+                  <span className="text-gray-500 dark:text-gray-400">Type</span>
                   <span className={`font-medium capitalize ${
                     qrAppointment.consultation_type === "online" ? "text-purple-700" : "text-teal-700"
                   }`}>
-                    {qrAppointment.consultation_type || "—"}
+                    {qrAppointment.consultation_type || "�"}
                   </span>
                 </div>
                 {qrAppointment.payment_amount > 0 && (

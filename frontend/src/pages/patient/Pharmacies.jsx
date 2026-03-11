@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
 import Loading from "../../components/Loading";
 import {
@@ -137,14 +137,14 @@ const Pharmacies = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Find Pharmacies</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Find Pharmacies</h1>
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">
             Browse pharmacies and book an appointment
           </p>
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
           <div className="relative max-w-md">
             <input
               type="text"
@@ -154,10 +154,10 @@ const Pharmacies = () => {
                 setSearchTerm(e.target.value);
                 setPagination((prev) => ({ ...prev, page: 1 }));
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
             <svg
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -171,7 +171,7 @@ const Pharmacies = () => {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
             {error}
           </div>
         )}
@@ -180,7 +180,7 @@ const Pharmacies = () => {
         {loading ? (
           <Loading message="Loading pharmacies..." color="blue" />
         ) : pharmacies.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-500">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
             <svg
               className="w-16 h-16 mx-auto mb-4 text-gray-300"
               viewBox="0 0 24 24"
@@ -196,7 +196,7 @@ const Pharmacies = () => {
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="mt-2 text-blue-600 hover:underline"
+                className="mt-2 text-teal-600 hover:underline"
               >
                 Clear search
               </button>
@@ -207,10 +207,10 @@ const Pharmacies = () => {
             {pharmacies.map((pharmacy) => (
               <div
                 key={pharmacy.pharmacy_id}
-                className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
               >
                 {/* Pharmacy Header */}
-                <div className="bg-linear-to-r from-blue-500 to-blue-600 p-4 text-white">
+                <div className="bg-linear-to-r from-teal-600 to-emerald-600 p-4 text-white">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                       <svg
@@ -227,7 +227,7 @@ const Pharmacies = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold">{pharmacy.pharmacy_name}</h3>
-                      <p className="text-sm text-blue-100">{pharmacy.address}</p>
+                      <p className="text-sm text-teal-100">{pharmacy.address}</p>
                     </div>
                   </div>
                 </div>
@@ -236,9 +236,9 @@ const Pharmacies = () => {
                 <div className="p-4 space-y-3">
                   {/* Hours */}
                   {(pharmacy.opening_time || pharmacy.closing_time) && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                       <svg
-                        className="w-4 h-4 text-gray-400"
+                        className="w-4 h-4 text-gray-400 dark:text-gray-500"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -261,9 +261,9 @@ const Pharmacies = () => {
 
                   {/* Phone */}
                   {pharmacy.phone && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                       <svg
-                        className="w-4 h-4 text-gray-400"
+                        className="w-4 h-4 text-gray-400 dark:text-gray-500"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -283,7 +283,7 @@ const Pharmacies = () => {
                   )}
 
                   {/* License */}
-                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
                     <svg
                       className="w-3 h-3"
                       viewBox="0 0 24 24"
@@ -302,7 +302,7 @@ const Pharmacies = () => {
                 <div className="px-4 pb-4">
                   <button
                     onClick={() => handleOpenBooking(pharmacy)}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium flex items-center justify-center gap-2"
                   >
                     <svg
                       className="w-5 h-5"
@@ -328,8 +328,8 @@ const Pharmacies = () => {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="bg-white rounded-xl shadow-sm px-6 py-4 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm px-6 py-4 flex items-center justify-between">
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
               Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
               {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
               {pagination.total} pharmacies
@@ -340,7 +340,7 @@ const Pharmacies = () => {
                   setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
                 }
                 disabled={pagination.page === 1}
-                className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Previous
               </button>
@@ -349,7 +349,7 @@ const Pharmacies = () => {
                   setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
                 }
                 disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Next
               </button>
@@ -360,16 +360,16 @@ const Pharmacies = () => {
 
       {/* Booking Modal */}
       {showBookingModal && selectedPharmacy && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="p-6 border-b">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   Book Appointment
                 </h2>
                 <button
                   onClick={handleCloseBookingModal}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500"
                 >
                   <svg
                     className="w-6 h-6"
@@ -412,13 +412,13 @@ const Pharmacies = () => {
                   <div className="flex gap-3">
                     <button
                       onClick={handleCloseBookingModal}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       Close
                     </button>
                     <a
                       href="/patient/appointments"
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-center"
+                      className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-center"
                     >
                       View Appointments
                     </a>
@@ -427,28 +427,28 @@ const Pharmacies = () => {
               ) : (
                 <div className="space-y-4">
                   {/* Pharmacy Info */}
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-sm text-blue-600 font-medium">
+                  <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
+                    <p className="text-sm text-teal-600 font-medium">
                       Booking at
                     </p>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-gray-900 dark:text-white">
                       {selectedPharmacy.pharmacy_name}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                       {selectedPharmacy.address}
                     </p>
                   </div>
 
                   {/* Error */}
                   {bookingErrors.submit && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-red-700 dark:text-red-300 text-sm">
                       {bookingErrors.submit}
                     </div>
                   )}
 
                   {/* Date */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Appointment Date *
                     </label>
                     <input
@@ -457,7 +457,7 @@ const Pharmacies = () => {
                       value={bookingData.appointment_date}
                       onChange={handleBookingInputChange}
                       min={getMinDate()}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                         bookingErrors.appointment_date
                           ? "border-red-500"
                           : "border-gray-300"
@@ -472,7 +472,7 @@ const Pharmacies = () => {
 
                   {/* Time */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Preferred Time *
                     </label>
                     <input
@@ -480,7 +480,7 @@ const Pharmacies = () => {
                       name="appointment_time"
                       value={bookingData.appointment_time}
                       onChange={handleBookingInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${
                         bookingErrors.appointment_time
                           ? "border-red-500"
                           : "border-gray-300"
@@ -495,7 +495,7 @@ const Pharmacies = () => {
 
                   {/* Reason */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Reason for Visit (Optional)
                     </label>
                     <textarea
@@ -503,13 +503,13 @@ const Pharmacies = () => {
                       value={bookingData.reason}
                       onChange={handleBookingInputChange}
                       rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       placeholder="Describe your symptoms or reason for the appointment..."
                     />
                   </div>
 
                   {/* Info Notice */}
-                  <div className="flex items-start gap-2 text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-start gap-2 text-sm text-gray-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
                     <svg
                       className="w-4 h-4 text-gray-400 mt-0.5 shrink-0"
                       viewBox="0 0 24 24"
@@ -531,14 +531,14 @@ const Pharmacies = () => {
                   <div className="flex justify-end gap-3 pt-4">
                     <button
                       onClick={handleCloseBookingModal}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSubmitBooking}
                       disabled={booking}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       {booking && (
                         <svg

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import Layout from "../../components/Layout";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -106,7 +106,7 @@ const Profile = () => {
           <div
             className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
               toast.type === "success"
-                ? "bg-blue-500 text-white"
+                ? "bg-teal-500 text-white"
                 : "bg-red-500 text-white"
             }`}
           >
@@ -118,7 +118,7 @@ const Profile = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+            <div className="p-3 bg-linear-to-br from-teal-500 to-teal-600 rounded-xl shadow-lg">
               <User className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -133,7 +133,7 @@ const Profile = () => {
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl transition-colors font-medium"
             >
               <Edit2 className="w-4 h-4" />
               Edit Profile
@@ -143,7 +143,7 @@ const Profile = () => {
 
         {/* Profile Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-8">
+          <div className="bg-linear-to-r from-teal-500 to-emerald-600 px-6 py-8">
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
                 <User className="w-10 h-10 text-white" />
@@ -152,7 +152,7 @@ const Profile = () => {
                 <h2 className="text-2xl font-semibold">
                   {profileData.full_name || "Patient Name"}
                 </h2>
-                <p className="text-blue-100 mt-1">{user?.role || "Patient"}</p>
+                <p className="text-teal-100 mt-1">{user?.role || "Patient"}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 backdrop-blur rounded-full text-sm">
                     <Calendar className="w-4 h-4" />
@@ -170,8 +170,8 @@ const Profile = () => {
           {/* Quick Info Grid */}
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                <Mail className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
@@ -219,8 +219,8 @@ const Profile = () => {
         {/* Personal Information Form */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+              <User className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -244,7 +244,7 @@ const Profile = () => {
                   value={profileData.full_name}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -270,7 +270,7 @@ const Profile = () => {
                   value={profileData.phone}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -284,7 +284,7 @@ const Profile = () => {
                   value={profileData.date_of_birth}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -299,7 +299,7 @@ const Profile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed resize-none"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed resize-none"
                 placeholder="Enter your full address"
               />
             </div>
@@ -333,7 +333,7 @@ const Profile = () => {
                   value={profileData.blood_group}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
                 >
                   <option value="">Select Blood Group</option>
                   {bloodGroups.map((group) => (
@@ -355,7 +355,7 @@ const Profile = () => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   placeholder="+977-98XXXXXXXX"
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -370,7 +370,7 @@ const Profile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed resize-none"
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed resize-none"
                 placeholder="List any allergies (medications, food, etc.)"
               />
             </div>
@@ -378,7 +378,7 @@ const Profile = () => {
             {profileData.allergies && !isEditing && (
               <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-yellow-800 dark:text-yellow-200 text-sm">
                       Known Allergies
@@ -396,7 +396,7 @@ const Profile = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-xl transition-colors font-medium"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-300 text-white rounded-xl transition-colors font-medium"
                 >
                   <Save className="w-4 h-4" />
                   {loading ? "Saving..." : "Save Changes"}
@@ -440,9 +440,9 @@ const Profile = () => {
                 </div>
               )}
               {profileData.emergency_contact && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/50">
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Emergency Contact</p>
-                  <p className="text-lg font-bold text-blue-700 dark:text-blue-300 mt-1">
+                <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-100 dark:border-teal-800/50">
+                  <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">Emergency Contact</p>
+                  <p className="text-lg font-bold text-teal-700 dark:text-teal-300 mt-1">
                     {profileData.emergency_contact}
                   </p>
                 </div>
