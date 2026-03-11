@@ -1,21 +1,60 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import Layout from "../../components/Layout";
 import {
   appointmentAPI,
+  paymentAPI,
   getStatusBadgeClass,
   formatDate,
   formatTime,
+  handleApiError,
   APPOINTMENT_STATUS,
 } from "../../services/api";
+import {
+  Calendar,
+  CheckCircle2,
+  ClipboardCheck,
+  Wallet,
+  PlusCircle,
+  CalendarDays,
+  FileText,
+  Siren,
+  X,
+  Video,
+  MapPin,
+  Clock,
+  Stethoscope,
+  Building2,
+  QrCode,
+  XCircle,
+  Info,
+  CreditCard,
+  Loader2,
+} from "lucide-react";
+
+const healthTips = [
+  "Drinking at least 8 glasses of water a day helps maintain your blood pressure and kidney function.",
+  "A 30-minute walk every day can reduce the risk of heart disease by up to 35%.",
+  "Getting 7-8 hours of sleep each night improves your immune system significantly.",
+  "Regular hand washing is the simplest way to prevent the spread of infections.",
+  "Eating a balanced breakfast boosts your metabolism and concentration throughout the day.",
+  "Taking short breaks every hour during work reduces eye strain and back pain.",
+];
 
 const Dashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrAppointment, setQrAppointment] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
+  const [payingId, setPayingId] = useState(null);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const [dailyTip] = useState(() => {
+    const dayIndex = new Date().getDate() % healthTips.length;
+    return healthTips[dayIndex];
+  });
 
   useEffect(() => {
     fetchDashboardData();
@@ -33,400 +72,457 @@ const Dashboard = () => {
     }
   };
 
-  // Compute stats from real data
+  // Compute stats
   const upcomingAppointments = appointments.filter((a) =>
     [APPOINTMENT_STATUS.REQUESTED, APPOINTMENT_STATUS.ASSIGNED, APPOINTMENT_STATUS.CONFIRMED].includes(a.status)
+  );
+  const nonConfirmedUpcoming = appointments.filter((a) =>
+    [APPOINTMENT_STATUS.REQUESTED, APPOINTMENT_STATUS.ASSIGNED].includes(a.status)
   );
   const confirmedAppointments = appointments.filter((a) => a.status === APPOINTMENT_STATUS.CONFIRMED);
   const completedCount = appointments.filter((a) => a.status === APPOINTMENT_STATUS.COMPLETED).length;
   const pendingPayments = confirmedAppointments.filter((a) => a.payment_status !== "paid" && a.payment_amount > 0);
   const totalPendingAmount = pendingPayments.reduce((sum, a) => sum + (a.payment_amount || 0), 0);
 
-  const stats = [
-    {
-      label: "Upcoming",
-      value: upcomingAppointments.length,
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      ),
-      color: "blue",
-    },
-    {
-      label: "Confirmed",
-      value: confirmedAppointments.length,
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      ),
-      color: "green",
-    },
-    {
-      label: "Completed",
-      value: completedCount,
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-        </svg>
-      ),
-      color: "purple",
-    },
-    {
-      label: "Pending Fee",
-      value: `Rs.${totalPendingAmount}`,
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="12" y1="1" x2="12" y2="23" />
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-        </svg>
-      ),
-      color: "orange",
-    },
-  ];
-
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    purple: "bg-purple-100 text-purple-600",
-    orange: "bg-orange-100 text-orange-600",
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
   };
 
-  const quickActions = [
-    {
-      label: "Book Appointment",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-          <line x1="12" y1="14" x2="12" y2="18" />
-          <line x1="10" y1="16" x2="14" y2="16" />
-        </svg>
-      ),
-      href: "/patient/pharmacies",
-    },
-    {
-      label: "My Appointments",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      ),
-      href: "/patient/appointments",
-    },
-    {
-      label: "Medical Records",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-        </svg>
-      ),
-      href: "/patient/records",
-    },
-    {
-      label: "Emergency",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-        </svg>
-      ),
-      href: "/emergency",
-    },
+  const getFirstName = () => {
+    return user.full_name?.split(" ")[0] || "there";
+  };
+
+  const handleCancel = async (appointmentId) => {
+    const reason = window.prompt("Reason for cancellation (optional):");
+    if (reason === null) return;
+    try {
+      setCancellingId(appointmentId);
+      await appointmentAPI.cancelAppointment(appointmentId, reason);
+      fetchDashboardData();
+    } catch (err) {
+      const errorInfo = handleApiError(err);
+      alert(errorInfo.message);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handlePay = async (appointment, method) => {
+    try {
+      setPayingId(`${appointment.appointment_id}-${method}`);
+      const response = await paymentAPI.initiatePayment(appointment.appointment_id, method);
+      if (response.data?.payment_url) {
+        window.open(response.data.payment_url, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      const errorInfo = handleApiError(err);
+      alert(errorInfo.message);
+    } finally {
+      setPayingId(null);
+    }
+  };
+
+  // Get the nearest confirmed appointment for the main card
+  const nextConfirmed = confirmedAppointments.sort(
+    (a, b) => new Date(a.appointment_date) - new Date(b.appointment_date)
+  )[0];
+
+  // Time until meeting helper
+  const getMeetingTimeLabel = (apt) => {
+    if (!apt) return null;
+    const aptDate = new Date(apt.appointment_date);
+    const [hours, minutes] = (apt.scheduled_time || apt.appointment_time || "00:00").split(":");
+    aptDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const now = new Date();
+    const diffMs = aptDate - now;
+    if (diffMs < 0) return null;
+    const diffMins = Math.round(diffMs / 60000);
+    if (diffMins < 60) return `Starts in ${diffMins} min${diffMins !== 1 ? "s" : ""}`;
+    const diffHrs = Math.floor(diffMins / 60);
+    if (diffHrs < 24) return `Starts in ${diffHrs}h ${diffMins % 60}m`;
+    return `In ${Math.floor(diffHrs / 24)} day${Math.floor(diffHrs / 24) !== 1 ? "s" : ""}`;
+  };
+
+  const stats = [
+    { label: "UPCOMING", value: upcomingAppointments.length, icon: CalendarDays, cardBg: "bg-sky-600 dark:bg-sky-700" },
+    { label: "CONFIRMED", value: confirmedAppointments.length, icon: CheckCircle2, cardBg: "bg-emerald-600 dark:bg-emerald-700" },
+    { label: "COMPLETED", value: completedCount, icon: ClipboardCheck, cardBg: "bg-violet-600 dark:bg-violet-700" },
+    { label: "PENDING FEE", value: `Rs. ${totalPendingAmount}`, icon: Wallet, cardBg: "bg-amber-500 dark:bg-amber-600" },
   ];
 
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
-          <h1 className="text-2xl font-bold mb-2">Welcome back, {user.full_name || "Patient"}!</h1>
-          <p className="text-blue-100">
-            Here's an overview of your health dashboard. Stay healthy!
-          </p>
+        {/* Header Row: Greeting + Book Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {getGreeting()}, {getFirstName()}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Here is what's happening with your health today.
+            </p>
+          </div>
+          <Link
+            to="/patient/pharmacies"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium shadow-sm"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Book New Appointment
+          </Link>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[stat.color]}`}>
-                  {stat.icon}
+          {stats.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <div key={i} className={`${stat.cardBg} rounded-xl p-5 shadow-md`}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold tracking-wider text-white/70 uppercase">{stat.label}</span>
+                  <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
                 </div>
+                <p className="text-2xl font-bold text-white">
+                  {loading ? "..." : stat.value}
+                </p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{loading ? "..." : stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Quick Actions */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
-              <Link
-                key={index}
-                to={action.href}
-                className="flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-blue-500 border-2 border-transparent transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  {action.icon}
-                </div>
-                <span className="font-medium text-gray-700">{action.label}</span>
-              </Link>
-            ))}
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Quick Actions</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: "Book Appointment", icon: PlusCircle, href: "/patient/pharmacies", accent: false },
+              { label: "My Appointments", icon: CalendarDays, href: "/patient/appointments", accent: false },
+              { label: "Medical Records", icon: FileText, href: "/patient/records", accent: false },
+              { label: "Emergency", icon: Siren, href: "/emergency", accent: true },
+            ].map((action, i) => {
+              const Icon = action.icon;
+              return (
+                <Link
+                  key={i}
+                  to={action.href}
+                  className={`flex flex-col items-center justify-center p-5 rounded-xl border-2 transition-all duration-200 group ${
+                    action.accent
+                      ? "bg-linear-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-100 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700"
+                      : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-700"
+                  }`}
+                >
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors ${
+                    action.accent
+                      ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 group-hover:bg-red-500 group-hover:text-white"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 group-hover:bg-teal-600 group-hover:text-white"
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className={`text-sm font-medium ${action.accent ? "text-red-700 dark:text-red-400" : "text-gray-700 dark:text-gray-300"}`}>
+                    {action.label}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
 
-        {/* Confirmed Appointments with Fee & QR */}
-        {confirmedAppointments.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Confirmed Appointments
-                <span className="ml-2 text-sm font-normal text-gray-500">
-                  (Doctor fee & QR code available)
-                </span>
-              </h2>
-              <Link to="/patient/appointments" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View All →
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {confirmedAppointments.map((appointment) => (
-                <div key={appointment.appointment_id} className="bg-white rounded-xl shadow-sm p-5 border-l-4 border-green-500">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      {/* Date Box */}
-                      <div className="flex-shrink-0 w-14 h-14 bg-green-50 rounded-lg flex flex-col items-center justify-center">
-                        <span className="text-xs font-medium text-green-600 uppercase">
-                          {new Date(appointment.appointment_date).toLocaleDateString("en-US", { month: "short" })}
-                        </span>
-                        <span className="text-lg font-bold text-green-700">
-                          {new Date(appointment.appointment_date).getDate()}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-900">
-                            {appointment.Doctor?.User?.full_name || "Doctor"}
-                          </h3>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full capitalize ${
-                            appointment.consultation_type === "online"
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-teal-100 text-teal-700"
-                          }`}>
-                            {appointment.consultation_type === "online" ? "🎥 Online" : "🏥 Physical"}
-                          </span>
+        {/* Two-Column Layout: Main + Sidebar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column (2/3) */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Confirmed Appointment Card */}
+            {nextConfirmed && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Confirmed Appointment</h2>
+                  {confirmedAppointments.length > 1 && (
+                    <Link to="/patient/appointments" className="text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 font-medium">
+                      View All
+                    </Link>
+                  )}
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+                  <div className="p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      {/* Doctor Info */}
+                      <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 bg-teal-100 dark:bg-teal-900/30 rounded-full flex items-center justify-center shrink-0">
+                          <Stethoscope className="w-7 h-7 text-teal-600 dark:text-teal-400" />
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {appointment.Pharmacy?.pharmacy_name} •{" "}
-                          {formatTime(appointment.scheduled_time || appointment.appointment_time)}
-                        </p>
-                        {appointment.doctor_notes && (
-                          <p className="text-sm text-blue-600 mt-1">
-                            📝 {appointment.doctor_notes}
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                              Dr. {nextConfirmed.Doctor?.User?.full_name || "Doctor"}
+                            </h3>
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 uppercase tracking-wide">
+                              Confirmed
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                            {nextConfirmed.Doctor?.specialization || "Specialist"} • {nextConfirmed.Doctor?.hospital_name || ""}
                           </p>
-                        )}
-                        {/* Meeting Link */}
-                        {appointment.consultation_type === "online" && appointment.meeting_link && (
-                          <a
-                            href={appointment.meeting_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 mt-1"
-                          >
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z" />
-                            </svg>
-                            Join Meeting
-                          </a>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: Fee + QR */}
-                    <div className="flex items-center gap-3">
-                      {/* Doctor Fee */}
-                      {appointment.payment_amount > 0 && (
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500">Doctor Fee</p>
-                          <p className="text-xl font-bold text-green-700">Rs. {appointment.payment_amount}</p>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                            appointment.payment_status === "paid"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}>
-                            {appointment.payment_status === "paid" ? "Paid" : "Pending"}
-                          </span>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <Building2 className="w-3.5 h-3.5" />
+                              {nextConfirmed.Pharmacy?.pharmacy_name}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Wallet className="w-3.5 h-3.5" />
+                              Fee: Rs. {nextConfirmed.payment_amount || 0}{" "}
+                              <span className={`text-xs font-medium ${nextConfirmed.payment_status === "paid" ? "text-green-600 dark:text-green-400" : "text-yellow-600 dark:text-yellow-400"}`}>
+                                ({nextConfirmed.payment_status === "paid" ? "Paid" : "Pending"})
+                              </span>
+                            </span>
+                          </div>
                         </div>
-                      )}
+                      </div>
 
-                      {/* QR Code Button */}
-                      {appointment.qr_token && (
+                      {/* QR Code */}
+                      {nextConfirmed.qr_token && (
                         <button
-                          onClick={() => { setQrAppointment(appointment); setShowQrModal(true); }}
-                          className="flex flex-col items-center gap-1 p-3 bg-blue-50 border-2 border-blue-200 rounded-xl hover:bg-blue-100 hover:border-blue-300 transition-colors"
+                          onClick={() => { setQrAppointment(nextConfirmed); setShowQrModal(true); }}
+                          className="flex flex-col items-center gap-1 p-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0"
+                          title="View QR Code"
                         >
-                          <svg className="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                          </svg>
-                          <span className="text-xs font-medium text-blue-700">QR Code</span>
+                          <QRCodeSVG
+                            value={JSON.stringify({ type: "appointment", token: nextConfirmed.qr_token, id: nextConfirmed.appointment_id })}
+                            size={64}
+                            level="L"
+                          />
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500">Appt ID #{nextConfirmed.appointment_id}</span>
                         </button>
                       )}
                     </div>
                   </div>
+
+                  {/* Meeting / Notes Bar */}
+                  {(nextConfirmed.consultation_type === "online" && nextConfirmed.meeting_link) || nextConfirmed.doctor_notes ? (
+                    <div className="px-5 py-3 bg-teal-50 dark:bg-teal-900/20 border-t border-teal-100 dark:border-teal-800/30">
+                      {nextConfirmed.consultation_type === "online" && nextConfirmed.meeting_link && (
+                        <a
+                          href={nextConfirmed.meeting_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-sm font-medium text-teal-700 dark:text-teal-400 hover:text-teal-800"
+                        >
+                          <Video className="w-4 h-4" />
+                          Join Video Meeting
+                          {getMeetingTimeLabel(nextConfirmed) && (
+                            <span className="text-teal-500 dark:text-teal-300 font-normal">
+                              ({getMeetingTimeLabel(nextConfirmed)})
+                            </span>
+                          )}
+                        </a>
+                      )}
+                      {nextConfirmed.doctor_notes && (
+                        <p className="text-sm text-teal-600 dark:text-teal-400 mt-1">
+                          <span className="font-medium">Note:</span> {nextConfirmed.doctor_notes}
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Upcoming Appointments */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Upcoming Appointments</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+                {loading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-7 h-7 animate-spin text-teal-600 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading appointments...</p>
+                  </div>
+                ) : nonConfirmedUpcoming.length > 0 ? (
+                  <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                    {nonConfirmedUpcoming.slice(0, 5).map((apt) => (
+                      <div key={apt.appointment_id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                              apt.status === APPOINTMENT_STATUS.ASSIGNED
+                                ? "bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400"
+                                : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400"
+                            }`}>
+                              <Calendar className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                                {apt.reason || "General Checkup"} - {apt.Doctor?.User?.full_name ? `Dr. ${apt.Doctor.User.full_name}` : apt.Pharmacy?.pharmacy_name || "Pending"}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Requested: {formatDate(apt.appointment_date)}, {formatTime(apt.scheduled_time || apt.appointment_time)} • {" "}
+                                <span className="capitalize">{apt.status?.replace("_", " ")}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleCancel(apt.appointment_id)}
+                            disabled={cancellingId === apt.appointment_id}
+                            className="p-1.5 text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors shrink-0"
+                            title="Cancel appointment"
+                          >
+                            {cancellingId === apt.appointment_id ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <XCircle className="w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <Calendar className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No upcoming appointments</p>
+                    <Link to="/patient/pharmacies" className="text-sm text-teal-600 dark:text-teal-400 hover:underline mt-2 inline-block">
+                      Book an appointment
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Upcoming Appointments (not yet confirmed) */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Upcoming Appointments</h2>
-            <Link to="/patient/appointments" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              View All →
-            </Link>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            {loading ? (
-              <div className="p-8 text-center">
-                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-500">Loading...</p>
-              </div>
-            ) : upcomingAppointments.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {upcomingAppointments.slice(0, 5).map((appointment) => (
-                  <div key={appointment.appointment_id} className="p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
-                          {appointment.Doctor?.User?.full_name?.charAt(0) ||
-                            appointment.Pharmacy?.pharmacy_name?.charAt(0) || "A"}
+          {/* Right Column (1/3) */}
+          <div className="space-y-6">
+            {/* Pending Payments Card */}
+            {pendingPayments.length > 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Pending Payments</h3>
+                  {pendingPayments.slice(0, 2).map((apt) => (
+                    <div key={apt.appointment_id} className="mb-4 last:mb-0">
+                      <div className="flex flex-col items-center text-center mb-3">
+                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-2">
+                          <Wallet className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                         </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900">
-                            {appointment.Doctor?.User?.full_name || appointment.Pharmacy?.pharmacy_name || "Pending"}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {appointment.Doctor?.specialization || "Doctor not yet assigned"}
-                          </p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">Rs. {apt.payment_amount}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          Due for Dr. {apt.Doctor?.User?.full_name || "Doctor"}
+                        </p>
+                      </div>
+
+                      {/* Payment Gateway Section */}
+                      <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+                        <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-center mb-3">
+                          Pay via Secure Gateway
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => handlePay(apt, "esewa")}
+                            disabled={payingId === `${apt.appointment_id}-esewa`}
+                            className="flex flex-col items-center gap-1 px-3 py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded-lg transition-colors"
+                          >
+                            {payingId === `${apt.appointment_id}-esewa` ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <span className="text-sm font-bold">eSewa</span>
+                            )}
+                            <span className="text-[10px] opacity-80">Pay with eSewa</span>
+                          </button>
+                          <button
+                            onClick={() => handlePay(apt, "khalti")}
+                            disabled={payingId === `${apt.appointment_id}-khalti`}
+                            className="flex flex-col items-center gap-1 px-3 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-lg transition-colors"
+                          >
+                            {payingId === `${apt.appointment_id}-khalti` ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <span className="text-sm font-bold">Khalti</span>
+                            )}
+                            <span className="text-[10px] opacity-80">Pay with Khalti</span>
+                          </button>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">{formatDate(appointment.appointment_date)}</p>
-                        <p className="text-sm text-gray-500">{formatTime(appointment.scheduled_time || appointment.appointment_time)}</p>
-                      </div>
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeClass(
-                          appointment.status
-                        )}`}
-                      >
-                        {appointment.status?.replace("_", " ")}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                  {pendingPayments.length > 2 && (
+                    <Link to="/patient/appointments" className="block text-center text-sm text-teal-600 dark:text-teal-400 hover:underline mt-3">
+                      +{pendingPayments.length - 2} more pending
+                    </Link>
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="p-8 text-center text-gray-500">
-                <svg
-                  className="w-12 h-12 mx-auto mb-4 text-gray-300"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                <p>No upcoming appointments</p>
-                <Link to="/patient/pharmacies" className="text-blue-600 hover:underline text-sm mt-2 inline-block">
-                  Book an appointment
-                </Link>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 text-center">
+                <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <CheckCircle2 className="w-6 h-6 text-green-500 dark:text-green-400" />
+                </div>
+                <p className="font-medium text-gray-900 dark:text-white">All Paid Up!</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">No pending payments</p>
+              </div>
+            )}
+
+            {/* Health Tip */}
+            <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-100 dark:border-teal-800/30 p-5">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-teal-100 dark:bg-teal-800/50 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                  <Info className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-teal-900 dark:text-teal-300 text-sm">Health Tip</h3>
+                  <p className="text-sm text-teal-700 dark:text-teal-400 mt-1 leading-relaxed">
+                    {dailyTip}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Confirmed Appointments (if more than 1) */}
+            {confirmedAppointments.length > 1 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  More Confirmed ({confirmedAppointments.length - 1})
+                </h3>
+                <div className="space-y-3">
+                  {confirmedAppointments.slice(1, 4).map((apt) => (
+                    <div key={apt.appointment_id} className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          Dr. {apt.Doctor?.User?.full_name || "Doctor"}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatDate(apt.appointment_date)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         </div>
-
-        {/* Pending Payments Section */}
-        {pendingPayments.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Pending Payments</h2>
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="divide-y divide-gray-100">
-                {pendingPayments.map((appointment) => (
-                  <div key={appointment.appointment_id} className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="12" y1="1" x2="12" y2="23" />
-                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          Dr. {appointment.Doctor?.User?.full_name || "Doctor"}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {formatDate(appointment.appointment_date)} • {appointment.Pharmacy?.pharmacy_name}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-orange-700 text-lg">Rs. {appointment.payment_amount}</p>
-                      <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">Pending</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="px-4 py-3 bg-orange-50 border-t">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-orange-700">Total Pending</span>
-                  <span className="text-lg font-bold text-orange-800">Rs. {totalPendingAmount}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* QR Code Modal */}
       {showQrModal && qrAppointment && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Appointment QR Code</h2>
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => { setShowQrModal(false); setQrAppointment(null); }}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Appointment QR Code</h2>
               <button
                 onClick={() => { setShowQrModal(false); setQrAppointment(null); }}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
             <div className="p-6 flex flex-col items-center">
@@ -447,38 +543,26 @@ const Dashboard = () => {
                 />
               </div>
               <div className="w-full space-y-2 text-sm">
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Pharmacy</span>
-                  <span className="font-medium text-gray-900">{qrAppointment.Pharmacy?.pharmacy_name}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Doctor</span>
-                  <span className="font-medium text-gray-900">{qrAppointment.Doctor?.User?.full_name || "—"}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Date</span>
-                  <span className="font-medium text-gray-900">{formatDate(qrAppointment.appointment_date)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Time</span>
-                  <span className="font-medium text-gray-900">{formatTime(qrAppointment.scheduled_time || qrAppointment.appointment_time)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Type</span>
-                  <span className={`font-medium capitalize ${
-                    qrAppointment.consultation_type === "online" ? "text-purple-700" : "text-teal-700"
-                  }`}>
-                    {qrAppointment.consultation_type || "—"}
-                  </span>
-                </div>
+                {[
+                  { label: "Pharmacy", value: qrAppointment.Pharmacy?.pharmacy_name },
+                  { label: "Doctor", value: qrAppointment.Doctor?.User?.full_name ? `Dr. ${qrAppointment.Doctor.User.full_name}` : "—" },
+                  { label: "Date", value: formatDate(qrAppointment.appointment_date) },
+                  { label: "Time", value: formatTime(qrAppointment.scheduled_time || qrAppointment.appointment_time) },
+                  { label: "Type", value: qrAppointment.consultation_type || "—" },
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                    <span className="text-gray-500 dark:text-gray-400">{item.label}</span>
+                    <span className="font-medium text-gray-900 dark:text-white capitalize">{item.value}</span>
+                  </div>
+                ))}
                 {qrAppointment.payment_amount > 0 && (
-                  <div className="flex justify-between py-2 bg-green-50 rounded-lg px-3 mt-2">
-                    <span className="text-green-700 font-medium">Doctor Fee</span>
-                    <span className="font-bold text-green-800 text-lg">Rs. {qrAppointment.payment_amount}</span>
+                  <div className="flex justify-between py-2 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 mt-2">
+                    <span className="text-green-700 dark:text-green-400 font-medium">Doctor Fee</span>
+                    <span className="font-bold text-green-800 dark:text-green-300 text-lg">Rs. {qrAppointment.payment_amount}</span>
                   </div>
                 )}
               </div>
-              <p className="text-xs text-gray-400 mt-4 text-center">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 text-center">
                 Show this QR code at the pharmacy for verification
               </p>
             </div>
