@@ -20,7 +20,7 @@ const ComingSoon = ({
     <div className="min-h-[60vh] flex items-center justify-center p-4">
       <div className="text-center max-w-md">
         {/* Icon */}
-        <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+        <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
           <svg
             className="w-12 h-12 text-gray-400"
             viewBox="0 0 24 24"
@@ -34,10 +34,10 @@ const ComingSoon = ({
         </div>
 
         {/* Title */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">{title}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">{title}</h1>
 
         {/* Description */}
-        <p className="text-gray-500 mb-8">{description}</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">{description}</p>
 
         {/* Progress indicator */}
         <div className="mb-8">
@@ -55,7 +55,7 @@ const ComingSoon = ({
             </svg>
             <span>In Development</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 max-w-xs mx-auto">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 max-w-xs mx-auto">
             <div
               className="bg-blue-500 h-2 rounded-full animate-pulse"
               style={{ width: "45%" }}
@@ -84,7 +84,7 @@ const ComingSoon = ({
           )}
           <button
             onClick={() => window.history.back()}
-            className="inline-flex items-center gap-2 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            className="inline-flex items-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
           >
             <svg
               className="w-4 h-4"
@@ -100,7 +100,7 @@ const ComingSoon = ({
         </div>
 
         {/* Additional info */}
-        <div className="mt-10 p-4 bg-blue-50 rounded-lg">
+        <div className="mt-10 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <div className="flex items-start gap-3">
             <svg
               className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
@@ -114,10 +114,10 @@ const ComingSoon = ({
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <div className="text-left">
-              <p className="text-sm font-medium text-blue-900">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
                 Want to be notified?
               </p>
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-blue-700 dark:text-blue-300">
                 Check back soon or contact support for updates on this feature.
               </p>
             </div>

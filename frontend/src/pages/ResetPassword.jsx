@@ -119,25 +119,25 @@ const ResetPassword = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-900 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
         {/* Header Card */}
-        <div className="bg-white rounded-t-2xl shadow-xl p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-t-2xl shadow-xl p-8">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Reset Your Password</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reset Your Password</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
               This is your first login. Please create a new secure password.
             </p>
           </div>
 
           {/* Alert Message */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-800">
+              <div className="text-sm text-amber-800 dark:text-amber-300">
                 <p className="font-medium mb-1">Security Notice</p>
                 <p>
                   You're using a temporary password. For security reasons, you must
@@ -148,8 +148,8 @@ const ResetPassword = () => {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+              <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
             </div>
           )}
 
@@ -288,7 +288,7 @@ const ResetPassword = () => {
         </div>
 
         {/* Footer Card */}
-        <div className="bg-gray-50 rounded-b-2xl shadow-xl px-8 py-6">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl shadow-xl px-8 py-6">
           <div className="text-center">
             <p className="text-sm text-gray-600">
               Need help?{" "}

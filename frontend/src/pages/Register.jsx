@@ -112,13 +112,13 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-lg">
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
           {/* Header */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
               <svg
                 className="w-8 h-8 text-blue-600"
                 viewBox="0 0 24 24"
@@ -131,14 +131,14 @@ const Register = () => {
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Patient Account</h1>
-            <p className="text-gray-500">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Create Patient Account</h1>
+            <p className="text-gray-500 dark:text-gray-400">
               Register to book appointments at pharmacies
             </p>
           </div>
 
           {/* Info Notice */}
-          <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <svg
               className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
               viewBox="0 0 24 24"
@@ -150,7 +150,7 @@ const Register = () => {
               <line x1="12" y1="16" x2="12" y2="12" />
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
-            <div className="text-sm text-blue-700">
+            <div className="text-sm text-blue-700 dark:text-blue-300">
               <p className="font-medium">Patient Registration</p>
               <p className="mt-1">
                 This registration is for patients only. Pharmacies are registered by administrators, and doctors are registered by pharmacies.
@@ -160,7 +160,7 @@ const Register = () => {
 
           {/* Error Alert */}
           {error && (
-            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <svg
                 className="w-5 h-5 text-red-600 flex-shrink-0"
                 viewBox="0 0 24 24"
@@ -172,7 +172,7 @@ const Register = () => {
                 <line x1="15" y1="9" x2="9" y2="15" />
                 <line x1="9" y1="9" x2="15" y2="15" />
               </svg>
-              <span className="text-sm text-red-700">{error}</span>
+              <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
             </div>
           )}
 
@@ -511,12 +511,12 @@ const Register = () => {
           </form>
 
           {/* Footer */}
-          <div className="text-center pt-4 border-t border-gray-100">
-            <p className="text-gray-600">
+          <div className="text-center pt-4 border-t border-gray-100 dark:border-gray-700">
+            <p className="text-gray-600 dark:text-gray-400">
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
               >
                 Sign In
               </Link>

@@ -152,13 +152,13 @@ const VerifyOtp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
           {/* Header */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
               <svg
                 className="w-8 h-8 text-blue-600"
                 viewBox="0 0 24 24"
@@ -169,13 +169,13 @@ const VerifyOtp = () => {
                 <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               Verify Your Email
             </h1>
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-gray-400">
               We've sent a 6-digit verification code to
               <br />
-              <span className="font-semibold text-gray-700">{email}</span>
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{email}</span>
             </p>
           </div>
 
@@ -289,12 +289,12 @@ const VerifyOtp = () => {
           </div>
 
           {/* Footer */}
-          <div className="text-center pt-4 border-t border-gray-100">
-            <p className="text-gray-600">
+          <div className="text-center pt-4 border-t border-gray-100 dark:border-gray-700">
+            <p className="text-gray-600 dark:text-gray-400">
               Wrong email?{" "}
               <Link
                 to="/register"
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
               >
                 Go back to registration
               </Link>
