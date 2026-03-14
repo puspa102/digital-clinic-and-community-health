@@ -1,6 +1,20 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../../components/Layout";
+import StatCard from "../../components/dashboard/StatCard";
+import QuickActions from "../../components/dashboard/QuickActions";
+import {
+  Users,
+  Stethoscope,
+  CalendarDays,
+  UserCheck,
+  Settings,
+  Loader2,
+  Server,
+  Database,
+  Activity,
+  ChevronRight,
+} from "lucide-react";
 import { authAPI, doctorAPI, appointmentAPI, handleApiError, formatDate, getStatusBadgeClass, getRoleBadgeClass } from "../../services/api";
 
 const Dashboard = () => {
@@ -77,120 +91,28 @@ const Dashboard = () => {
     }
   };
 
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    purple: "bg-purple-100 text-purple-600",
-    orange: "bg-orange-100 text-orange-600",
-  };
-
-  const statsConfig = [
-    {
-      label: "Total Users",
-      value: stats.totalUsers,
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      color: "blue",
-      link: "/admin/users",
-    },
-    {
-      label: "Active Doctors",
-      value: stats.totalDoctors,
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      ),
-      color: "green",
-      link: "/admin/doctors",
-    },
-    {
-      label: "Total Appointments",
-      value: stats.totalAppointments,
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      ),
-      color: "purple",
-      link: "/admin/appointments",
-    },
-    {
-      label: "Pending Approvals",
-      value: stats.pendingUsers,
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      ),
-      color: "orange",
-      link: "/admin/users?status=pending",
-    },
+  const statCards = [
+    { label: "Total Users", value: stats.totalUsers, icon: Users, colorClass: "bg-[#0ea5e9] dark:bg-[#0284c7]" },
+    { label: "Total Doctors", value: stats.totalDoctors, icon: Stethoscope, colorClass: "bg-[#8b5cf6] dark:bg-[#7c3aed]" },
+    { label: "Total Appointments", value: stats.totalAppointments, icon: CalendarDays, colorClass: "bg-[#f59e0b] dark:bg-[#d97706]" },
+    { label: "Pending Approvals", value: stats.pendingUsers, icon: UserCheck, colorClass: "bg-[#ef4444] dark:bg-[#dc2626]" },
   ];
 
-  const quickActions = [
-    {
-      label: "Manage Users",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      href: "/admin/users",
-    },
-    {
-      label: "Manage Doctors",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      ),
-      href: "/admin/doctors",
-    },
-    {
-      label: "View Appointments",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      ),
-      href: "/admin/appointments",
-    },
-    {
-      label: "Settings",
-      icon: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      ),
-      href: "/admin/settings",
-    },
+  const quickActionsList = [
+    { label: "Manage Users", icon: Users, href: "/admin/users", accent: false },
+    { label: "Manage Doctors", icon: Stethoscope, href: "/admin/doctors", accent: false },
+    { label: "View Appointments", icon: CalendarDays, href: "/admin/appointments", accent: false },
+    { label: "Settings", icon: Settings, href: "/admin/settings", accent: true },
   ];
 
   if (loading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full"></div>
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-500 font-medium">Loading dashboard...</p>
+          </div>
         </div>
       </Layout>
     );
@@ -198,22 +120,26 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-2xl p-6 text-white">
-          <h1 className="text-2xl font-bold mb-2">Admin Dashboard</h1>
-          <p className="text-purple-100">
-            Welcome back! Here's an overview of your platform's performance.
-          </p>
+      <div className="space-y-8 animate-in fade-in duration-500">
+        {/* Header Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              Admin Dashboard
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">
+              Welcome back! Here's an overview of your platform's performance.
+            </p>
+          </div>
         </div>
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-center justify-between">
+            <p className="text-red-700 dark:text-red-400 font-medium text-sm">{error}</p>
             <button
               onClick={fetchDashboardData}
-              className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
+              className="px-4 py-2 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded-xl text-sm font-bold hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
             >
               Try Again
             </button>
@@ -221,95 +147,77 @@ const Dashboard = () => {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statsConfig.map((stat, index) => (
-            <Link
-              key={index}
-              to={stat.link}
-              className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[stat.color]}`}>
-                  {stat.icon}
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-            </Link>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {statCards.map((stat, i) => (
+            <StatCard key={i} {...stat} loading={loading} />
           ))}
         </div>
 
         {/* Quick Actions */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
-              <Link
-                key={index}
-                to={action.href}
-                className="flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-purple-500 border-2 border-transparent transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-3 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                  {action.icon}
-                </div>
-                <span className="font-medium text-gray-700">{action.label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
+        <QuickActions actions={quickActionsList} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Users */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Users</h2>
-              <Link to="/admin/users" className="text-sm text-purple-600 hover:text-purple-700 font-medium">
-                View All →
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
+                Recent Users
+              </h2>
+              <Link
+                to="/admin/users"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 overflow-hidden shadow-lg">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                     <tr>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                      <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">User</th>
+                      <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Role</th>
+                      <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Status</th>
+                      <th className="text-left px-6 py-4 text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Joined</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
                     {recentUsers.length === 0 ? (
                       <tr>
-                        <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                          No users found
+                        <td colSpan="4" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                          <div className="flex flex-col items-center justify-center">
+                            <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+                            <span className="font-medium">No users found</span>
+                          </div>
                         </td>
                       </tr>
                     ) : (
                       recentUsers.map((user) => (
-                        <tr key={user.user_id} className="hover:bg-gray-50">
+                        <tr key={user.user_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-semibold">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-sm">
                                 {user.full_name?.charAt(0)?.toUpperCase() || "?"}
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900">{user.full_name}</p>
-                                <p className="text-sm text-gray-500">{user.email}</p>
+                                <p className="font-bold text-gray-900 dark:text-white text-[15px]">{user.full_name}</p>
+                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{user.email}</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(user.role)}`}>
+                            <span className={`px-3 py-1 text-[11px] font-black rounded-full uppercase tracking-widest ${getRoleBadgeClass(user.role)}`}>
                               {user.role}
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeClass(user.status)}`}>
+                            <span className={`px-3 py-1 text-[11px] font-black rounded-full uppercase tracking-widest ${getStatusBadgeClass(user.status)}`}>
                               {user.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-gray-600">{formatDate(user.created_at)}</td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                            {formatDate(user.created_at)}
+                          </td>
                         </tr>
                       ))
                     )}
@@ -322,46 +230,41 @@ const Dashboard = () => {
           {/* Pending Approvals */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Pending Approvals</h2>
-              <span className="bg-red-100 text-red-700 text-xs font-medium px-2 py-1 rounded-full">
-                {pendingApprovals.length} pending
-              </span>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
+                Pending Approvals
+              </h2>
+              {pendingApprovals.length > 0 && (
+                <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest border border-red-200 dark:border-red-800">
+                  {pendingApprovals.length} New
+                </span>
+              )}
             </div>
-            <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 overflow-hidden shadow-lg divide-y divide-gray-100 dark:divide-gray-800/50">
               {pendingApprovals.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <svg
-                    className="w-12 h-12 mx-auto mb-4 text-gray-300"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                  <p>No pending approvals</p>
+                <div className="p-10 text-center text-gray-500 dark:text-gray-400">
+                  <UserCheck className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                  <p className="font-medium">No pending approvals</p>
                 </div>
               ) : (
                 pendingApprovals.slice(0, 5).map((user) => (
-                  <div key={user.user_id} className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-gray-900">{user.full_name}</h3>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeClass(user.role)}`}>
+                  <div key={user.user_id} className="p-5 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-[15px]">{user.full_name}</h3>
+                      <span className={`px-2 py-0.5 text-[10px] font-black rounded-full uppercase tracking-widest ${getRoleBadgeClass(user.role)}`}>
                         {user.role}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-3">{user.email}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{user.email}</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleApproveUser(user.user_id)}
-                        className="flex-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                        className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-bold rounded-xl hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:-translate-y-0.5 transition-all"
                       >
                         Approve
                       </button>
                       <Link
                         to="/admin/users"
-                        className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors text-center"
+                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-center border border-gray-200 dark:border-gray-700"
                       >
                         Review
                       </Link>
@@ -375,40 +278,61 @@ const Dashboard = () => {
 
         {/* System Overview */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">System Overview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight mb-4">
+            System Overview
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-gray-900">Server Status</h3>
-                <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              </div>
-              <p className="text-sm text-gray-500">All systems operational</p>
-              <p className="text-xs text-gray-400 mt-1">API connected</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-gray-900">Database</h3>
-                <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              </div>
-              <p className="text-sm text-gray-500">Connected</p>
-              <p className="text-xs text-gray-400 mt-1">PostgreSQL</p>
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-gray-900">Platform Stats</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Users</span>
-                  <span className="font-medium text-gray-900">{stats.totalUsers}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                    <Server className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 dark:text-white">Server</h3>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Doctors</span>
-                  <span className="font-medium text-gray-900">{stats.totalDoctors}</span>
+                <span className="flex h-3 w-3 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+              </div>
+              <p className="text-sm font-bold text-green-600 dark:text-green-400">Operational</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">API processing normally</p>
+            </div>
+            
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-lg p-6 hover:shadow-xl transition-shadow">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 dark:text-white">Database</h3>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Appointments</span>
-                  <span className="font-medium text-gray-900">{stats.totalAppointments}</span>
+                <span className="flex h-3 w-3 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+              </div>
+              <p className="text-sm font-bold text-green-600 dark:text-green-400">Connected</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">PostgreSQL responding</p>
+            </div>
+            
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-lg p-6 hover:shadow-xl transition-shadow">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-gray-900 dark:text-white">Activity</h3>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-medium text-gray-500 dark:text-gray-400">Total Users</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{stats.totalUsers.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm border-t border-gray-100 dark:border-gray-800 pt-2">
+                  <span className="font-medium text-gray-500 dark:text-gray-400">Appointments</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{stats.totalAppointments.toLocaleString()}</span>
                 </div>
               </div>
             </div>

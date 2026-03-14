@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../../components/Layout";
+import StatCard from "../../components/dashboard/StatCard";
+import QuickActions from "../../components/dashboard/QuickActions";
 import {
   Calendar,
   Users,
@@ -8,6 +10,9 @@ import {
   Clock,
   DollarSign,
   TrendingUp,
+  Loader2,
+  CalendarDays,
+  CheckCircle2,
 } from "lucide-react";
 import api, { handleApiError } from "../../services/api";
 
@@ -122,17 +127,17 @@ const Dashboard = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      requested: { label: "Requested", class: "bg-gray-100 text-gray-700" },
-      assigned: { label: "Assigned", class: "bg-blue-100 text-blue-700" },
-      confirmed: { label: "Confirmed", class: "bg-green-100 text-green-700" },
-      completed: { label: "Completed", class: "bg-purple-100 text-purple-700" },
-      cancelled: { label: "Cancelled", class: "bg-red-100 text-red-700" },
-      no_show: { label: "No Show", class: "bg-orange-100 text-orange-700" },
+      requested: { label: "Requested", class: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700" },
+      assigned: { label: "Assigned", class: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800" },
+      confirmed: { label: "Confirmed", class: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800" },
+      completed: { label: "Completed", class: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-800" },
+      cancelled: { label: "Cancelled", class: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800" },
+      no_show: { label: "No Show", class: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800" },
     };
     const config = statusConfig[status] || statusConfig.requested;
     return (
       <span
-        className={`px-2 py-1 text-xs font-medium rounded-full ${config.class}`}
+        className={`px-3 py-1 text-[11px] font-black rounded-full uppercase tracking-widest ${config.class}`}
       >
         {config.label}
       </span>
@@ -157,11 +162,27 @@ const Dashboard = () => {
     });
   };
 
+  const statCards = [
+    { label: "Today's Appts", value: stats.todayAppointments, icon: CalendarDays, colorClass: "bg-[#0ea5e9] dark:bg-[#0284c7]" },
+    { label: "Total Patients", value: stats.totalPatients, icon: Users, colorClass: "bg-[#8b5cf6] dark:bg-[#7c3aed]" },
+    { label: "This Month", value: `Rs. ${stats.thisMonthEarnings.toFixed(2)}`, icon: DollarSign, colorClass: "bg-[#10b981] dark:bg-[#059669]" },
+  ];
+
+  const quickActionsList = [
+    { label: "Appointments", icon: Calendar, href: "/doctor/appointments", accent: false },
+    { label: "Patients", icon: Users, href: "/doctor/patients", accent: false },
+    { label: "Schedule", icon: Clock, href: "/doctor/schedule", accent: false },
+    { label: "Profile", icon: Users, href: "/doctor/profile", accent: true },
+  ];
+
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-500 font-medium">Loading dashboard...</p>
+          </div>
         </div>
       </Layout>
     );
@@ -169,240 +190,142 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Doctor Dashboard
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Welcome back! Here's what's happening today.
-          </p>
+      <div className="space-y-8 animate-in fade-in duration-500">
+        {/* Header Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              Doctor Dashboard
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">
+              Welcome back! Here's what's happening today.
+            </p>
+          </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Today's Appointments */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Today's Appointments
-                </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
-                  {stats.todayAppointments}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm text-green-600 dark:text-green-400">
-              <TrendingUp className="w-4 h-4 mr-1" />
-              {stats.completedToday} completed
-            </div>
-          </div>
-
-          {/* Total Patients */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Total Patients
-                </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
-                  {stats.totalPatients}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm text-gray-600 dark:text-gray-400">
-              <Clock className="w-4 h-4 mr-1" />
-              {stats.pendingAppointments} pending
-            </div>
-          </div>
-
-          {/* This Month Earnings */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  This Month
-                </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
-                  Rs. {stats.thisMonthEarnings.toFixed(2)}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm text-gray-600 dark:text-gray-400">
-              Total: Rs. {stats.totalEarnings.toFixed(2)}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {statCards.map((stat, i) => (
+            <StatCard key={i} {...stat} loading={loading} />
+          ))}
         </div>
 
+        {/* Quick Actions */}
+        <QuickActions actions={quickActionsList} />
+
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Upcoming Appointments */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Upcoming Appointments
-                </h2>
-                <Link
-                  to="/doctor/appointments"
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  View All
-                </Link>
-              </div>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
+                Upcoming Appointments
+              </h2>
+              <Link
+                to="/doctor/appointments"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors"
+              >
+                View All →
+              </Link>
             </div>
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 overflow-hidden shadow-lg">
               {appointments.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No upcoming appointments</p>
+                <div className="p-10 text-center">
+                  <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-gray-700">
+                    <Calendar className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">No upcoming appointments</p>
                 </div>
               ) : (
-                appointments.map((appointment) => (
-                  <div
-                    key={appointment.appointment_id}
-                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                            {appointment.Patient?.full_name
-                              ?.charAt(0)
-                              ?.toUpperCase() || "P"}
+                <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                  {appointments.map((appointment) => (
+                    <div
+                      key={appointment.appointment_id}
+                      className="p-5 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors duration-300"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                            <span className="font-bold text-lg">
+                              {appointment.Patient?.full_name?.charAt(0)?.toUpperCase() || "P"}
+                            </span>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-gray-100">
-                              {appointment.Patient?.full_name ||
-                                "Unknown Patient"}
+                          <div className="min-w-0">
+                            <p className="font-bold text-gray-900 dark:text-white text-[15px] truncate">
+                              {appointment.Patient?.full_name || "Unknown Patient"}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {formatDate(appointment.appointment_date)} at{" "}
-                              {formatTime(appointment.appointment_time)}
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
+                              {formatDate(appointment.appointment_date)} at {formatTime(appointment.appointment_time)}
                             </p>
                           </div>
                         </div>
+                        {getStatusBadge(appointment.status)}
                       </div>
-                      {getStatusBadge(appointment.status)}
+                      {appointment.reason && (
+                        <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                          <span className="font-bold text-gray-900 dark:text-gray-200">Reason:</span> {appointment.reason}
+                        </p>
+                      )}
                     </div>
-                    {appointment.reason && (
-                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 ml-13">
-                        {appointment.reason}
-                      </p>
-                    )}
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </div>
 
           {/* Recent Patients */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Recent Patients
-                </h2>
-                <Link
-                  to="/doctor/patients"
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  View All
-                </Link>
-              </div>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
+                Recent Patients
+              </h2>
+              <Link
+                to="/doctor/patients"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold transition-colors"
+              >
+                View All →
+              </Link>
             </div>
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 overflow-hidden shadow-lg">
               {recentPatients.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No recent patients</p>
+                <div className="p-10 text-center">
+                  <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-gray-700">
+                    <Users className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">No recent patients</p>
                 </div>
               ) : (
-                recentPatients.map((appointment) => (
-                  <div
-                    key={appointment.appointment_id}
-                    className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {appointment.Patient?.full_name
-                            ?.charAt(0)
-                            ?.toUpperCase() || "P"}
+                <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                  {recentPatients.map((appointment) => (
+                    <div
+                      key={appointment.appointment_id}
+                      className="p-5 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors duration-300"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-800">
+                            <span className="font-bold text-lg">
+                              {appointment.Patient?.full_name?.charAt(0)?.toUpperCase() || "P"}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-gray-900 dark:text-white text-[15px] truncate">
+                              {appointment.Patient?.full_name || "Unknown Patient"}
+                            </p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
+                              Last visit: {formatDate(appointment.appointment_date)}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {appointment.Patient?.full_name ||
-                              "Unknown Patient"}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Last visit:{" "}
-                            {formatDate(appointment.appointment_date)}
-                          </p>
+                        <div className="bg-green-50 dark:bg-green-900/30 p-2 rounded-xl text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800">
+                          <CheckCircle2 className="w-5 h-5" />
                         </div>
                       </div>
-                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link
-              to="/doctor/appointments"
-              className="flex flex-col items-center justify-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-            >
-              <Calendar className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-2" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Appointments
-              </span>
-            </Link>
-            <Link
-              to="/doctor/patients"
-              className="flex flex-col items-center justify-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
-            >
-              <Users className="w-8 h-8 text-purple-600 dark:text-purple-400 mb-2" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Patients
-              </span>
-            </Link>
-            <Link
-              to="/doctor/schedule"
-              className="flex flex-col items-center justify-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-            >
-              <Clock className="w-8 h-8 text-green-600 dark:text-green-400 mb-2" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Schedule
-              </span>
-            </Link>
-            <Link
-              to="/doctor/profile"
-              className="flex flex-col items-center justify-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
-            >
-              <Users className="w-8 h-8 text-orange-600 dark:text-orange-400 mb-2" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Profile
-              </span>
-            </Link>
           </div>
         </div>
       </div>
@@ -411,3 +334,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

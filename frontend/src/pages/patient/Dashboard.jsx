@@ -152,9 +152,9 @@ const Dashboard = () => {
   ];
 
   const quickActionsList = [
-    { label: "Book Appt", icon: PlusCircle, href: "/patient/pharmacies", accent: false },
-    { label: "My Appts", icon: CalendarDays, href: "/patient/appointments", accent: false },
-    { label: "Records", icon: FileText, href: "/patient/records", accent: false },
+    { label: "Book Appointment", icon: PlusCircle, href: "/patient/pharmacies", accent: false },
+    { label: "My Appointments", icon: CalendarDays, href: "/patient/appointments", accent: false },
+    { label: "Medical Records", icon: FileText, href: "/patient/records", accent: false },
     { label: "Emergency", icon: Siren, href: "/emergency", accent: true },
   ];
 
