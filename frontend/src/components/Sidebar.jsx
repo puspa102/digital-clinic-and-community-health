@@ -285,6 +285,35 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               </Link>
             );
           })}
+
+          {/* Chat in main menu for Doctor/Patient */}
+          {(user?.role === "Doctor" || user?.role === "Patient") && (
+            <button
+              onClick={() => {
+                setShowChat(true);
+                onClose();
+              }}
+              title={isMinimized ? "Chat" : undefined}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all group relative text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white ${
+                isMinimized ? "justify-center" : ""
+              }`}
+            >
+              <div className="relative shrink-0">
+                <MessageSquare size={19} className="transition-colors" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-2 -right-2 min-w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1">
+                    {unreadMessages > 9 ? "9+" : unreadMessages}
+                  </span>
+                )}
+              </div>
+              {!isMinimized && <span className="whitespace-nowrap">Chat</span>}
+              {isMinimized && (
+                <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
+                  Chat
+                </div>
+              )}
+            </button>
+          )}
         </nav>
 
         {/* Divider */}
@@ -320,35 +349,6 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
                 </div>
               )}
             </Link>
-
-            {/* Chat */}
-            {(user?.role === "Doctor" || user?.role === "Patient") && (
-              <button
-                onClick={() => {
-                  setShowChat(true);
-                  onClose();
-                }}
-                title={isMinimized ? "Chat" : undefined}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all group relative text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white ${
-                  isMinimized ? "justify-center" : ""
-                }`}
-              >
-                <div className="relative shrink-0">
-                  <MessageSquare size={18} className="transition-colors" />
-                  {unreadMessages > 0 && (
-                    <span className="absolute -top-2 -right-2 min-w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1">
-                      {unreadMessages > 9 ? "9+" : unreadMessages}
-                    </span>
-                  )}
-                </div>
-                {!isMinimized && <span className="whitespace-nowrap">Chat</span>}
-                {isMinimized && (
-                  <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
-                    Chat
-                  </div>
-                )}
-              </button>
-            )}
 
             {/* Help */}
             <button

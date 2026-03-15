@@ -35,6 +35,7 @@ const Navbar = ({ onMenuClick }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const notificationRef = useRef(null);
+  const seenNotificationIdsRef = useRef(new Set());
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -474,10 +475,10 @@ const Navbar = ({ onMenuClick }) => {
       }
 
       setNotifications(notifs);
-      // Only update unseen count if dropdown is closed
-      if (!showNotifications) {
-        setUnseenCount(notifs.length);
-      }
+
+      // Count only notifications not seen yet
+      const unseen = notifs.filter((n) => !seenNotificationIdsRef.current.has(n.id));
+      setUnseenCount(unseen.length);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     } finally {
@@ -487,11 +488,20 @@ const Navbar = ({ onMenuClick }) => {
 
   // Mark notifications as seen when dropdown opens
   const handleNotificationClick = () => {
-    setShowNotifications(!showNotifications);
-    if (!showNotifications) {
-      // Opening dropdown - mark as seen
+    const nextOpenState = !showNotifications;
+    setShowNotifications(nextOpenState);
+
+    if (nextOpenState) {
+      // Opening dropdown means user has read current notifications
+      notifications.forEach((n) => seenNotificationIdsRef.current.add(n.id));
       setUnseenCount(0);
     }
+  };
+
+  const handleNotificationRead = (notifId) => {
+    seenNotificationIdsRef.current.add(notifId);
+    setUnseenCount(0);
+    setShowNotifications(false);
   };
 
   const getNotificationColorClasses = (color) => {
@@ -717,7 +727,7 @@ const Navbar = ({ onMenuClick }) => {
                               <Link
                                 key={notif.id}
                                 to={notif.link}
-                                onClick={() => setShowNotifications(false)}
+                                onClick={() => handleNotificationRead(notif.id)}
                                 className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group"
                               >
                                 <div className={`p-2 rounded-lg shrink-0 ${getNotificationColorClasses(notif.color)}`}>
