@@ -37,6 +37,47 @@ const Navbar = ({ onMenuClick }) => {
   const notificationRef = useRef(null);
   const seenNotificationIdsRef = useRef(new Set());
 
+  const getSeenNotificationsStorageKey = () => {
+    if (!user) return null;
+    const userIdentifier = user.user_id || user.id || user.email || user.role;
+    return `seenNotifications:${user.role}:${userIdentifier}`;
+  };
+
+  const persistSeenNotifications = () => {
+    const storageKey = getSeenNotificationsStorageKey();
+    if (!storageKey) return;
+
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(Array.from(seenNotificationIdsRef.current)),
+      );
+    } catch (err) {
+      console.error("Failed to persist seen notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      seenNotificationIdsRef.current = new Set();
+      setUnseenCount(0);
+      return;
+    }
+
+    const storageKey = getSeenNotificationsStorageKey();
+    if (!storageKey) return;
+
+    try {
+      const savedSeenIds = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      if (Array.isArray(savedSeenIds)) {
+        seenNotificationIdsRef.current = new Set(savedSeenIds);
+      }
+    } catch (err) {
+      seenNotificationIdsRef.current = new Set();
+      console.error("Failed to load seen notifications:", err);
+    }
+  }, [isAuthenticated, user?.role, user?.user_id, user?.id, user?.email]);
+
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -494,12 +535,14 @@ const Navbar = ({ onMenuClick }) => {
     if (nextOpenState) {
       // Opening dropdown means user has read current notifications
       notifications.forEach((n) => seenNotificationIdsRef.current.add(n.id));
+      persistSeenNotifications();
       setUnseenCount(0);
     }
   };
 
   const handleNotificationRead = (notifId) => {
     seenNotificationIdsRef.current.add(notifId);
+    persistSeenNotifications();
     setUnseenCount(0);
     setShowNotifications(false);
   };
@@ -683,7 +726,7 @@ const Navbar = ({ onMenuClick }) => {
                 >
                   <Bell size={20} className="text-gray-500 dark:text-gray-400" />
                   {unseenCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1 ring-2 ring-white dark:ring-gray-900">
+                    <span className="absolute top-1.5 right-1.5 min-w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1 ring-2 ring-white dark:ring-gray-900">
                       {unseenCount > 9 ? "9+" : unseenCount}
                     </span>
                   )}
@@ -706,7 +749,7 @@ const Navbar = ({ onMenuClick }) => {
                       )}
                     </div>
 
-                    <div className="max-h-[320px] overflow-y-auto">
+                    <div className="max-h-80 overflow-y-auto">
                       {loadingNotifications ? (
                         <div className="p-8 text-center">
                           <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
