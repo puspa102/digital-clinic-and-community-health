@@ -1,5 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
+import { chatAPI } from "../services/api";
+import Chat from "./Chat";
 import {
   LayoutDashboard,
   Home,
@@ -23,12 +27,49 @@ import {
   ChevronRight,
   HelpCircle,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showChat, setShowChat] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    if (!isAuthenticated || !["Doctor", "Patient"].includes(user?.role)) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    chatAPI
+      .getUnreadCount()
+      .then((response) => {
+        if (response.success) {
+          setUnreadMessages(response.data.unread_count || 0);
+        }
+      })
+      .catch(() => {});
+
+    const SOCKET_URL =
+      import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"],
+    });
+
+    socketRef.current = socket;
+    socket.on("message_notification", () => {
+      setUnreadMessages((prev) => prev + 1);
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [isAuthenticated, user?.role]);
 
   const isActivePath = (path) => location.pathname === path;
 
@@ -280,6 +321,35 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               )}
             </Link>
 
+            {/* Chat */}
+            {(user?.role === "Doctor" || user?.role === "Patient") && (
+              <button
+                onClick={() => {
+                  setShowChat(true);
+                  onClose();
+                }}
+                title={isMinimized ? "Chat" : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all group relative text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white ${
+                  isMinimized ? "justify-center" : ""
+                }`}
+              >
+                <div className="relative shrink-0">
+                  <MessageSquare size={18} className="transition-colors" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-2 -right-2 min-w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1">
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </span>
+                  )}
+                </div>
+                {!isMinimized && <span className="whitespace-nowrap">Chat</span>}
+                {isMinimized && (
+                  <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
+                    Chat
+                  </div>
+                )}
+              </button>
+            )}
+
             {/* Help */}
             <button
               title={isMinimized ? "Help & Support" : undefined}
@@ -342,6 +412,14 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
           <ChevronLeft size={20} className="text-gray-500 dark:text-gray-400" />
         </button>
       </aside>
+
+      {(user?.role === "Doctor" || user?.role === "Patient") && (
+        <Chat
+          isOpen={showChat}
+          onClose={() => setShowChat(false)}
+          onUnreadChange={setUnreadMessages}
+        />
+      )}
     </>
   );
 };
