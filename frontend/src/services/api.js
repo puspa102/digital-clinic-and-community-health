@@ -90,6 +90,18 @@ export const authAPI = {
     return response.data;
   },
 
+  // Request OTP for password reset
+  forgotPassword: async (email) => {
+    const response = await api.post("/auth/forgot-password", { email });
+    return response.data;
+  },
+
+  // Reset password using OTP
+  resetPasswordWithOtp: async (data) => {
+    const response = await api.post("/auth/reset-password-otp", data);
+    return response.data;
+  },
+
   // Logout user
   logout: async () => {
     const response = await api.post("/auth/logout");

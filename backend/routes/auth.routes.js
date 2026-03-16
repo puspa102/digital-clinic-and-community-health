@@ -9,6 +9,8 @@ import {
   updateProfile,
   changePassword,
   resendOtp,
+  requestPasswordResetOtp,
+  resetPasswordWithOtp,
   getAllUsers,
   getUserById,
   updateUserStatus,
@@ -71,6 +73,28 @@ router.post(
   "/resend-otp",
   otpLimiter,
   resendOtp,
+);
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Send OTP for password reset
+ * @access  Public
+ */
+router.post(
+  "/forgot-password",
+  otpLimiter,
+  requestPasswordResetOtp,
+);
+
+/**
+ * @route   POST /api/auth/reset-password-otp
+ * @desc    Reset password using email + OTP
+ * @access  Public
+ */
+router.post(
+  "/reset-password-otp",
+  authLimiter,
+  resetPasswordWithOtp,
 );
 
 /**

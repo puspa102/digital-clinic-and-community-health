@@ -199,7 +199,7 @@ export const resendOtp = async (req, res) => {
     user.otp_expiry = otp_expiry;
     await user.save();
 
-    // TODO: Send OTP via email/SMS
+    await otpMail(email, otp);
     console.log(`[DEV] New OTP for ${email}: ${otp}`);
 
     return successResponse(res, HTTP_STATUS.OK, "OTP sent successfully", {
@@ -207,6 +207,116 @@ export const resendOtp = async (req, res) => {
     });
   } catch (error) {
     console.error("Resend OTP error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
+ * Request password reset OTP
+ * @route POST /api/auth/forgot-password
+ */
+export const requestPasswordResetOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return errorResponse(res, HTTP_STATUS.BAD_REQUEST, "Email is required");
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.USER_NOT_FOUND,
+      );
+    }
+
+    const otp = generateOtp();
+    const otp_expiry = getOtpExpiry(10);
+
+    user.otp = otp;
+    user.otp_expiry = otp_expiry;
+    await user.save();
+
+    await otpMail(email, otp);
+    console.log(`[DEV] Password reset OTP for ${email}: ${otp}`);
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Password reset OTP sent to your email",
+      { email: user.email },
+    );
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return errorResponse(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      ERROR_MESSAGES.SERVER_ERROR,
+    );
+  }
+};
+
+/**
+ * Reset password using OTP
+ * @route POST /api/auth/reset-password-otp
+ */
+export const resetPasswordWithOtp = async (req, res) => {
+  try {
+    const { email, otp, new_password } = req.body;
+
+    if (!email || !otp || !new_password) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Email, OTP, and new password are required",
+      );
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(new_password)) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        ERROR_MESSAGES.INVALID_PASSWORD,
+      );
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.USER_NOT_FOUND,
+      );
+    }
+
+    if (user.otp !== otp || isOtpExpired(user.otp_expiry)) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        ERROR_MESSAGES.INVALID_OTP,
+      );
+    }
+
+    user.password_hash = await bcrypt.hash(new_password, 12);
+    user.otp = null;
+    user.otp_expiry = null;
+    user.is_temp_password = false;
+    await user.save();
+
+    return successResponse(
+      res,
+      HTTP_STATUS.OK,
+      "Password has been reset successfully",
+    );
+  } catch (error) {
+    console.error("Reset password with OTP error:", error);
     return errorResponse(
       res,
       HTTP_STATUS.INTERNAL_SERVER_ERROR,
