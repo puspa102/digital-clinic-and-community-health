@@ -399,17 +399,17 @@ const Settings = () => {
                   </div>
                   <button
                     onClick={() => handleNotificationChange(option.key)}
-                    className={`relative w-12 h-7 rounded-full transition-colors ${
+                    className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${
                       notifications[option.key]
                         ? "bg-teal-500"
                         : "bg-gray-300 dark:bg-gray-600"
                     }`}
                   >
                     <span
-                      className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
                         notifications[option.key]
-                          ? "translate-x-6"
-                          : "translate-x-1"
+                          ? "translate-x-5"
+                          : "translate-x-0"
                       }`}
                     />
                   </button>
