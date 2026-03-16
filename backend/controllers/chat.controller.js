@@ -9,7 +9,49 @@ import {
   successResponse,
   errorResponse,
 } from "../utils/helpers.js";
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from "../utils/constants.js";
+import {
+  HTTP_STATUS,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+  APPOINTMENT_STATUS,
+} from "../utils/constants.js";
+
+const CHAT_ALLOWED_APPOINTMENT_STATUSES = [
+  APPOINTMENT_STATUS.CONFIRMED,
+  APPOINTMENT_STATUS.COMPLETED,
+];
+
+const hasAcceptedDoctorPatientAppointment = async (userOne, userTwo) => {
+  const isDoctorPatientPair =
+    (userOne.role === "Doctor" && userTwo.role === "Patient") ||
+    (userOne.role === "Patient" && userTwo.role === "Doctor");
+
+  if (!isDoctorPatientPair) {
+    return false;
+  }
+
+  const doctorUserId = userOne.role === "Doctor" ? userOne.user_id : userTwo.user_id;
+  const patientUserId = userOne.role === "Patient" ? userOne.user_id : userTwo.user_id;
+
+  const doctorProfile = await Doctor.findOne({
+    where: { user_id: doctorUserId },
+    attributes: ["doctor_id"],
+  });
+
+  if (!doctorProfile) {
+    return false;
+  }
+
+  const appointmentCount = await Appointment.count({
+    where: {
+      patient_id: patientUserId,
+      doctor_id: doctorProfile.doctor_id,
+      status: { [Op.in]: CHAT_ALLOWED_APPOINTMENT_STATUSES },
+    },
+  });
+
+  return appointmentCount > 0;
+};
 
 /**
  * Get or create a conversation between two users
@@ -37,6 +79,23 @@ export const getOrCreateConversation = async (req, res) => {
 
     if (!["Doctor", "Patient"].includes(participant.role)) {
       return errorResponse(res, HTTP_STATUS.BAD_REQUEST, "Can only chat with doctors or patients");
+    }
+
+    const currentUser = await User.findByPk(userId, {
+      attributes: ["user_id", "role"],
+    });
+
+    if (!currentUser) {
+      return errorResponse(res, HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.USER_NOT_FOUND);
+    }
+
+    const isEligible = await hasAcceptedDoctorPatientAppointment(currentUser, participant);
+    if (!isEligible) {
+      return errorResponse(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        "Chat is available only after the doctor accepts your appointment",
+      );
     }
 
     // Ensure participants are ordered consistently (lower ID first)
@@ -385,11 +444,12 @@ export const getChatContacts = async (req, res) => {
     let contacts = [];
 
     if (userRole === "Patient") {
-      // Patients can chat with doctors from their appointments
+      // Patients can chat with doctors only after doctor accepts appointment.
       const appointments = await Appointment.findAll({
         where: {
           patient_id: userId,
           doctor_id: { [Op.ne]: null },
+          status: { [Op.in]: CHAT_ALLOWED_APPOINTMENT_STATUSES },
         },
         include: [
           {
@@ -401,7 +461,6 @@ export const getChatContacts = async (req, res) => {
           },
         ],
         attributes: ["doctor_id"],
-        group: ["doctor_id", "Doctor.doctor_id", "Doctor.User.user_id"],
       });
 
       const doctorMap = new Map();
@@ -419,14 +478,17 @@ export const getChatContacts = async (req, res) => {
 
       contacts = Array.from(doctorMap.values());
     } else if (userRole === "Doctor") {
-      // Doctors can chat with their patients
+      // Doctors can chat with patients whose appointments are accepted/confirmed.
       const doctor = await Doctor.findOne({
         where: { user_id: userId },
       });
 
       if (doctor) {
         const appointments = await Appointment.findAll({
-          where: { doctor_id: doctor.doctor_id },
+          where: {
+            doctor_id: doctor.doctor_id,
+            status: { [Op.in]: CHAT_ALLOWED_APPOINTMENT_STATUSES },
+          },
           include: [
             {
               model: User,

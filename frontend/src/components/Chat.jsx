@@ -416,7 +416,7 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
                   {searchQuery
                     ? "No contacts found"
                     : user?.role === "Patient"
-                    ? "Book an appointment to chat with doctors"
+                    ? "Your doctor will appear here after appointment is accepted"
                     : "Your patients will appear here"}
                 </div>
               )
