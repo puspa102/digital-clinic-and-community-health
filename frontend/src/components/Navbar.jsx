@@ -455,8 +455,13 @@ const Navbar = ({ onMenuClick }) => {
         // Requested appointments needing doctor assignment
         const requested = appointments.filter((a) => a.status === APPOINTMENT_STATUS.REQUESTED);
         if (requested.length > 0) {
+          const requestedSignature = requested
+            .slice(0, 5)
+            .map((a) => a.appointment_id)
+            .join("-");
+
           notifs.push({
-            id: "requested-appointments",
+            id: `requested-appointments-${requested.length}-${requestedSignature}`,
             type: "action",
             title: "Doctor Assignment Needed",
             message: `${requested.length} appointment${requested.length > 1 ? "s" : ""} need doctor assignment`,
@@ -473,8 +478,9 @@ const Navbar = ({ onMenuClick }) => {
           return aptDate === now.toDateString();
         });
         if (todayApts.length > 0) {
+          const todayKey = now.toISOString().slice(0, 10);
           notifs.push({
-            id: "pharmacy-today",
+            id: `pharmacy-today-${todayKey}-${todayApts.length}`,
             type: "info",
             title: "Today's Appointments",
             message: `${todayApts.length} appointment${todayApts.length > 1 ? "s" : ""} scheduled for today`,
