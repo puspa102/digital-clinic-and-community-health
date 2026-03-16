@@ -47,10 +47,12 @@ export const createEmergency = async (req, res) => {
       );
     }
 
-    // Check for existing active emergency from same patient
+    // Prevent duplicate active requests of the same type,
+    // but allow different emergency types in parallel.
     const existingEmergency = await Emergency.findOne({
       where: {
         patient_id: effectivePatientId,
+        emergency_type,
         status: {
           [Op.in]: [
             EMERGENCY_STATUS.PENDING,
@@ -65,7 +67,7 @@ export const createEmergency = async (req, res) => {
       return errorResponse(
         res,
         HTTP_STATUS.CONFLICT,
-        "You already have an active emergency request. Please wait for it to be resolved or cancel it first.",
+        `You already have an active ${emergency_type} emergency request. Please wait for it to be resolved or cancel it first.`,
       );
     }
 
