@@ -14,7 +14,7 @@ import {
   CalendarDays,
   CheckCircle2,
 } from "lucide-react";
-import api, { handleApiError } from "../../services/api";
+import { appointmentAPI } from "../../services/api";
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -37,9 +37,22 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      // Fetch doctor's appointments
-      const appointmentsResponse = await api.get("/appointments/doctor/me");
-      const allAppointments = appointmentsResponse.data.data || [];
+      // Fetch all doctor appointments across pages so dashboard totals are accurate.
+      const allAppointments = [];
+      let page = 1;
+      const limit = 100;
+      let totalPages = 1;
+
+      do {
+        const response = await appointmentAPI.getMyDoctorAppointments({
+          page,
+          limit,
+        });
+        const pageData = response.data || [];
+        allAppointments.push(...pageData);
+        totalPages = response.pagination?.totalPages || 1;
+        page += 1;
+      } while (page <= totalPages);
 
       // Calculate today's date
       const today = new Date().toISOString().split("T")[0];
@@ -61,13 +74,15 @@ const Dashboard = () => {
 
       // Get unique patients
       const uniquePatients = new Set(
-        allAppointments.map((apt) => apt.patient_id),
+        allAppointments.map(
+          (apt) => apt.patient_id || apt.Patient?.user_id,
+        ).filter(Boolean),
       );
 
       // Calculate total earnings (paid appointments)
       const totalEarnings = allAppointments
         .filter((apt) => apt.payment_status === "paid")
-        .reduce((sum, apt) => sum + (apt.payment_amount || 0), 0);
+        .reduce((sum, apt) => sum + (Number(apt.payment_amount) || 0), 0);
 
       // Calculate this month's earnings
       const currentMonth = new Date().getMonth();
@@ -81,7 +96,7 @@ const Dashboard = () => {
             apt.payment_status === "paid"
           );
         })
-        .reduce((sum, apt) => sum + (apt.payment_amount || 0), 0);
+        .reduce((sum, apt) => sum + (Number(apt.payment_amount) || 0), 0);
 
       setStats({
         todayAppointments: todayAppts.length,
