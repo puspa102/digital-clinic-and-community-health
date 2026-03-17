@@ -837,8 +837,7 @@ export const getMyAppointments = async (req, res) => {
       limit,
       offset,
       order: [
-        ["appointment_date", "ASC"],
-        ["appointment_time", "ASC"],
+        ["created_at", "DESC"],
       ],
     });
 
