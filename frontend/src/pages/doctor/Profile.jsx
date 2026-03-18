@@ -17,15 +17,19 @@ import {
   Check,
   BadgeCheck,
   Banknote,
+  Camera,
 } from "lucide-react";
 import api, { handleApiError } from "../../services/api";
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [removeImage, setRemoveImage] = useState(false);
 
   const [doctorProfile, setDoctorProfile] = useState(null);
   const [formData, setFormData] = useState({
@@ -67,12 +71,34 @@ const Profile = () => {
         bio: profile.bio || "",
         consultation_fee: profile.consultation_fee || "",
       });
+      setPreviewImage(
+        profile.User?.profile_picture
+          ? `http://localhost:5000/${profile.User.profile_picture}`
+          : null,
+      );
+      setRemoveImage(false);
     } catch (err) {
       const errorInfo = handleApiError(err);
       showToast(errorInfo.message, "error");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      setPreviewImage(URL.createObjectURL(file));
+      setRemoveImage(false);
+    }
+  };
+
+  const handleRemoveImage = (e) => {
+    e.preventDefault();
+    setProfileImage(null);
+    setPreviewImage(null);
+    setRemoveImage(true);
   };
 
   const handleInputChange = (e) => {
@@ -88,6 +114,22 @@ const Profile = () => {
     setSaving(true);
 
     try {
+      // 1. Update User Profile (Image, Name, Phone)
+      const userFormData = new FormData();
+      userFormData.append("full_name", formData.full_name);
+      userFormData.append("phone", formData.phone);
+      if (profileImage) {
+        userFormData.append("profile_picture", profileImage);
+      }
+      if (removeImage) {
+        userFormData.append("remove_profile_picture", "true");
+      }
+
+      await api.put("/auth/profile", userFormData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // 2. Update Doctor Profile
       const updateData = {
         specialization: formData.specialization,
         license_number: formData.license_number,
@@ -100,9 +142,13 @@ const Profile = () => {
       };
 
       await api.put(`/doctors/${doctorProfile.doctor_id}`, updateData);
+
       showToast("Profile updated successfully!");
       setIsEditing(false);
+      setProfileImage(null);
+      setRemoveImage(false);
       fetchDoctorProfile();
+      if (refreshUser) refreshUser();
     } catch (err) {
       const errorInfo = handleApiError(err);
       showToast(errorInfo.message, "error");
@@ -125,6 +171,13 @@ const Profile = () => {
         bio: doctorProfile.bio || "",
         consultation_fee: doctorProfile.consultation_fee || "",
       });
+      setPreviewImage(
+        doctorProfile.User?.profile_picture
+          ? `http://localhost:5000/${doctorProfile.User.profile_picture}`
+          : null,
+      );
+      setProfileImage(null);
+      setRemoveImage(false);
     }
   };
 
@@ -183,10 +236,42 @@ const Profile = () => {
 
         {/* Profile Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-8">
+          <div className="bg-linear-to-r from-blue-600 to-indigo-600 px-6 py-8">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-                <User className="w-10 h-10 text-white" />
+              <div className="relative">
+                <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center overflow-hidden border-2 border-white/30">
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-10 h-10 text-white" />
+                  )}
+                </div>
+                {isEditing && (
+                  <div className="absolute -bottom-2 -right-4 flex gap-1">
+                    <label className="p-1.5 bg-white text-blue-600 rounded-full cursor-pointer hover:bg-gray-100 transition-colors shadow-lg">
+                      <Camera className="w-4 h-4" />
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                    {previewImage && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="p-1.5 bg-white text-red-500 rounded-full cursor-pointer hover:bg-gray-100 transition-colors shadow-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="text-white">
                 <h2 className="text-2xl font-semibold">
@@ -212,7 +297,9 @@ const Profile = () => {
                 <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Email
+                </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {formData.email || "Not set"}
                 </p>
@@ -223,7 +310,9 @@ const Profile = () => {
                 <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Phone
+                </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {formData.phone || "Not set"}
                 </p>
@@ -234,7 +323,9 @@ const Profile = () => {
                 <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Hospital</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Hospital
+                </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {formData.hospital_name || "Not set"}
                 </p>
@@ -245,9 +336,13 @@ const Profile = () => {
                 <Banknote className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Consultation Fee</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Consultation Fee
+                </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {formData.consultation_fee ? `Rs. ${formData.consultation_fee}` : "Not set"}
+                  {formData.consultation_fee
+                    ? `Rs. ${formData.consultation_fee}`
+                    : "Not set"}
                 </p>
               </div>
             </div>

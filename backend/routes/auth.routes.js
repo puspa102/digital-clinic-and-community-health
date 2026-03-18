@@ -33,6 +33,7 @@ import {
   otpLimiter,
   refreshTokenLimiter,
 } from "../middlewares/rateLimiter.middleware.js";
+import upload from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
@@ -45,90 +46,56 @@ const router = express.Router();
  * @desc    Register a new patient account (public registration is Patient-only)
  * @access  Public
  */
-router.post(
-  "/register",
-  authLimiter,
-  validateRegister,
-  registerUser,
-);
+router.post("/register", authLimiter, validateRegister, registerUser);
 
 /**
  * @route   POST /api/auth/verify-otp
  * @desc    Verify OTP for account activation
  * @access  Public
  */
-router.post(
-  "/verify-otp",
-  otpLimiter,
-  validateOtp,
-  verifyOtp,
-);
+router.post("/verify-otp", otpLimiter, validateOtp, verifyOtp);
 
 /**
  * @route   POST /api/auth/resend-otp
  * @desc    Resend OTP to user email
  * @access  Public
  */
-router.post(
-  "/resend-otp",
-  otpLimiter,
-  resendOtp,
-);
+router.post("/resend-otp", otpLimiter, resendOtp);
 
 /**
  * @route   POST /api/auth/forgot-password
  * @desc    Send OTP for password reset
  * @access  Public
  */
-router.post(
-  "/forgot-password",
-  otpLimiter,
-  requestPasswordResetOtp,
-);
+router.post("/forgot-password", otpLimiter, requestPasswordResetOtp);
 
 /**
  * @route   POST /api/auth/reset-password-otp
  * @desc    Reset password using email + OTP
  * @access  Public
  */
-router.post(
-  "/reset-password-otp",
-  authLimiter,
-  resetPasswordWithOtp,
-);
+router.post("/reset-password-otp", authLimiter, resetPasswordWithOtp);
 
 /**
  * @route   POST /api/auth/login
  * @desc    Authenticate user and get tokens
  * @access  Public
  */
-router.post(
-  "/login",
-  authLimiter,
-  validateLogin,
-  loginUser,
-);
+router.post("/login", authLimiter, validateLogin, loginUser);
 
 /**
  * @route   GET /api/auth/refresh-token
  * @desc    Refresh access token using refresh token cookie
  * @access  Public (requires valid refresh token cookie)
  */
-router.get(
-  "/refresh-token",
-  refreshTokenLimiter,
-  refreshAccessToken,
-);
+router.get("/refresh-token", refreshTokenLimiter, refreshAccessToken);
 
 /**
  * @route   POST /api/auth/logout
  * @desc    Logout user and clear refresh token cookie
  * @access  Public
  */
-router.post(
-  "/logout",
-  logoutUser,
-);
+router.post("/logout", logoutUser);
 
 // ============================================
 // Protected Routes (Authentication Required)
@@ -139,11 +106,7 @@ router.post(
  * @desc    Get current user profile
  * @access  Private
  */
-router.get(
-  "/profile",
-  verifyToken,
-  getProfile,
-);
+router.get("/profile", verifyToken, getProfile);
 
 /**
  * @route   PUT /api/auth/profile
@@ -153,6 +116,7 @@ router.get(
 router.put(
   "/profile",
   verifyToken,
+  upload.single("profile_picture"),
   updateProfile,
 );
 
@@ -161,12 +125,7 @@ router.put(
  * @desc    Change user password
  * @access  Private
  */
-router.put(
-  "/change-password",
-  verifyToken,
-  authLimiter,
-  changePassword,
-);
+router.put("/change-password", verifyToken, authLimiter, changePassword);
 
 /**
  * @route   GET /api/auth/patient-stats
@@ -189,12 +148,7 @@ router.get(
  * @desc    Get all users (Admin only)
  * @access  Private (Admin)
  */
-router.get(
-  "/users",
-  verifyToken,
-  authorizeRoles("Admin"),
-  getAllUsers,
-);
+router.get("/users", verifyToken, authorizeRoles("Admin"), getAllUsers);
 
 /**
  * @route   GET /api/auth/users/:id

@@ -11,15 +11,19 @@ import {
   X,
   Calendar,
   BadgeCheck,
+  Camera,
 } from "lucide-react";
 import api, { handleApiError, formatDate } from "../../services/api";
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [removeImage, setRemoveImage] = useState(false);
 
   const [profileData, setProfileData] = useState(null);
   const [formData, setFormData] = useState({
@@ -49,12 +53,34 @@ const Profile = () => {
         email: profile.email || "",
         phone: profile.phone || "",
       });
+      setPreviewImage(
+        profile.profile_picture
+          ? `http://localhost:5000/${profile.profile_picture}`
+          : null,
+      );
+      setRemoveImage(false);
     } catch (err) {
       const errorInfo = handleApiError(err);
       showToast(errorInfo.message, "error");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      setPreviewImage(URL.createObjectURL(file));
+      setRemoveImage(false);
+    }
+  };
+
+  const handleRemoveImage = (e) => {
+    e.preventDefault();
+    setProfileImage(null);
+    setPreviewImage(null);
+    setRemoveImage(true);
   };
 
   const handleInputChange = (e) => {
@@ -70,15 +96,26 @@ const Profile = () => {
     setSaving(true);
 
     try {
-      const updateData = {
-        full_name: formData.full_name,
-        phone: formData.phone,
-      };
+      const formDataToSend = new FormData();
+      formDataToSend.append("full_name", formData.full_name);
+      formDataToSend.append("phone", formData.phone);
+      if (profileImage) {
+        formDataToSend.append("profile_picture", profileImage);
+      }
+      if (removeImage) {
+        formDataToSend.append("remove_profile_picture", "true");
+      }
 
-      await api.put("/auth/profile", updateData);
+      await api.put("/auth/profile", formDataToSend, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       showToast("Profile updated successfully!");
       setIsEditing(false);
+      setProfileImage(null);
+      setRemoveImage(false);
       fetchProfile();
+      if (refreshUser) refreshUser();
     } catch (err) {
       const errorInfo = handleApiError(err);
       showToast(errorInfo.message, "error");
@@ -93,6 +130,13 @@ const Profile = () => {
       email: profileData?.email || "",
       phone: profileData?.phone || "",
     });
+    setPreviewImage(
+      profileData?.profile_picture
+        ? `http://localhost:5000/${profileData.profile_picture}`
+        : null,
+    );
+    setProfileImage(null);
+    setRemoveImage(false);
     setIsEditing(false);
   };
 
@@ -102,7 +146,9 @@ const Profile = () => {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              Loading profile...
+            </p>
           </div>
         </div>
       </Layout>
@@ -132,10 +178,42 @@ const Profile = () => {
           <div className="absolute -right-5 -bottom-10 w-32 h-32 bg-white/10 rounded-full"></div>
 
           <div className="relative flex items-center gap-6">
-            <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/30 shadow-xl">
-              <span className="text-4xl font-bold">
-                {profileData?.full_name?.charAt(0)?.toUpperCase() || "A"}
-              </span>
+            <div className="relative">
+              <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/30 shadow-xl overflow-hidden">
+                {previewImage ? (
+                  <img
+                    src={previewImage}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-4xl font-bold">
+                    {profileData?.full_name?.charAt(0)?.toUpperCase() || "A"}
+                  </span>
+                )}
+              </div>
+              {isEditing && (
+                <div className="absolute -bottom-2 -right-4 flex gap-1">
+                  <label className="p-2 bg-white text-purple-600 rounded-full cursor-pointer hover:bg-gray-100 transition-colors shadow-lg">
+                    <Camera className="w-4 h-4" />
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </label>
+                  {previewImage && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="p-2 bg-white text-red-500 rounded-full cursor-pointer hover:bg-gray-100 transition-colors shadow-lg"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex-1">
               <h1 className="text-3xl font-bold mb-1">
@@ -301,22 +379,34 @@ const Profile = () => {
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-800/30 rounded-full flex items-center justify-center mx-auto mb-2">
                 <User className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">User Management</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">Full Access</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                User Management
+              </p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                Full Access
+              </p>
             </div>
             <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 text-center">
               <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-800/30 rounded-full flex items-center justify-center mx-auto mb-2">
                 <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">System Settings</p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">Full Access</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                System Settings
+              </p>
+              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                Full Access
+              </p>
             </div>
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-800/30 rounded-full flex items-center justify-center mx-auto mb-2">
                 <BadgeCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Reports & Analytics</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Full Access</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Reports & Analytics
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                Full Access
+              </p>
             </div>
           </div>
         </div>

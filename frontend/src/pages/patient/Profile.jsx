@@ -15,6 +15,7 @@ import {
   Check,
   Shield,
   Droplets,
+  Camera,
 } from "lucide-react";
 import api, { handleApiError } from "../../services/api";
 
@@ -23,6 +24,9 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [removeImage, setRemoveImage] = useState(false);
 
   const [profileData, setProfileData] = useState({
     full_name: "",
@@ -52,8 +56,30 @@ const Profile = () => {
         blood_group: user.blood_group || "",
         allergies: user.allergies || "",
       });
+      setPreviewImage(
+        user.profile_picture
+          ? `http://localhost:5000/${user.profile_picture}`
+          : null,
+      );
+      setRemoveImage(false);
     }
   }, [user]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(file);
+      setPreviewImage(URL.createObjectURL(file));
+      setRemoveImage(false);
+    }
+  };
+
+  const handleRemoveImage = (e) => {
+    e.preventDefault();
+    setProfileImage(null);
+    setPreviewImage(null);
+    setRemoveImage(true);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -68,9 +94,25 @@ const Profile = () => {
     setLoading(true);
 
     try {
-      await api.put("/auth/profile", profileData);
+      const formData = new FormData();
+      Object.keys(profileData).forEach((key) => {
+        formData.append(key, profileData[key]);
+      });
+      if (profileImage) {
+        formData.append("profile_picture", profileImage);
+      }
+      if (removeImage) {
+        formData.append("remove_profile_picture", "true");
+      }
+
+      await api.put("/auth/profile", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       showToast("Profile updated successfully!");
       setIsEditing(false);
+      setProfileImage(null);
+      setRemoveImage(false);
       if (refreshUser) refreshUser();
     } catch (err) {
       const errorInfo = handleApiError(err);
@@ -93,6 +135,13 @@ const Profile = () => {
         blood_group: user.blood_group || "",
         allergies: user.allergies || "",
       });
+      setPreviewImage(
+        user.profile_picture
+          ? `http://localhost:5000/${user.profile_picture}`
+          : null,
+      );
+      setProfileImage(null);
+      setRemoveImage(false);
     }
   };
 
@@ -145,8 +194,40 @@ const Profile = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           <div className="bg-linear-to-r from-teal-500 to-emerald-600 px-6 py-8">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-                <User className="w-10 h-10 text-white" />
+              <div className="relative">
+                <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center overflow-hidden border-2 border-white/30">
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-10 h-10 text-white" />
+                  )}
+                </div>
+                {isEditing && (
+                  <div className="absolute -bottom-2 -right-4 flex gap-1">
+                    <label className="p-1.5 bg-white text-teal-600 rounded-full cursor-pointer hover:bg-gray-100 transition-colors shadow-lg">
+                      <Camera className="w-4 h-4" />
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                    {previewImage && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="p-1.5 bg-white text-red-500 rounded-full cursor-pointer hover:bg-gray-100 transition-colors shadow-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="text-white">
                 <h2 className="text-2xl font-semibold">
@@ -174,7 +255,9 @@ const Profile = () => {
                 <Mail className="w-5 h-5 text-teal-600 dark:text-teal-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Email
+                </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {profileData.email || "Not set"}
                 </p>
@@ -185,7 +268,9 @@ const Profile = () => {
                 <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Phone
+                </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {profileData.phone || "Not set"}
                 </p>
@@ -196,7 +281,9 @@ const Profile = () => {
                 <Droplets className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Blood Group</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Blood Group
+                </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {profileData.blood_group || "Not set"}
                 </p>
@@ -207,7 +294,9 @@ const Profile = () => {
                 <MapPin className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Location</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Location
+                </p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {profileData.address || "Not set"}
                 </p>
@@ -415,41 +504,46 @@ const Profile = () => {
         </div>
 
         {/* Emergency Info Card */}
-        {(profileData.emergency_contact || profileData.blood_group) && !isEditing && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Shield className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white">
-                  Emergency Information
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Quick reference for emergencies
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {profileData.blood_group && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800/50">
-                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">Blood Type</p>
-                  <p className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">
-                    {profileData.blood_group}
+        {(profileData.emergency_contact || profileData.blood_group) &&
+          !isEditing && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Shield className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    Emergency Information
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Quick reference for emergencies
                   </p>
                 </div>
-              )}
-              {profileData.emergency_contact && (
-                <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-100 dark:border-teal-800/50">
-                  <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">Emergency Contact</p>
-                  <p className="text-lg font-bold text-teal-700 dark:text-teal-300 mt-1">
-                    {profileData.emergency_contact}
-                  </p>
-                </div>
-              )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {profileData.blood_group && (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800/50">
+                    <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                      Blood Type
+                    </p>
+                    <p className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">
+                      {profileData.blood_group}
+                    </p>
+                  </div>
+                )}
+                {profileData.emergency_contact && (
+                  <div className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-100 dark:border-teal-800/50">
+                    <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">
+                      Emergency Contact
+                    </p>
+                    <p className="text-lg font-bold text-teal-700 dark:text-teal-300 mt-1">
+                      {profileData.emergency_contact}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </Layout>
   );

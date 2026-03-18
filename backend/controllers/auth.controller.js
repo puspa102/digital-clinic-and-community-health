@@ -1,3 +1,4 @@
+import fs from "fs";
 import User from "../models/user.model.js";
 import Appointment from "../models/appointment.model.js";
 import Prescription from "../models/prescription.model.js";
@@ -575,7 +576,7 @@ export const getProfile = async (req, res) => {
  */
 export const updateProfile = async (req, res) => {
   try {
-    const { full_name, phone } = req.body;
+    const { full_name, phone, remove_profile_picture } = req.body;
 
     const user = await User.findByPk(req.user.id);
     if (!user) {
@@ -603,6 +604,25 @@ export const updateProfile = async (req, res) => {
     // Update fields
     if (full_name) user.full_name = full_name;
     if (phone) user.phone = phone;
+    if (req.file) {
+      if (user.profile_picture && fs.existsSync(user.profile_picture)) {
+        try {
+          fs.unlinkSync(user.profile_picture);
+        } catch (err) {
+          console.error("Error deleting old profile picture:", err);
+        }
+      }
+      user.profile_picture = req.file.path.replace(/\\/g, "/");
+    } else if (remove_profile_picture === "true") {
+      if (user.profile_picture && fs.existsSync(user.profile_picture)) {
+        try {
+          fs.unlinkSync(user.profile_picture);
+        } catch (err) {
+          console.error("Error deleting profile picture:", err);
+        }
+      }
+      user.profile_picture = null;
+    }
 
     await user.save();
 
@@ -895,40 +915,36 @@ export const getPatientDashboardStats = async (req, res) => {
     // Get all prescriptions for this patient
     const allPrescriptions = await Prescription.findAll({
       where: { patient_id: patientId },
-      attributes: [
-        "prescription_id",
-        "status",
-        "created_at",
-      ],
+      attributes: ["prescription_id", "status", "created_at"],
     });
 
     // Upcoming appointments
     const upcomingAppointments = allAppointments.filter(
       (apt) =>
         apt.appointment_date >= todayStr &&
-        ["requested", "assigned", "confirmed"].includes(apt.status)
+        ["requested", "assigned", "confirmed"].includes(apt.status),
     );
 
     // Completed appointments
     const completedAppointments = allAppointments.filter(
-      (apt) => apt.status === "completed"
+      (apt) => apt.status === "completed",
     );
 
     // This month's appointments
     const thisMonthAppointments = allAppointments.filter(
-      (apt) => apt.appointment_date >= startOfMonthStr
+      (apt) => apt.appointment_date >= startOfMonthStr,
     );
 
     // Unique doctors consulted
     const uniqueDoctors = new Set(
       allAppointments
         .filter((apt) => apt.doctor_id)
-        .map((apt) => apt.doctor_id)
+        .map((apt) => apt.doctor_id),
     );
 
     // Unique pharmacies visited
     const uniquePharmacies = new Set(
-      allAppointments.map((apt) => apt.pharmacy_id)
+      allAppointments.map((apt) => apt.pharmacy_id),
     );
 
     // Payment stats
@@ -942,20 +958,24 @@ export const getPatientDashboardStats = async (req, res) => {
 
     // Prescription stats
     const activePrescriptions = allPrescriptions.filter(
-      (p) => p.status === "pending" || p.status === "dispensed"
+      (p) => p.status === "pending" || p.status === "dispensed",
     ).length;
 
     const completedPrescriptions = allPrescriptions.filter(
-      (p) => p.status === "completed"
+      (p) => p.status === "completed",
     ).length;
 
     // Status breakdown
     const statusBreakdown = {
-      requested: allAppointments.filter((apt) => apt.status === "requested").length,
-      assigned: allAppointments.filter((apt) => apt.status === "assigned").length,
-      confirmed: allAppointments.filter((apt) => apt.status === "confirmed").length,
+      requested: allAppointments.filter((apt) => apt.status === "requested")
+        .length,
+      assigned: allAppointments.filter((apt) => apt.status === "assigned")
+        .length,
+      confirmed: allAppointments.filter((apt) => apt.status === "confirmed")
+        .length,
       completed: completedAppointments.length,
-      cancelled: allAppointments.filter((apt) => apt.status === "cancelled").length,
+      cancelled: allAppointments.filter((apt) => apt.status === "cancelled")
+        .length,
       no_show: allAppointments.filter((apt) => apt.status === "no_show").length,
     };
 
@@ -1027,8 +1047,8 @@ const calculateProfileCompletion = (user) => {
     "blood_group",
   ];
 
-
-
-  const filledFields = fields.filter((field) => user[field] && user[field].toString().trim() !== "");
+  const filledFields = fields.filter(
+    (field) => user[field] && user[field].toString().trim() !== "",
+  );
   return Math.round((filledFields.length / fields.length) * 100);
 };
