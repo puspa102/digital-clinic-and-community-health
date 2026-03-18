@@ -127,16 +127,36 @@ const runMigrations = async () => {
         WHEN duplicate_object THEN null;
       END $$;
     `);
-    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS consultation_type "enum_appointments_consultation_type";`);
-    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS scheduled_time TIME;`);
-    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS doctor_notes TEXT;`);
-    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS meeting_link VARCHAR(255);`);
-    await sequelize.query(`ALTER TABLE appointments ADD COLUMN IF NOT EXISTS qr_token VARCHAR(255) UNIQUE;`);
+    await sequelize.query(
+      `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS consultation_type "enum_appointments_consultation_type";`,
+    );
+    await sequelize.query(
+      `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS scheduled_time TIME;`,
+    );
+    await sequelize.query(
+      `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS doctor_notes TEXT;`,
+    );
+    await sequelize.query(
+      `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS meeting_link VARCHAR(255);`,
+    );
+    await sequelize.query(
+      `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS qr_token VARCHAR(255) UNIQUE;`,
+    );
 
     // Add is_verified column to users table
-    await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT false;`);
+    await sequelize.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT false;`,
+    );
     // Mark existing approved users (admin, doctors, pharmacies) as verified
-    await sequelize.query(`UPDATE users SET is_verified = true WHERE is_verified = false AND (role != 'Patient' OR otp IS NULL);`);
+    await sequelize.query(
+      `UPDATE users SET is_verified = true WHERE is_verified = false AND (role != 'Patient' OR otp IS NULL);`,
+    );
+
+    // Add profile_picture column to users table
+    await sequelize.query(
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(255);`,
+    );
+
     console.log("Migrations completed successfully");
   } catch (err) {
     console.error("Migration warning:", err.message);

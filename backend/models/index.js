@@ -13,6 +13,7 @@ import InventoryItem from "./inventory.model.js";
 import { Order, OrderItem } from "./order.model.js";
 import { Prescription, PrescriptionItem } from "./prescription.model.js";
 import { Conversation, Message } from "./chat.model.js";
+import Transaction from "./transaction.model.js";
 
 // Export models object
 const models = {
@@ -28,13 +29,28 @@ const models = {
   PrescriptionItem,
   Conversation,
   Message,
+  Transaction,
 };
 
 // Export sequelize instance
 export { sequelize };
 
 // Export individual models
-export { User, Pharmacy, Doctor, Appointment, Emergency, InventoryItem, Order, OrderItem, Prescription, PrescriptionItem, Conversation, Message };
+export {
+  User,
+  Pharmacy,
+  Doctor,
+  Appointment,
+  Emergency,
+  InventoryItem,
+  Order,
+  OrderItem,
+  Prescription,
+  PrescriptionItem,
+  Conversation,
+  Message,
+  Transaction,
+};
 
 // Default export with all models
 export default models;

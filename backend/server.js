@@ -1,4 +1,6 @@
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
@@ -8,7 +10,6 @@ import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
-
 
 // Database
 import { connectDB } from "./config/db.js";
@@ -40,6 +41,9 @@ import { seedAdminIfNotExists } from "./utils/seedAdmin.js";
 
 // Load environment variables
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Initialize Express app
 const app = express();
@@ -95,7 +99,7 @@ io.on("connection", (socket) => {
   // Handle sending messages
   socket.on("send_message", (data) => {
     const { conversationId, message, recipientId } = data;
-    
+
     // Emit to the conversation room
     socket.to(`conversation_${conversationId}`).emit("new_message", {
       conversationId,
@@ -178,6 +182,9 @@ app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
 // Parse cookies
 app.use(cookieParser());
+
+// Serve static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ============================================
 // Performance Middlewares
