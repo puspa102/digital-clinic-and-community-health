@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { QRCodeSVG } from "qrcode.react";
 import Layout from "../../components/Layout";
 import {
   appointmentAPI,
   getStatusBadgeClass,
   formatTime,
-  formatDate,
   handleApiError,
   APPOINTMENT_STATUS,
 } from "../../services/api";
@@ -28,9 +26,6 @@ const Appointments = () => {
   const [showUpcoming, setShowUpcoming] = useState(false);
 
   // QR Code modal
-  const [showQrModal, setShowQrModal] = useState(false);
-  const [qrAppointment, setQrAppointment] = useState(null);
-
   useEffect(() => {
     fetchAppointments();
   }, [pagination.page, statusFilter, showUpcoming]);
@@ -61,7 +56,9 @@ const Appointments = () => {
   };
 
   const handleCancel = async (appointmentId) => {
-    const reason = window.prompt("Please provide a reason for cancellation (optional):");
+    const reason = window.prompt(
+      "Please provide a reason for cancellation (optional):",
+    );
     if (reason === null) return; // User clicked cancel on prompt
 
     try {
@@ -116,10 +113,18 @@ const Appointments = () => {
   // Calculate stats
   const stats = {
     upcoming: appointments.filter((a) =>
-      [APPOINTMENT_STATUS.REQUESTED, APPOINTMENT_STATUS.ASSIGNED, APPOINTMENT_STATUS.CONFIRMED].includes(a.status)
+      [
+        APPOINTMENT_STATUS.REQUESTED,
+        APPOINTMENT_STATUS.ASSIGNED,
+        APPOINTMENT_STATUS.CONFIRMED,
+      ].includes(a.status),
     ).length,
-    completed: appointments.filter((a) => a.status === APPOINTMENT_STATUS.COMPLETED).length,
-    cancelled: appointments.filter((a) => a.status === APPOINTMENT_STATUS.CANCELLED).length,
+    completed: appointments.filter(
+      (a) => a.status === APPOINTMENT_STATUS.COMPLETED,
+    ).length,
+    cancelled: appointments.filter(
+      (a) => a.status === APPOINTMENT_STATUS.CANCELLED,
+    ).length,
     total: appointments.length,
   };
 
@@ -129,14 +134,24 @@ const Appointments = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Appointments</h1>
-            <p className="text-gray-500 dark:text-gray-400">View and manage your appointments</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              My Appointments
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              View and manage your appointments
+            </p>
           </div>
           <Link
             to="/patient/pharmacies"
             className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -148,19 +163,27 @@ const Appointments = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-sky-600 dark:bg-sky-700 rounded-xl p-4 shadow-md">
             <p className="text-2xl font-bold text-white">{stats.upcoming}</p>
-            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Upcoming</p>
+            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+              Upcoming
+            </p>
           </div>
           <div className="bg-emerald-600 dark:bg-emerald-700 rounded-xl p-4 shadow-md">
             <p className="text-2xl font-bold text-white">{stats.completed}</p>
-            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Completed</p>
+            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+              Completed
+            </p>
           </div>
           <div className="bg-rose-600 dark:bg-rose-700 rounded-xl p-4 shadow-md">
             <p className="text-2xl font-bold text-white">{stats.cancelled}</p>
-            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Cancelled</p>
+            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+              Cancelled
+            </p>
           </div>
           <div className="bg-violet-600 dark:bg-violet-700 rounded-xl p-4 shadow-md">
             <p className="text-2xl font-bold text-white">{stats.total}</p>
-            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">Total Shown</p>
+            <p className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+              Total Shown
+            </p>
           </div>
         </div>
 
@@ -191,7 +214,9 @@ const Appointments = () => {
                 }}
                 className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Upcoming only</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Upcoming only
+              </span>
             </label>
             {(statusFilter || showUpcoming) && (
               <button
@@ -220,7 +245,9 @@ const Appointments = () => {
           {loading ? (
             <div className="p-8 text-center">
               <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-500 dark:text-gray-400">Loading appointments...</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                Loading appointments...
+              </p>
             </div>
           ) : appointments.length === 0 ? (
             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -247,14 +274,19 @@ const Appointments = () => {
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {appointments.map((appointment) => (
-                <div key={appointment.appointment_id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                <div
+                  key={appointment.appointment_id}
+                  className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     {/* Left: Info */}
                     <div className="flex items-start gap-4">
                       {/* Date Box */}
                       <div className="shrink-0 w-16 h-16 bg-teal-50 rounded-lg flex flex-col items-center justify-center">
                         <span className="text-xs font-medium text-teal-600 uppercase">
-                          {new Date(appointment.appointment_date).toLocaleDateString("en-US", { month: "short" })}
+                          {new Date(
+                            appointment.appointment_date,
+                          ).toLocaleDateString("en-US", { month: "short" })}
                         </span>
                         <span className="text-xl font-bold text-teal-700">
                           {new Date(appointment.appointment_date).getDate()}
@@ -269,29 +301,37 @@ const Appointments = () => {
                           </h3>
                           <span
                             className={`px-2 py-0.5 text-xs font-medium rounded-full capitalize ${getStatusBadgeClass(
-                              appointment.status
+                              appointment.status,
                             )}`}
                           >
                             {appointment.status?.replace("_", " ")}
                           </span>
                           {appointment.consultation_type && (
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full capitalize ${
-                              appointment.consultation_type === "online"
-                                ? "bg-purple-100 text-purple-700"
-                                : "bg-teal-100 text-teal-700"
-                            }`}>
-                              {appointment.consultation_type === "online" ? "?? Online" : "?? Physical"}
+                            <span
+                              className={`px-2 py-0.5 text-xs font-medium rounded-full capitalize ${
+                                appointment.consultation_type === "online"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-teal-100 text-teal-700"
+                              }`}
+                            >
+                              {appointment.consultation_type === "online"
+                                ? "?? Online"
+                                : "?? Physical"}
                             </span>
                           )}
                         </div>
                         <p className="text-sm text-gray-500 mt-1">
-                          {formatTime(appointment.scheduled_time || appointment.appointment_time)} �{" "}
-                          {appointment.Pharmacy?.address || ""}
+                          {formatTime(
+                            appointment.scheduled_time ||
+                              appointment.appointment_time,
+                          )}{" "}
+                          � {appointment.Pharmacy?.address || ""}
                         </p>
                         {appointment.Doctor ? (
                           <p className="text-sm text-gray-600 mt-1">
                             <span className="font-medium">Doctor:</span>{" "}
-                            {appointment.Doctor?.User?.full_name} ({appointment.Doctor?.specialization})
+                            {appointment.Doctor?.User?.full_name} (
+                            {appointment.Doctor?.specialization})
                           </p>
                         ) : (
                           <p className="text-sm text-yellow-600 mt-1">
@@ -300,51 +340,74 @@ const Appointments = () => {
                         )}
                         {appointment.reason && (
                           <p className="text-sm text-gray-500 mt-1 truncate max-w-md">
-                            <span className="font-medium">Reason:</span> {appointment.reason}
+                            <span className="font-medium">Reason:</span>{" "}
+                            {appointment.reason}
                           </p>
                         )}
                         {appointment.doctor_notes && (
                           <p className="text-sm text-teal-600 mt-1">
-                            <span className="font-medium">Doctor's Note:</span> {appointment.doctor_notes}
+                            <span className="font-medium">Doctor's Note:</span>{" "}
+                            {appointment.doctor_notes}
                           </p>
                         )}
 
                         {/* Doctor Fee - shown when confirmed */}
-                        {appointment.payment_amount > 0 && appointment.status !== APPOINTMENT_STATUS.REQUESTED && (
-                          <div className="mt-2 inline-flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-1.5">
-                            <svg className="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <line x1="12" y1="1" x2="12" y2="23" />
-                              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                            </svg>
-                            <span className="text-sm font-semibold text-green-700">
-                              Doctor Fee: Rs. {appointment.payment_amount}
-                            </span>
-                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                              appointment.payment_status === "paid"
-                                ? "bg-green-200 text-green-800"
-                                : "bg-yellow-200 text-yellow-800"
-                            }`}>
-                              {appointment.payment_status === "paid" ? "Paid" : "Pending"}
-                            </span>
-                          </div>
-                        )}
+                        {appointment.payment_amount > 0 &&
+                          appointment.status !==
+                            APPOINTMENT_STATUS.REQUESTED && (
+                            <div className="mt-2 inline-flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-1.5">
+                              <svg
+                                className="w-4 h-4 text-green-600"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              >
+                                <line x1="12" y1="1" x2="12" y2="23" />
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                              </svg>
+                              <span className="text-sm font-semibold text-green-700">
+                                Doctor Fee: Rs. {appointment.payment_amount}
+                              </span>
+                              <span
+                                className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                  appointment.payment_status === "paid"
+                                    ? "bg-green-200 text-green-800"
+                                    : "bg-yellow-200 text-yellow-800"
+                                }`}
+                              >
+                                {appointment.payment_status === "paid"
+                                  ? "Paid"
+                                  : "Pending"}
+                              </span>
+                            </div>
+                          )}
 
                         {/* Meeting Link for online */}
-                        {appointment.consultation_type === "online" && appointment.meeting_link && appointment.status === APPOINTMENT_STATUS.CONFIRMED && (
-                          <div className="mt-2">
-                            <a
-                              href={appointment.meeting_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
-                            >
-                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z" />
-                              </svg>
-                              Join Online Meeting
-                            </a>
-                          </div>
-                        )}
+                        {appointment.consultation_type === "online" &&
+                          appointment.meeting_link &&
+                          appointment.status ===
+                            APPOINTMENT_STATUS.CONFIRMED && (
+                            <div className="mt-2">
+                              <a
+                                href={appointment.meeting_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z" />
+                                </svg>
+                                Join Online Meeting
+                              </a>
+                            </div>
+                          )}
 
                         <p className="text-xs text-gray-400 mt-1">
                           {getStatusDescription(appointment.status)}
@@ -354,34 +417,35 @@ const Appointments = () => {
 
                     {/* Right: Actions */}
                     <div className="flex items-center gap-2 md:shrink-0">
-                      {/* QR Code Button - for confirmed/completed appointments */}
-                      {appointment.qr_token && [APPOINTMENT_STATUS.CONFIRMED, APPOINTMENT_STATUS.COMPLETED].includes(appointment.status) && (
-                        <button
-                          onClick={() => {
-                            setQrAppointment(appointment);
-                            setShowQrModal(true);
-                          }}
-                          className="px-3 py-2 border border-teal-200 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2 text-sm font-medium"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                          </svg>
-                          QR Code
-                        </button>
-                      )}
                       {canCancel(appointment.status) && (
                         <button
-                          onClick={() => handleCancel(appointment.appointment_id)}
-                          disabled={actionLoading === appointment.appointment_id}
+                          onClick={() =>
+                            handleCancel(appointment.appointment_id)
+                          }
+                          disabled={
+                            actionLoading === appointment.appointment_id
+                          }
                           className="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
                         >
                           {actionLoading === appointment.appointment_id && (
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            <svg
+                              className="animate-spin h-4 w-4"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                              />
                             </svg>
                           )}
                           Cancel
@@ -399,8 +463,8 @@ const Appointments = () => {
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
-                {pagination.total}
+                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
+                of {pagination.total}
               </p>
               <div className="flex gap-2">
                 <button
@@ -428,7 +492,9 @@ const Appointments = () => {
 
         {/* Status Flow Explanation */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">How It Works</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            How It Works
+          </h3>
           <div className="flex flex-wrap gap-6 text-sm">
             <div className="flex items-center gap-2">
               <div className="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 font-semibold text-xs">
@@ -451,7 +517,7 @@ const Appointments = () => {
                 3
               </div>
               <span className="text-gray-600 dark:text-gray-400">
-                <strong>Confirmed</strong> � Doctor sets time & type, fee shown + QR generated
+                <strong>Confirmed</strong> — Doctor sets time & type, fee shown
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -465,83 +531,6 @@ const Appointments = () => {
           </div>
         </div>
       </div>
-
-      {/* QR Code Modal */}
-      {showQrModal && qrAppointment && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Appointment QR Code</h2>
-              <button
-                onClick={() => { setShowQrModal(false); setQrAppointment(null); }}
-                className="text-gray-400 hover:text-gray-600 dark:text-gray-400"
-              >
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6 flex flex-col items-center">
-              {/* QR Code */}
-              <div className="bg-white p-4 rounded-xl border-2 border-gray-100 mb-4">
-                <QRCodeSVG
-                  value={JSON.stringify({
-                    type: "appointment",
-                    token: qrAppointment.qr_token,
-                    id: qrAppointment.appointment_id,
-                    date: qrAppointment.appointment_date,
-                    time: qrAppointment.scheduled_time || qrAppointment.appointment_time,
-                    consultation: qrAppointment.consultation_type,
-                    fee: qrAppointment.payment_amount,
-                  })}
-                  size={200}
-                  level="M"
-                  includeMargin={true}
-                />
-              </div>
-
-              {/* Appointment Details */}
-              <div className="w-full space-y-2 text-sm">
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500 dark:text-gray-400">Pharmacy</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{qrAppointment.Pharmacy?.pharmacy_name}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500 dark:text-gray-400">Doctor</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{qrAppointment.Doctor?.User?.full_name || "�"}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500 dark:text-gray-400">Date</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{formatDate(qrAppointment.appointment_date)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500 dark:text-gray-400">Time</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{formatTime(qrAppointment.scheduled_time || qrAppointment.appointment_time)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500 dark:text-gray-400">Type</span>
-                  <span className={`font-medium capitalize ${
-                    qrAppointment.consultation_type === "online" ? "text-purple-700" : "text-teal-700"
-                  }`}>
-                    {qrAppointment.consultation_type || "�"}
-                  </span>
-                </div>
-                {qrAppointment.payment_amount > 0 && (
-                  <div className="flex justify-between py-2 bg-green-50 rounded-lg px-3 mt-2">
-                    <span className="text-green-700 font-medium">Doctor Fee</span>
-                    <span className="font-bold text-green-800 text-lg">Rs. {qrAppointment.payment_amount}</span>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-xs text-gray-400 mt-4 text-center">
-                Show this QR code at the pharmacy for verification
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 };

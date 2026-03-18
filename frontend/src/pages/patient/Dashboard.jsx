@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { QRCodeSVG } from "qrcode.react";
 import Layout from "../../components/Layout";
 import StatCard from "../../components/dashboard/StatCard";
 import QuickActions from "../../components/dashboard/QuickActions";
 import NextAppointment from "../../components/dashboard/NextAppointment";
 import PendingPayments from "../../components/dashboard/PendingPayments";
 
-import {
+import api, {
   appointmentAPI,
-  paymentAPI,
   formatDate,
   formatTime,
   handleApiError,
@@ -28,7 +26,6 @@ import {
   Loader2,
   XCircle,
   Calendar,
-  X
 } from "lucide-react";
 
 const healthTips = [
@@ -43,8 +40,6 @@ const healthTips = [
 const Dashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showQrModal, setShowQrModal] = useState(false);
-  const [qrAppointment, setQrAppointment] = useState(null);
   const [cancellingId, setCancellingId] = useState(null);
   const [payingId, setPayingId] = useState(null);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -72,15 +67,30 @@ const Dashboard = () => {
 
   // Compute stats
   const upcomingAppointments = appointments.filter((a) =>
-    [APPOINTMENT_STATUS.REQUESTED, APPOINTMENT_STATUS.ASSIGNED, APPOINTMENT_STATUS.CONFIRMED].includes(a.status)
+    [
+      APPOINTMENT_STATUS.REQUESTED,
+      APPOINTMENT_STATUS.ASSIGNED,
+      APPOINTMENT_STATUS.CONFIRMED,
+    ].includes(a.status),
   );
   const nonConfirmedUpcoming = appointments.filter((a) =>
-    [APPOINTMENT_STATUS.REQUESTED, APPOINTMENT_STATUS.ASSIGNED].includes(a.status)
+    [APPOINTMENT_STATUS.REQUESTED, APPOINTMENT_STATUS.ASSIGNED].includes(
+      a.status,
+    ),
   );
-  const confirmedAppointments = appointments.filter((a) => a.status === APPOINTMENT_STATUS.CONFIRMED);
-  const completedCount = appointments.filter((a) => a.status === APPOINTMENT_STATUS.COMPLETED).length;
-  const pendingPaymentsList = confirmedAppointments.filter((a) => a.payment_status !== "paid" && a.payment_amount > 0);
-  const totalPendingAmount = pendingPaymentsList.reduce((sum, a) => sum + (a.payment_amount || 0), 0);
+  const confirmedAppointments = appointments.filter(
+    (a) => a.status === APPOINTMENT_STATUS.CONFIRMED,
+  );
+  const completedCount = appointments.filter(
+    (a) => a.status === APPOINTMENT_STATUS.COMPLETED,
+  ).length;
+  const pendingPaymentsList = confirmedAppointments.filter(
+    (a) => a.payment_status !== "paid" && a.payment_amount > 0,
+  );
+  const totalPendingAmount = pendingPaymentsList.reduce(
+    (sum, a) => sum + (a.payment_amount || 0),
+    0,
+  );
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -111,9 +121,37 @@ const Dashboard = () => {
   const handlePay = async (appointment, method) => {
     try {
       setPayingId(`${appointment.appointment_id}-${method}`);
-      const response = await paymentAPI.initiatePayment(appointment.appointment_id, method);
-      if (response.data?.payment_url) {
-        window.open(response.data.payment_url, "_blank", "noopener,noreferrer");
+      const response = await api.post("/payments/initiate", {
+        appointment_id: appointment.appointment_id,
+        amount: appointment.payment_amount,
+        payment_method: method,
+      });
+
+      const { data } = response.data;
+
+      if (data.payment_method === "esewa") {
+        const { params, url } = data;
+        const form = document.createElement("form");
+        form.setAttribute("method", "POST");
+        form.setAttribute("action", url);
+
+        for (const key in params) {
+          if (Object.prototype.hasOwnProperty.call(params, key)) {
+            const hiddenField = document.createElement("input");
+            hiddenField.setAttribute("type", "hidden");
+            hiddenField.setAttribute("name", key);
+            hiddenField.setAttribute("value", params[key]);
+            form.appendChild(hiddenField);
+          }
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+      } else if (data.payment_method === "khalti") {
+        if (data.url) {
+          window.location.href = data.url;
+        }
       }
     } catch (err) {
       const errorInfo = handleApiError(err);
@@ -125,36 +163,76 @@ const Dashboard = () => {
 
   // Get the nearest confirmed appointment for the main card
   const nextConfirmed = confirmedAppointments.sort(
-    (a, b) => new Date(a.appointment_date) - new Date(b.appointment_date)
+    (a, b) => new Date(a.appointment_date) - new Date(b.appointment_date),
   )[0];
 
   // Time until meeting helper
   const getMeetingTimeLabel = (apt) => {
     if (!apt) return null;
     const aptDate = new Date(apt.appointment_date);
-    const [hours, minutes] = (apt.scheduled_time || apt.appointment_time || "00:00").split(":");
+    const [hours, minutes] = (
+      apt.scheduled_time ||
+      apt.appointment_time ||
+      "00:00"
+    ).split(":");
     aptDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
     const now = new Date();
     const diffMs = aptDate - now;
     if (diffMs < 0) return null;
     const diffMins = Math.round(diffMs / 60000);
-    if (diffMins < 60) return `Starts in ${diffMins} min${diffMins !== 1 ? "s" : ""}`;
+    if (diffMins < 60)
+      return `Starts in ${diffMins} min${diffMins !== 1 ? "s" : ""}`;
     const diffHrs = Math.floor(diffMins / 60);
     if (diffHrs < 24) return `Starts in ${diffHrs}h ${diffMins % 60}m`;
     return `In ${Math.floor(diffHrs / 24)} day${Math.floor(diffHrs / 24) !== 1 ? "s" : ""}`;
   };
 
   const stats = [
-    { label: "Upcoming", value: upcomingAppointments.length, icon: CalendarDays, colorClass: "bg-[#0ea5e9] dark:bg-[#0284c7]" },
-    { label: "Confirmed", value: confirmedAppointments.length, icon: CheckCircle2, colorClass: "bg-[#10b981] dark:bg-[#059669]" },
-    { label: "Completed", value: completedCount, icon: ClipboardCheck, colorClass: "bg-[#8b5cf6] dark:bg-[#7c3aed]" },
-    { label: "Pending Fee", value: `Rs. ${totalPendingAmount}`, icon: Wallet, colorClass: "bg-[#f59e0b] dark:bg-[#d97706]" },
+    {
+      label: "Upcoming",
+      value: upcomingAppointments.length,
+      icon: CalendarDays,
+      colorClass: "bg-[#0ea5e9] dark:bg-[#0284c7]",
+    },
+    {
+      label: "Confirmed",
+      value: confirmedAppointments.length,
+      icon: CheckCircle2,
+      colorClass: "bg-[#10b981] dark:bg-[#059669]",
+    },
+    {
+      label: "Completed",
+      value: completedCount,
+      icon: ClipboardCheck,
+      colorClass: "bg-[#8b5cf6] dark:bg-[#7c3aed]",
+    },
+    {
+      label: "Pending Fee",
+      value: `Rs. ${totalPendingAmount}`,
+      icon: Wallet,
+      colorClass: "bg-[#f59e0b] dark:bg-[#d97706]",
+    },
   ];
 
   const quickActionsList = [
-    { label: "Book Appointment", icon: PlusCircle, href: "/patient/pharmacies", accent: false },
-    { label: "My Appointments", icon: CalendarDays, href: "/patient/appointments", accent: false },
-    { label: "Medical Records", icon: FileText, href: "/patient/records", accent: false },
+    {
+      label: "Book Appointment",
+      icon: PlusCircle,
+      href: "/patient/pharmacies",
+      accent: false,
+    },
+    {
+      label: "My Appointments",
+      icon: CalendarDays,
+      href: "/patient/appointments",
+      accent: false,
+    },
+    {
+      label: "Medical Records",
+      icon: FileText,
+      href: "/patient/records",
+      accent: false,
+    },
     { label: "Emergency", icon: Siren, href: "/emergency", accent: true },
   ];
 
@@ -165,7 +243,10 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              {getGreeting()}, <span className="text-blue-600 dark:text-blue-400">{getFirstName()}</span>
+              {getGreeting()},{" "}
+              <span className="text-blue-600 dark:text-blue-400">
+                {getFirstName()}
+              </span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">
               Here's what's happening with your health today.
@@ -195,43 +276,56 @@ const Dashboard = () => {
           {/* Left Column (2/3) */}
           <div className="lg:col-span-2 space-y-8">
             {/* Confirmed Appointment Card */}
-            <NextAppointment 
+            <NextAppointment
               nextConfirmed={nextConfirmed}
               confirmedAppointments={confirmedAppointments}
               getMeetingTimeLabel={getMeetingTimeLabel}
-              setQrAppointment={setQrAppointment}
-              setShowQrModal={setShowQrModal}
             />
 
             {/* Upcoming Appointments List */}
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 tracking-tight">Upcoming Appointments</h2>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+                Upcoming Appointments
+              </h2>
               <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 overflow-hidden shadow-lg">
                 {loading ? (
                   <div className="p-10 text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Loading appointments...</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Loading appointments...
+                    </p>
                   </div>
                 ) : nonConfirmedUpcoming.length > 0 ? (
                   <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
                     {nonConfirmedUpcoming.slice(0, 5).map((apt) => (
-                      <div key={apt.appointment_id} className="p-5 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors duration-300">
+                      <div
+                        key={apt.appointment_id}
+                        className="p-5 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors duration-300"
+                      >
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 min-w-0">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                              apt.status === APPOINTMENT_STATUS.ASSIGNED
-                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800"
-                                : "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-orange-800"
-                            }`}>
+                            <div
+                              className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                                apt.status === APPOINTMENT_STATUS.ASSIGNED
+                                  ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800"
+                                  : "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-orange-800"
+                              }`}
+                            >
                               <Calendar className="w-6 h-6" />
                             </div>
                             <div className="min-w-0">
                               <p className="font-bold text-gray-900 dark:text-white text-[15px] truncate">
-                                {apt.reason || "General Checkup"} - {apt.Doctor?.User?.full_name ? `Dr. ${apt.Doctor.User.full_name}` : apt.Pharmacy?.pharmacy_name || "Pending"}
+                                {apt.reason || "General Checkup"} -{" "}
+                                {apt.Doctor?.User?.full_name
+                                  ? `Dr. ${apt.Doctor.User.full_name}`
+                                  : apt.Pharmacy?.pharmacy_name || "Pending"}
                               </p>
                               <div className="flex items-center gap-2 mt-1">
                                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                  {formatDate(apt.appointment_date)}, {formatTime(apt.scheduled_time || apt.appointment_time)}
+                                  {formatDate(apt.appointment_date)},{" "}
+                                  {formatTime(
+                                    apt.scheduled_time || apt.appointment_time,
+                                  )}
                                 </p>
                                 <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
                                 <span className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
@@ -259,10 +353,15 @@ const Dashboard = () => {
                 ) : (
                   <div className="p-10 text-center">
                     <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-gray-700">
-                       <Calendar className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                      <Calendar className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                     </div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">No upcoming appointments</p>
-                    <Link to="/patient/pharmacies" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 mt-2 inline-block">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                      No upcoming appointments
+                    </p>
+                    <Link
+                      to="/patient/pharmacies"
+                      className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 mt-2 inline-block"
+                    >
                       Book an appointment now
                     </Link>
                   </div>
@@ -273,10 +372,10 @@ const Dashboard = () => {
 
           {/* Right Column (1/3) */}
           <div className="space-y-8">
-            <PendingPayments 
-              pendingPayments={pendingPaymentsList} 
-              handlePay={handlePay} 
-              payingId={payingId} 
+            <PendingPayments
+              pendingPayments={pendingPaymentsList}
+              handlePay={handlePay}
+              payingId={payingId}
             />
 
             {/* Health Tip */}
@@ -286,7 +385,9 @@ const Dashboard = () => {
                   <Info className="w-5 h-5 text-[#0ca2e8] dark:text-[#38bdf8]" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#082f49] dark:text-[#bae6fd] tracking-tight">Today's Health Tip</h3>
+                  <h3 className="font-bold text-[#082f49] dark:text-[#bae6fd] tracking-tight">
+                    Today's Health Tip
+                  </h3>
                   <p className="text-sm font-medium text-[#0c4a6e]/80 dark:text-[#7dd3fc]/80 mt-2 leading-relaxed">
                     {dailyTip}
                   </p>
@@ -302,7 +403,10 @@ const Dashboard = () => {
                 </h3>
                 <div className="space-y-4">
                   {confirmedAppointments.slice(1, 4).map((apt) => (
-                    <div key={apt.appointment_id} className="flex items-center gap-4 bg-gray-50/50 dark:bg-gray-800/30 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <div
+                      key={apt.appointment_id}
+                      className="flex items-center gap-4 bg-gray-50/50 dark:bg-gray-800/30 p-3 rounded-xl border border-gray-100 dark:border-gray-800"
+                    >
                       <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center shrink-0 shadow-inner">
                         <CheckCircle2 className="w-5 h-5 text-white" />
                       </div>
@@ -322,69 +426,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      {/* QR Code Modal */}
-      {showQrModal && qrAppointment && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => { setShowQrModal(false); setQrAppointment(null); }}
-        >
-          <div
-            className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Appointment QR</h2>
-              <button
-                onClick={() => { setShowQrModal(false); setQrAppointment(null); }}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
-            </div>
-            <div className="p-8 flex flex-col items-center">
-              <div className="bg-white p-5 rounded-2xl shadow-inner border border-gray-100 mb-6">
-                <QRCodeSVG
-                  value={JSON.stringify({
-                    type: "appointment",
-                    token: qrAppointment.qr_token,
-                    id: qrAppointment.appointment_id,
-                    date: qrAppointment.appointment_date,
-                    time: qrAppointment.scheduled_time || qrAppointment.appointment_time,
-                    consultation: qrAppointment.consultation_type,
-                    fee: qrAppointment.payment_amount,
-                  })}
-                  size={200}
-                  level="M"
-                  includeMargin={false}
-                />
-              </div>
-              <div className="w-full space-y-3 text-[13px]">
-                {[
-                  { label: "Pharmacy", value: qrAppointment.Pharmacy?.pharmacy_name },
-                  { label: "Doctor", value: qrAppointment.Doctor?.User?.full_name ? `Dr. ${qrAppointment.Doctor.User.full_name}` : "—" },
-                  { label: "Date", value: formatDate(qrAppointment.appointment_date) },
-                  { label: "Time", value: formatTime(qrAppointment.scheduled_time || qrAppointment.appointment_time) },
-                ].map((item, i) => (
-                  <div key={i} className="flex justify-between py-2 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
-                    <span className="text-gray-500 dark:text-gray-400 font-medium">{item.label}</span>
-                    <span className="font-bold text-gray-900 dark:text-white capitalize">{item.value}</span>
-                  </div>
-                ))}
-                {qrAppointment.payment_amount > 0 && (
-                  <div className="flex justify-between items-center py-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl px-4 mt-4 border border-green-100 dark:border-green-800/30">
-                    <span className="text-green-800 dark:text-green-400 font-bold">Doctor Fee</span>
-                    <span className="font-black text-green-700 dark:text-green-300 text-xl">Rs. {qrAppointment.payment_amount}</span>
-                  </div>
-                )}
-              </div>
-              <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 mt-6 text-center uppercase tracking-wider">
-                Show this QR at the pharmacy
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 };
