@@ -1,8 +1,11 @@
+import crypto from "crypto";
+import axios from "axios";
+import { Op } from "sequelize";
 import Appointment from "../models/appointment.model.js";
 import User from "../models/user.model.js";
 import Pharmacy from "../models/pharmacy.model.js";
 import Doctor from "../models/doctor.model.js";
-import { Op } from "sequelize";
+import Transaction from "../models/transaction.model.js";
 import {
   getPagination,
   formatPaginatedResponse,
@@ -19,6 +22,19 @@ import {
 } from "../utils/constants.js";
 
 /**
+ * Generate eSewa Signature
+ */
+const generateEsewaSignature = (totalAmount, transactionUuid, productCode) => {
+  const data = `total_amount=${totalAmount},transaction_uuid=${transactionUuid},product_code=${productCode}`;
+  const hmac = crypto.createHmac(
+    "sha256",
+    process.env.ESEWA_SECRET || "8gBm/:&EnhH.1/q",
+  );
+  hmac.update(data);
+  return hmac.digest("base64");
+};
+
+/**
  * Initiate payment for an appointment
  * @route POST /api/payments/initiate
  */
@@ -29,8 +45,15 @@ export const initiatePayment = async (req, res) => {
     // Find appointment
     const appointment = await Appointment.findByPk(appointment_id, {
       include: [
-        { model: User, as: "Patient", attributes: ["user_id", "full_name", "email", "phone"] },
-        { model: Pharmacy, attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"] },
+        {
+          model: User,
+          as: "Patient",
+          attributes: ["user_id", "full_name", "email", "phone"],
+        },
+        {
+          model: Pharmacy,
+          attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"],
+        },
         {
           model: Doctor,
           required: false,
@@ -47,7 +70,7 @@ export const initiatePayment = async (req, res) => {
       );
     }
 
-    // Check if user has permission (must be the patient or admin)
+    // Check permissions
     if (req.user.role !== "Admin" && req.user.id !== appointment.patient_id) {
       return errorResponse(
         res,
@@ -83,38 +106,102 @@ export const initiatePayment = async (req, res) => {
       );
     }
 
-    // Generate transaction ID
-    const transactionId = `TXN-${Date.now()}-${generateRandomString(8)}`;
+    // Generate transaction identifier
+    // We use a combination to ensure uniqueness for retries if needed, but keeping mapping clear
+    const transactionUuid = `${appointment_id}-${Date.now()}`;
+    const productCode = process.env.ESEWA_MERCHANT_ID || "EPAYTEST";
 
-    // Build payment URL based on payment method
-    let paymentUrl;
-    const baseCallbackUrl =
-      process.env.PAYMENT_CALLBACK_URL ||
-      "http://localhost:5000/api/payments/confirm";
+    // Create Transaction Record
+    const transaction = await Transaction.create({
+      transaction_uuid: transactionUuid,
+      customer_name: appointment.Patient?.full_name || "Unknown",
+      customer_email: appointment.Patient?.email,
+      customer_phone: appointment.Patient?.phone,
+      product_name: `Appointment #${appointment_id}`,
+      product_id: appointment_id.toString(),
+      amount: amount,
+      payment_gateway: payment_method,
+      status: "PENDING",
+    });
 
     if (payment_method === "esewa") {
-      // eSewa payment integration (simplified for demo)
-      const esewaParams = new URLSearchParams({
-        amt: amount,
-        pdc: 0, // Delivery charge
-        psc: 0, // Service charge
-        txAmt: 0, // Tax amount
-        tAmt: amount, // Total amount
-        pid: transactionId,
-        scd: process.env.ESEWA_MERCHANT_ID || "EPAYTEST",
-        su: `${baseCallbackUrl}?status=success`,
-        fu: `${baseCallbackUrl}?status=failed`,
-      });
+      const amountStr = amount.toString();
+      const signature = generateEsewaSignature(
+        amountStr,
+        transactionUuid,
+        productCode,
+      );
 
-      const esewaBaseUrl =
-        process.env.ESEWA_TEST_MODE !== "false"
-          ? "https://uat.esewa.com.np/epay/main"
-          : "https://esewa.com.np/epay/main";
+      const params = {
+        amount: amountStr,
+        failure_url: process.env.FAILURE_URL || "http://localhost:5173/failure",
+        product_delivery_charge: "0",
+        product_service_charge: "0",
+        product_code: productCode,
+        signature: signature,
+        signed_field_names: "total_amount,transaction_uuid,product_code",
+        success_url: process.env.SUCCESS_URL || "http://localhost:5173/success",
+        tax_amount: "0",
+        total_amount: amountStr,
+        transaction_uuid: transactionUuid,
+      };
 
-      paymentUrl = `${esewaBaseUrl}?${esewaParams.toString()}`;
+      return successResponse(
+        res,
+        HTTP_STATUS.OK,
+        SUCCESS_MESSAGES.PAYMENT_INITIATED,
+        {
+          payment_method: "esewa",
+          params,
+          url:
+            process.env.ESEWA_PAYMENT_URL ||
+            "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
+          transaction_id: transaction.transaction_id,
+        },
+      );
     } else if (payment_method === "khalti") {
-      // Khalti payment integration (simplified for demo)
-      paymentUrl = `https://khalti.com/api/v2/payment/initiate/?amount=${amount * 100}&appointment_id=${appointment_id}&transaction_id=${transactionId}`;
+      const payload = {
+        return_url: process.env.SUCCESS_URL || "http://localhost:5173/success",
+        website_url: process.env.FRONTEND_URL || "http://localhost:5173",
+        amount: amount * 100, // Khalti expects paisa
+        purchase_order_id: transactionUuid,
+        purchase_order_name: `Appointment #${appointment_id}`,
+        customer_info: {
+          name: appointment.Patient?.full_name || "Customer",
+          email: appointment.Patient?.email || "test@example.com",
+          phone: appointment.Patient?.phone || "9800000000",
+        },
+      };
+
+      const khaltiResponse = await axios.post(
+        process.env.KHALTI_PAYMENT_URL ||
+          "https://a.khalti.com/api/v2/epayment/initiate/",
+        payload,
+        {
+          headers: {
+            Authorization: `Key ${process.env.KHALTI_SECRET_KEY}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      // Save pidx to transaction
+      if (khaltiResponse.data.pidx) {
+        transaction.gateway_reference = khaltiResponse.data.pidx;
+        await transaction.save();
+      }
+
+      return successResponse(
+        res,
+        HTTP_STATUS.OK,
+        SUCCESS_MESSAGES.PAYMENT_INITIATED,
+        {
+          payment_method: "khalti",
+          url: khaltiResponse.data.payment_url,
+          pidx: khaltiResponse.data.pidx,
+          transaction_id: transaction.transaction_id,
+        },
+      );
     } else {
       return errorResponse(
         res,
@@ -122,28 +209,11 @@ export const initiatePayment = async (req, res) => {
         "Invalid payment method. Supported methods: esewa, khalti",
       );
     }
-
-    // Update appointment with payment info
-    appointment.payment_amount = amount;
-    appointment.payment_status = PAYMENT_STATUS.PENDING;
-    appointment.payment_reference = transactionId;
-    await appointment.save();
-
-    return successResponse(
-      res,
-      HTTP_STATUS.OK,
-      SUCCESS_MESSAGES.PAYMENT_INITIATED,
-      {
-        appointment_id: appointment.appointment_id,
-        transaction_id: transactionId,
-        amount,
-        payment_method,
-        payment_url: paymentUrl,
-        payment_status: appointment.payment_status,
-      },
-    );
   } catch (error) {
-    console.error("Initiate payment error:", error);
+    console.error(
+      "Initiate payment error:",
+      error.response?.data || error.message,
+    );
     return errorResponse(
       res,
       HTTP_STATUS.INTERNAL_SERVER_ERROR,
@@ -158,10 +228,48 @@ export const initiatePayment = async (req, res) => {
  */
 export const confirmPayment = async (req, res) => {
   try {
-    const { appointment_id, payment_id, status, transaction_code } = req.body;
+    const { product_id, pidx } = req.body; // product_id maps to transaction_uuid
+    console.log(`[Payment Confirmation] Request received:`, {
+      product_id,
+      pidx,
+    });
 
-    // Find appointment
-    const appointment = await Appointment.findByPk(appointment_id);
+    // Find Transaction
+    let transaction;
+    if (pidx) {
+      transaction = await Transaction.findOne({
+        where: { gateway_reference: pidx },
+      });
+    } else if (product_id) {
+      transaction = await Transaction.findOne({
+        where: { transaction_uuid: product_id },
+      });
+    }
+
+    if (!transaction) {
+      console.log(`[Payment Confirmation] Transaction not found for:`, {
+        product_id,
+        pidx,
+      });
+      return errorResponse(res, HTTP_STATUS.NOT_FOUND, "Transaction not found");
+    }
+
+    console.log(
+      `[Payment Confirmation] Transaction found:`,
+      transaction.toJSON(),
+    );
+
+    // Prevent re-processing if already completed
+    if (transaction.status === "COMPLETED") {
+      const appointment = await Appointment.findByPk(transaction.product_id);
+      return successResponse(res, HTTP_STATUS.OK, "Payment already confirmed", {
+        status: "COMPLETED",
+        transaction,
+        appointment,
+      });
+    }
+
+    const appointment = await Appointment.findByPk(transaction.product_id);
     if (!appointment) {
       return errorResponse(
         res,
@@ -170,54 +278,132 @@ export const confirmPayment = async (req, res) => {
       );
     }
 
-    // Verify payment status
-    if (status === "success") {
-      // In production, verify with payment gateway API
-      // For eSewa: verify with their verification endpoint
-      // For Khalti: verify with their verification endpoint
+    let verificationStatus = "PENDING";
+    let gatewayResponse = {};
 
-      // Update appointment payment status
-      appointment.payment_status = PAYMENT_STATUS.PAID;
-      appointment.payment_reference =
-        payment_id || appointment.payment_reference;
+    if (transaction.payment_gateway === "esewa") {
+      // Verify with eSewa
+      const checkUrl =
+        process.env.ESEWA_PAYMENT_STATUS_CHECK_URL ||
+        "https://rc-epay.esewa.com.np/api/epay/transaction/status";
+      const params = {
+        product_code: process.env.ESEWA_MERCHANT_ID || "EPAYTEST",
+        total_amount: transaction.amount.toString().replace(/,/g, ""),
+        transaction_uuid: transaction.transaction_uuid,
+      };
 
-      // Optionally store transaction code for reference
-      // You might want to add a payment_transaction_code field to the model
-    } else {
-      appointment.payment_status = PAYMENT_STATUS.FAILED;
+      console.log(`[eSewa Verification] Checking status at ${checkUrl}`);
+      console.log(`[eSewa Verification] Params:`, params);
+
+      try {
+        const response = await axios.get(checkUrl, { params });
+        console.log(`[eSewa Verification] Response Status:`, response.status);
+        console.log(
+          `[eSewa Verification] Response Data:`,
+          JSON.stringify(response.data),
+        );
+
+        gatewayResponse = response.data;
+        // eSewa returns { status: "COMPLETE", refId: "...", ... }
+        const resStatus = response.data.status;
+        if (
+          resStatus === "COMPLETE" ||
+          resStatus === "PASSED" ||
+          resStatus === "SUCCESS"
+        ) {
+          verificationStatus = "COMPLETED";
+          transaction.gateway_reference = response.data.refId;
+        } else {
+          console.log(`[eSewa Verification] Status not complete: ${resStatus}`);
+          verificationStatus = "FAILED";
+        }
+      } catch (err) {
+        console.error(
+          "eSewa verification failed:",
+          err.message,
+          err.response?.status,
+          err.response?.data,
+        );
+        verificationStatus = "FAILED";
+        gatewayResponse = { error: err.message, details: err.response?.data };
+      }
+    } else if (transaction.payment_gateway === "khalti") {
+      // Verify with Khalti
+      const verifyUrl =
+        process.env.KHALTI_VERIFICATION_URL ||
+        "https://a.khalti.com/api/v2/epayment/lookup/";
+      try {
+        console.log(`[Khalti Verification] Checking status at ${verifyUrl}`);
+        console.log(
+          `[Khalti Verification] pidx:`,
+          pidx || transaction.gateway_reference,
+        );
+        const response = await axios.post(
+          verifyUrl,
+          { pidx: pidx || transaction.gateway_reference },
+          {
+            headers: {
+              Authorization: `Key ${process.env.KHALTI_SECRET_KEY}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+        console.log(`[Khalti Verification] Response:`, response.data);
+        gatewayResponse = response.data;
+        // Khalti returns { status: "Completed", ... }
+        if (response.data.status === "Completed") {
+          verificationStatus = "COMPLETED";
+        } else if (
+          response.data.status === "Expired" ||
+          response.data.status === "User canceled"
+        ) {
+          verificationStatus = "FAILED";
+        } else {
+          verificationStatus = "PENDING";
+        }
+      } catch (err) {
+        console.error(
+          "Khalti verification failed:",
+          err.response?.data || err.message,
+        );
+        verificationStatus = "FAILED";
+      }
     }
 
-    await appointment.save();
+    console.log(`[Payment Confirmation] Final Status: ${verificationStatus}`);
 
-    // Fetch updated appointment with associations
-    const updatedAppointment = await Appointment.findByPk(appointment_id, {
-      include: [
-        { model: User, as: "Patient", attributes: ["user_id", "full_name", "email", "phone"] },
-        { model: Pharmacy, attributes: ["pharmacy_id", "pharmacy_name", "address", "phone"] },
+    // Update Transaction Status
+    transaction.status = verificationStatus;
+    await transaction.save();
+
+    // Update Appointment Status if Completed
+    if (verificationStatus === "COMPLETED") {
+      appointment.payment_status = PAYMENT_STATUS.PAID;
+      appointment.payment_reference =
+        transaction.gateway_reference || transaction.transaction_uuid;
+      await appointment.save();
+
+      return successResponse(
+        res,
+        HTTP_STATUS.OK,
+        SUCCESS_MESSAGES.PAYMENT_CONFIRMED,
         {
-          model: Doctor,
-          required: false,
-          include: [{ model: User, attributes: ["full_name"] }],
+          status: "COMPLETED",
+          transaction,
+          appointment,
         },
-      ],
-    });
-
-    // TODO: Send notification to patient about payment status
-    // TODO: Send notification to doctor if payment successful
-
-    return successResponse(
-      res,
-      HTTP_STATUS.OK,
-      appointment.payment_status === PAYMENT_STATUS.PAID
-        ? SUCCESS_MESSAGES.PAYMENT_CONFIRMED
-        : "Payment failed. Please try again.",
-      {
-        appointment_id: updatedAppointment.appointment_id,
-        payment_status: updatedAppointment.payment_status,
-        payment_amount: updatedAppointment.payment_amount,
-        payment_reference: updatedAppointment.payment_reference,
-      },
-    );
+      );
+    } else {
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Payment verification failed",
+        {
+          status: verificationStatus,
+          gateway_response: gatewayResponse,
+        },
+      );
+    }
   } catch (error) {
     console.error("Confirm payment error:", error);
     return errorResponse(
@@ -250,8 +436,15 @@ export const getPaymentStatus = async (req, res) => {
         "appointment_time",
       ],
       include: [
-        { model: User, as: "Patient", attributes: ["user_id", "full_name", "email"] },
-        { model: Pharmacy, attributes: ["pharmacy_id", "pharmacy_name", "address"] },
+        {
+          model: User,
+          as: "Patient",
+          attributes: ["user_id", "full_name", "email"],
+        },
+        {
+          model: Pharmacy,
+          attributes: ["pharmacy_id", "pharmacy_name", "address"],
+        },
         {
           model: Doctor,
           required: false,

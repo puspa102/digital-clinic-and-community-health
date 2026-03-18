@@ -42,7 +42,7 @@ export const validateRegister = [
     .withMessage("Password must be at least 8 characters")
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number",
     ),
   body("phone")
     .optional()
@@ -208,7 +208,14 @@ export const validateAppointmentStatus = [
   body("status")
     .notEmpty()
     .withMessage("Status is required")
-    .isIn(["requested", "assigned", "confirmed", "completed", "cancelled", "no_show"])
+    .isIn([
+      "requested",
+      "assigned",
+      "confirmed",
+      "completed",
+      "cancelled",
+      "no_show",
+    ])
     .withMessage("Invalid status value"),
   handleValidationErrors,
 ];
@@ -288,22 +295,8 @@ export const validatePaymentInitiate = [
 ];
 
 export const validatePaymentConfirm = [
-  body("appointment_id")
-    .notEmpty()
-    .withMessage("Appointment ID is required")
-    .isInt({ min: 1 })
-    .withMessage("Invalid appointment ID"),
-  body("payment_id")
-    .notEmpty()
-    .withMessage("Payment ID is required")
-    .trim()
-    .isLength({ max: 100 })
-    .withMessage("Payment ID must be less than 100 characters"),
-  body("status")
-    .notEmpty()
-    .withMessage("Status is required")
-    .isIn(["success", "failed", "pending"])
-    .withMessage("Invalid payment status"),
+  body("product_id").optional().trim(),
+  body("pidx").optional().trim(),
   handleValidationErrors,
 ];
 
