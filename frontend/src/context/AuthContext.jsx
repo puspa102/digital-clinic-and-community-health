@@ -134,6 +134,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await api.get("/auth/profile");
+      setUser(response.data.data);
+    } catch (err) {
+      console.error("Failed to refresh user profile:", err);
+    }
+  };
+
   const clearError = () => setError(null);
 
   /**
@@ -155,6 +164,7 @@ export const AuthProvider = ({ children }) => {
     resendOtp,
     login,
     logout,
+    refreshUser,
     clearError,
     getDashboardPath,
   };

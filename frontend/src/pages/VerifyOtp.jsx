@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  ShieldCheck,
+  Mail,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 
 const VerifyOtp = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -95,7 +104,7 @@ const VerifyOtp = () => {
       if (result.success) {
         setMessage({
           type: "success",
-          text: "Email verified successfully! Redirecting to login...",
+          text: "Verified! Redirecting...",
         });
         setTimeout(() => {
           navigate("/login", {
@@ -104,7 +113,7 @@ const VerifyOtp = () => {
               message: "Your account has been verified. You can now login.",
             },
           });
-        }, 2000);
+        }, 1500);
       } else {
         setMessage({ type: "error", text: result.error });
         setOtp(["", "", "", "", "", ""]);
@@ -152,80 +161,88 @@ const VerifyOtp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
-              <svg
-                className="w-8 h-8 text-blue-600"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
+      {/* Left Side - Hero/Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-cyan-600">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1563986768609-322da13575f3?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
+            alt="Digital Verification"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/90 via-cyan-800/80 to-blue-900/90"></div>
+        </div>
+
+        <div className="relative z-10 flex flex-col justify-center px-8 text-white h-full w-full">
+          <div className="mb-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl mb-4 shadow-lg">
+              <ShieldCheck size={24} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Verify Your Email
+            <h1 className="text-4xl font-bold mb-4 leading-tight">
+              Verify Your <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200">
+                Identity
+              </span>
             </h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              We've sent a 6-digit verification code to
-              <br />
-              <span className="font-semibold text-gray-700 dark:text-gray-300">{email}</span>
+            <p className="text-lg text-cyan-100 max-w-md leading-relaxed">
+              We need to verify your email address to ensure your account
+              security and activate your profile.
             </p>
           </div>
 
-          {/* Message Alert */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10">
+              <div className="w-8 h-8 rounded-full bg-cyan-400/20 flex items-center justify-center">
+                <Mail className="w-4 h-4 text-cyan-300" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm">Check your inbox</h3>
+                <p className="text-xs text-cyan-100">
+                  We've sent a 6-digit code to {email}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Form */}
+      <div className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-900">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center lg:text-left">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Enter Verification Code
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Please enter the code we sent to{" "}
+              <span className="font-medium text-gray-900 dark:text-white">
+                {email}
+              </span>
+            </p>
+          </div>
+
+          {/* Messages */}
           {message.text && (
             <div
-              className={`flex items-center gap-3 p-4 rounded-lg ${
+              className={`p-3 rounded-lg flex items-center gap-2 border-l-4 ${
                 message.type === "error"
-                  ? "bg-red-50 border border-red-200"
-                  : "bg-green-50 border border-green-200"
+                  ? "bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-300"
+                  : "bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-300"
               }`}
             >
               {message.type === "error" ? (
-                <svg
-                  className="w-5 h-5 text-red-600 flex-shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="15" y1="9" x2="9" y2="15" />
-                  <line x1="9" y1="9" x2="15" y2="15" />
-                </svg>
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
               ) : (
-                <svg
-                  className="w-5 h-5 text-green-600 flex-shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
+                <CheckCircle className="w-4 h-4 flex-shrink-0" />
               )}
-              <span
-                className={`text-sm ${
-                  message.type === "error" ? "text-red-700" : "text-green-700"
-                }`}
-              >
-                {message.text}
-              </span>
+              <p className="text-xs font-medium">{message.text}</p>
             </div>
           )}
 
           {/* OTP Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* OTP Inputs */}
-            <div className="flex justify-center gap-3">
+            <div className="flex justify-between gap-2 sm:gap-4">
               {otp.map((digit, index) => (
                 <input
                   key={index}
@@ -239,66 +256,73 @@ const VerifyOtp = () => {
                   onPaste={handlePaste}
                   disabled={loading}
                   autoComplete="one-time-code"
-                  className={`w-12 h-14 text-center text-xl font-bold border-2 rounded-lg outline-none transition-all duration-200
+                  className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold border-2 rounded-xl outline-none transition-all duration-200
                     ${
                       loading
-                        ? "bg-gray-100 cursor-not-allowed"
-                        : "bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        ? "bg-gray-50 cursor-not-allowed text-gray-400 border-gray-200"
+                        : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 dark:focus:ring-cyan-900"
                     }
-                    ${digit ? "border-blue-500" : "border-gray-300"}`}
+                    ${
+                      digit
+                        ? "border-cyan-500 dark:border-cyan-500"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
                 />
               ))}
             </div>
 
-            {/* Verify Button */}
             <button
               type="submit"
               disabled={loading || otp.join("").length !== 6}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-lg shadow-cyan-500/30 text-sm font-medium text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 transition-all duration-200"
             >
               {loading ? (
-                <>
-                  <span className="spinner"></span>
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Verifying...
-                </>
+                </span>
               ) : (
-                "Verify OTP"
+                <span className="flex items-center gap-2">
+                  Verify Email
+                  <ArrowRight size={16} />
+                </span>
               )}
             </button>
           </form>
 
-          {/* Resend OTP */}
-          <div className="text-center">
-            <p className="text-gray-600">
-              Didn't receive the code?{" "}
-              {canResend ? (
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={loading}
-                  className="text-blue-600 hover:text-blue-700 font-medium underline disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Resend OTP
-                </button>
-              ) : (
-                <span className="text-gray-400 font-medium">
-                  Resend in {countdown}s
-                </span>
-              )}
-            </p>
-          </div>
+          <div className="space-y-4">
+            {/* Resend OTP */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Didn't receive the code?{" "}
+                {canResend ? (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                    className="inline-flex items-center gap-1.5 font-medium text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 transition-colors"
+                  >
+                    <RefreshCw size={14} />
+                    Resend Code
+                  </button>
+                ) : (
+                  <span className="font-medium text-gray-400">
+                    Resend in {countdown}s
+                  </span>
+                )}
+              </p>
+            </div>
 
-          {/* Footer */}
-          <div className="text-center pt-4 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-gray-600 dark:text-gray-400">
-              Wrong email?{" "}
+            {/* Back link */}
+            <div className="text-center pt-4 border-t border-gray-100 dark:border-gray-800">
               <Link
                 to="/register"
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
+                className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
               >
-                Go back to registration
+                <ArrowLeft size={16} />
+                Wrong email? Go back
               </Link>
-            </p>
+            </div>
           </div>
         </div>
       </div>
