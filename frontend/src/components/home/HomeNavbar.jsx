@@ -1,71 +1,188 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Activity, Sun, Moon } from "lucide-react";
+import { Activity, Sun, Moon, Menu, X } from "lucide-react";
 
 const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const navLinks = [
+    { name: "Features", href: "#features" },
+    { name: "How it Works", href: "#how-it-works" },
+    { name: "Testimonials", href: "#testimonials" },
+    { name: "Contact", href: "#contact" },
+  ];
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50">
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/90 dark:bg-gray-950/90 backdrop-blur-md shadow-sm py-3"
+          : "bg-transparent py-5"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
               <Activity size={22} className="text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Digital Clinic</h1>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 -mt-0.5">Community Health</p>
+              <h1
+                className={`text-lg font-bold transition-colors ${
+                  scrolled ? "text-gray-900 dark:text-white" : "text-white"
+                }`}
+              >
+                Digital Clinic
+              </h1>
+              <p
+                className={`text-[10px] font-medium tracking-wider uppercase transition-colors ${
+                  scrolled
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-blue-200"
+                }`}
+              >
+                Community Health
+              </p>
             </div>
-          </div>
+          </Link>
 
-          {/* Nav Links - Desktop */}
+          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              Features
-            </a>
-            <a href="#how-it-works" className="text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              How it Works
-            </a>
-            <a href="#testimonials" className="text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              Reviews
-            </a>
-            <a href="#contact" className="text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              Contact
-            </a>
+            {navLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className={`text-sm font-medium transition-colors hover:text-blue-500 ${
+                  scrolled
+                    ? "text-gray-600 dark:text-gray-300"
+                    : "text-gray-200 hover:text-white"
+                }`}
+              >
+                {link.name}
+              </a>
+            ))}
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-4">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className={`p-2 rounded-lg transition-colors ${
+                scrolled
+                  ? "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                  : "bg-white/10 hover:bg-white/20 text-white"
+              }`}
+              aria-label="Toggle theme"
             >
-              {isDark ? <Sun size={20} className="text-amber-500" /> : <Moon size={20} className="text-gray-500" />}
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            
+
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
-                className="px-4 py-2 text-[13px] font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all"
+                className="px-5 py-2.5 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
               >
-                Go to Dashboard
+                Dashboard
               </Link>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-[13px] font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    scrolled
+                      ? "text-gray-700 dark:text-gray-200 hover:text-blue-600"
+                      : "text-white hover:text-blue-200"
+                  }`}
                 >
-                  Login
+                  Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 text-[13px] font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all"
+                  className="px-5 py-2.5 text-sm font-semibold bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-colors shadow-lg"
                 >
                   Get Started
                 </Link>
               </div>
             )}
           </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-colors ${
+                scrolled
+                  ? "text-gray-600 dark:text-gray-400"
+                  : "text-white bg-white/10"
+              }`}
+            >
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`p-2 rounded-lg transition-colors ${
+                scrolled ? "text-gray-900 dark:text-white" : "text-white"
+              }`}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      <div
+        className={`absolute top-full left-0 right-0 bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 shadow-xl md:hidden transition-all duration-300 ease-in-out origin-top ${
+          mobileMenuOpen
+            ? "opacity-100 scale-y-100"
+            : "opacity-0 scale-y-0 h-0 overflow-hidden"
+        }`}
+      >
+        <div className="p-4 flex flex-col gap-4">
+          {navLinks.map((link) => (
+            <a
+              key={link.name}
+              href={link.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-base font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 py-2"
+            >
+              {link.name}
+            </a>
+          ))}
+          <div className="h-px bg-gray-100 dark:bg-gray-800 my-2"></div>
+          {isAuthenticated ? (
+            <Link
+              to="/dashboard"
+              className="w-full py-3 text-center text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+            >
+              Go to Dashboard
+            </Link>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <Link
+                to="/login"
+                className="w-full py-3 text-center text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="w-full py-3 text-center text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+              >
+                Get Started
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </nav>

@@ -2,7 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import api, { handleApiError, formatDate, formatTime, APPOINTMENT_STATUS } from "../services/api";
+import api, {
+  handleApiError,
+  formatDate,
+  formatTime,
+  APPOINTMENT_STATUS,
+} from "../services/api";
 import {
   Menu,
   Search,
@@ -89,7 +94,10 @@ const Navbar = ({ onMenuClick }) => {
   // Close notification dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
         setShowNotifications(false);
       }
     };
@@ -128,9 +136,10 @@ const Navbar = ({ onMenuClick }) => {
         const doctorsRes = await api.get("/doctors").catch(() => null);
         if (doctorsRes?.data?.data) {
           doctorsRes.data.data
-            .filter((d) => 
-              d.User?.name?.toLowerCase().includes(searchLower) ||
-              d.specialization?.toLowerCase().includes(searchLower)
+            .filter(
+              (d) =>
+                d.User?.name?.toLowerCase().includes(searchLower) ||
+                d.specialization?.toLowerCase().includes(searchLower),
             )
             .slice(0, 5)
             .forEach((doc) => {
@@ -150,9 +159,10 @@ const Navbar = ({ onMenuClick }) => {
         const pharmaciesRes = await api.get("/pharmacies").catch(() => null);
         if (pharmaciesRes?.data?.data) {
           pharmaciesRes.data.data
-            .filter((p) => 
-              p.name?.toLowerCase().includes(searchLower) ||
-              p.address?.toLowerCase().includes(searchLower)
+            .filter(
+              (p) =>
+                p.name?.toLowerCase().includes(searchLower) ||
+                p.address?.toLowerCase().includes(searchLower),
             )
             .slice(0, 5)
             .forEach((pharm) => {
@@ -169,37 +179,44 @@ const Navbar = ({ onMenuClick }) => {
         }
       } else if (user?.role === "Doctor") {
         // Search patients (from appointments)
-        const appointmentsRes = await api.get("/appointments/doctor/me").catch(() => null);
+        const appointmentsRes = await api
+          .get("/appointments/doctor/me")
+          .catch(() => null);
         if (appointmentsRes?.data?.data) {
           const uniquePatients = new Map();
           appointmentsRes.data.data.forEach((apt) => {
             if (apt.User && !uniquePatients.has(apt.User.user_id)) {
-              if (apt.User.name?.toLowerCase().includes(searchLower) ||
-                  apt.User.email?.toLowerCase().includes(searchLower)) {
+              if (
+                apt.User.name?.toLowerCase().includes(searchLower) ||
+                apt.User.email?.toLowerCase().includes(searchLower)
+              ) {
                 uniquePatients.set(apt.User.user_id, apt.User);
               }
             }
           });
-          Array.from(uniquePatients.values()).slice(0, 5).forEach((patient) => {
-            results.push({
-              id: `patient-${patient.user_id}`,
-              type: "patient",
-              title: patient.name,
-              subtitle: patient.email,
-              icon: Users,
-              color: "blue",
-              link: "/doctor/patients",
+          Array.from(uniquePatients.values())
+            .slice(0, 5)
+            .forEach((patient) => {
+              results.push({
+                id: `patient-${patient.user_id}`,
+                type: "patient",
+                title: patient.name,
+                subtitle: patient.email,
+                icon: Users,
+                color: "blue",
+                link: "/doctor/patients",
+              });
             });
-          });
         }
       } else if (user?.role === "Pharmacy") {
         // Search inventory
         const inventoryRes = await api.get("/inventory").catch(() => null);
         if (inventoryRes?.data?.data) {
           inventoryRes.data.data
-            .filter((item) => 
-              item.medicine_name?.toLowerCase().includes(searchLower) ||
-              item.category?.toLowerCase().includes(searchLower)
+            .filter(
+              (item) =>
+                item.medicine_name?.toLowerCase().includes(searchLower) ||
+                item.category?.toLowerCase().includes(searchLower),
             )
             .slice(0, 5)
             .forEach((item) => {
@@ -219,9 +236,10 @@ const Navbar = ({ onMenuClick }) => {
         const doctorsRes = await api.get("/doctors").catch(() => null);
         if (doctorsRes?.data?.data) {
           doctorsRes.data.data
-            .filter((d) => 
-              d.User?.name?.toLowerCase().includes(searchLower) ||
-              d.specialization?.toLowerCase().includes(searchLower)
+            .filter(
+              (d) =>
+                d.User?.name?.toLowerCase().includes(searchLower) ||
+                d.specialization?.toLowerCase().includes(searchLower),
             )
             .slice(0, 3)
             .forEach((doc) => {
@@ -241,10 +259,11 @@ const Navbar = ({ onMenuClick }) => {
         const usersRes = await api.get("/auth/users").catch(() => null);
         if (usersRes?.data?.data) {
           usersRes.data.data
-            .filter((u) => 
-              u.name?.toLowerCase().includes(searchLower) ||
-              u.email?.toLowerCase().includes(searchLower) ||
-              u.role?.toLowerCase().includes(searchLower)
+            .filter(
+              (u) =>
+                u.name?.toLowerCase().includes(searchLower) ||
+                u.email?.toLowerCase().includes(searchLower) ||
+                u.role?.toLowerCase().includes(searchLower),
             )
             .slice(0, 5)
             .forEach((usr) => {
@@ -264,9 +283,10 @@ const Navbar = ({ onMenuClick }) => {
         const doctorsRes = await api.get("/doctors").catch(() => null);
         if (doctorsRes?.data?.data) {
           doctorsRes.data.data
-            .filter((d) => 
-              d.User?.name?.toLowerCase().includes(searchLower) ||
-              d.specialization?.toLowerCase().includes(searchLower)
+            .filter(
+              (d) =>
+                d.User?.name?.toLowerCase().includes(searchLower) ||
+                d.specialization?.toLowerCase().includes(searchLower),
             )
             .slice(0, 3)
             .forEach((doc) => {
@@ -286,9 +306,10 @@ const Navbar = ({ onMenuClick }) => {
         const pharmaciesRes = await api.get("/pharmacies").catch(() => null);
         if (pharmaciesRes?.data?.data) {
           pharmaciesRes.data.data
-            .filter((p) => 
-              p.name?.toLowerCase().includes(searchLower) ||
-              p.address?.toLowerCase().includes(searchLower)
+            .filter(
+              (p) =>
+                p.name?.toLowerCase().includes(searchLower) ||
+                p.address?.toLowerCase().includes(searchLower),
             )
             .slice(0, 3)
             .forEach((pharm) => {
@@ -341,11 +362,14 @@ const Navbar = ({ onMenuClick }) => {
   // Get color classes for search results
   const getResultColor = (color) => {
     const colors = {
-      green: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
+      green:
+        "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
       blue: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
       teal: "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
-      purple: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
-      orange: "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
+      purple:
+        "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
+      orange:
+        "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
     };
     return colors[color] || colors.blue;
   };
@@ -368,9 +392,11 @@ const Navbar = ({ onMenuClick }) => {
 
       if (user?.role === "Patient") {
         // Fetch patient's appointments
-        const res = await api.get("/appointments/my-appointments", { params: { limit: 20 } });
+        const res = await api.get("/appointments/my-appointments", {
+          params: { limit: 20 },
+        });
         const appointments = res.data?.data || [];
-        
+
         // Upcoming confirmed appointments (next 7 days)
         appointments
           .filter((a) => a.status === APPOINTMENT_STATUS.CONFIRMED)
@@ -392,7 +418,9 @@ const Navbar = ({ onMenuClick }) => {
           });
 
         // Prescription notifications
-        const prescRes = await api.get("/prescriptions/patient/me", { params: { limit: 5 } }).catch(() => null);
+        const prescRes = await api
+          .get("/prescriptions/patient/me", { params: { limit: 5 } })
+          .catch(() => null);
         if (prescRes?.data?.data?.length > 0) {
           const recentPresc = prescRes.data.data[0];
           const prescDate = new Date(recentPresc.created_at);
@@ -412,11 +440,15 @@ const Navbar = ({ onMenuClick }) => {
         }
       } else if (user?.role === "Doctor") {
         // Fetch doctor's appointments
-        const res = await api.get("/appointments/my-doctor-appointments", { params: { limit: 20 } });
+        const res = await api.get("/appointments/my-doctor-appointments", {
+          params: { limit: 20 },
+        });
         const appointments = res.data?.data || [];
 
         // Pending appointments to confirm
-        const assigned = appointments.filter((a) => a.status === APPOINTMENT_STATUS.ASSIGNED);
+        const assigned = appointments.filter(
+          (a) => a.status === APPOINTMENT_STATUS.ASSIGNED,
+        );
         if (assigned.length > 0) {
           notifs.push({
             id: "assigned-appointments",
@@ -433,7 +465,10 @@ const Navbar = ({ onMenuClick }) => {
         // Today's appointments
         const todayApts = appointments.filter((a) => {
           const aptDate = new Date(a.appointment_date).toDateString();
-          return aptDate === now.toDateString() && a.status === APPOINTMENT_STATUS.CONFIRMED;
+          return (
+            aptDate === now.toDateString() &&
+            a.status === APPOINTMENT_STATUS.CONFIRMED
+          );
         });
         if (todayApts.length > 0) {
           notifs.push({
@@ -449,11 +484,15 @@ const Navbar = ({ onMenuClick }) => {
         }
       } else if (user?.role === "Pharmacy") {
         // Fetch pharmacy appointments
-        const res = await api.get("/pharmacies/my-appointments", { params: { limit: 20 } });
+        const res = await api.get("/pharmacies/my-appointments", {
+          params: { limit: 20 },
+        });
         const appointments = res.data?.data || [];
 
         // Requested appointments needing doctor assignment
-        const requested = appointments.filter((a) => a.status === APPOINTMENT_STATUS.REQUESTED);
+        const requested = appointments.filter(
+          (a) => a.status === APPOINTMENT_STATUS.REQUESTED,
+        );
         if (requested.length > 0) {
           const requestedSignature = requested
             .slice(0, 5)
@@ -492,9 +531,11 @@ const Navbar = ({ onMenuClick }) => {
         }
       } else if (user?.role === "Admin") {
         // Fetch pending users
-        const usersRes = await api.get("/auth/users", { params: { status: "pending", limit: 10 } });
+        const usersRes = await api.get("/auth/users", {
+          params: { status: "pending", limit: 10 },
+        });
         const pendingUsers = usersRes.data?.data || [];
-        
+
         if (pendingUsers.length > 0) {
           notifs.push({
             id: "pending-users",
@@ -524,7 +565,9 @@ const Navbar = ({ onMenuClick }) => {
       setNotifications(notifs);
 
       // Count only notifications not seen yet
-      const unseen = notifs.filter((n) => !seenNotificationIdsRef.current.has(n.id));
+      const unseen = notifs.filter(
+        (n) => !seenNotificationIdsRef.current.has(n.id),
+      );
       setUnseenCount(unseen.length);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
@@ -556,11 +599,15 @@ const Navbar = ({ onMenuClick }) => {
   const getNotificationColorClasses = (color) => {
     const colors = {
       blue: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-      green: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
-      yellow: "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400",
-      orange: "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
+      green:
+        "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
+      yellow:
+        "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400",
+      orange:
+        "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
       red: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-      purple: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
+      purple:
+        "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
     };
     return colors[color] || colors.blue;
   };
@@ -654,7 +701,10 @@ const Navbar = ({ onMenuClick }) => {
                 placeholder="Search doctors, patients, appointments..."
                 className="w-full h-10 pl-10 pr-4 text-[13px] border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all"
               />
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <Search
+                size={16}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+              />
 
               {/* Search Results Dropdown */}
               {showSearch && (
@@ -662,7 +712,9 @@ const Navbar = ({ onMenuClick }) => {
                   {searchLoading ? (
                     <div className="p-6 text-center">
                       <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
-                      <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-3">Searching...</p>
+                      <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-3">
+                        Searching...
+                      </p>
                     </div>
                   ) : searchResults.length > 0 ? (
                     <div className="py-2">
@@ -674,7 +726,9 @@ const Navbar = ({ onMenuClick }) => {
                             onClick={() => handleResultClick(result.link)}
                             className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
                           >
-                            <div className={`p-2 rounded-lg ${getResultColor(result.color)}`}>
+                            <div
+                              className={`p-2 rounded-lg ${getResultColor(result.color)}`}
+                            >
                               <Icon size={16} />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -697,8 +751,12 @@ const Navbar = ({ onMenuClick }) => {
                       <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Search size={18} className="text-gray-400" />
                       </div>
-                      <p className="text-[13px] font-medium text-gray-600 dark:text-gray-300">No results found</p>
-                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Try a different search term</p>
+                      <p className="text-[13px] font-medium text-gray-600 dark:text-gray-300">
+                        No results found
+                      </p>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                        Try a different search term
+                      </p>
                     </div>
                   )}
                 </div>
@@ -726,11 +784,14 @@ const Navbar = ({ onMenuClick }) => {
 
               {/* Notifications */}
               <div className="relative" ref={notificationRef}>
-                <button 
+                <button
                   onClick={handleNotificationClick}
                   className="p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative"
                 >
-                  <Bell size={20} className="text-gray-500 dark:text-gray-400" />
+                  <Bell
+                    size={20}
+                    className="text-gray-500 dark:text-gray-400"
+                  />
                   {unseenCount > 0 && (
                     <span className="absolute top-1.5 right-1.5 min-w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1 ring-2 ring-white dark:ring-gray-900">
                       {unseenCount > 9 ? "9+" : unseenCount}
@@ -765,8 +826,12 @@ const Navbar = ({ onMenuClick }) => {
                           <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
                             <Bell size={20} className="text-gray-400" />
                           </div>
-                          <p className="text-[13px] font-medium text-gray-600 dark:text-gray-300">No notifications</p>
-                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">You're all caught up!</p>
+                          <p className="text-[13px] font-medium text-gray-600 dark:text-gray-300">
+                            No notifications
+                          </p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                            You're all caught up!
+                          </p>
                         </div>
                       ) : (
                         <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -779,7 +844,9 @@ const Navbar = ({ onMenuClick }) => {
                                 onClick={() => handleNotificationRead(notif.id)}
                                 className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group"
                               >
-                                <div className={`p-2 rounded-lg shrink-0 ${getNotificationColorClasses(notif.color)}`}>
+                                <div
+                                  className={`p-2 rounded-lg shrink-0 ${getNotificationColorClasses(notif.color)}`}
+                                >
                                   <Icon size={14} />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -791,7 +858,9 @@ const Navbar = ({ onMenuClick }) => {
                                   </p>
                                 </div>
                                 <button
-                                  onClick={(e) => clearNotification(notif.id, e)}
+                                  onClick={(e) =>
+                                    clearNotification(notif.id, e)
+                                  }
                                   className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 opacity-0 group-hover:opacity-100 transition-all"
                                 >
                                   <X size={12} className="text-gray-400" />
@@ -821,23 +890,39 @@ const Navbar = ({ onMenuClick }) => {
               <div className="hidden lg:block w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
               {/* Profile Dropdown - Desktop */}
-              <div className="hidden lg:flex items-center gap-2.5 ml-1 relative" ref={profileRef}>
+              <div
+                className="hidden lg:flex items-center gap-2.5 ml-1 relative"
+                ref={profileRef}
+              >
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center gap-2.5 p-1.5 pr-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
-                  <div className={`w-8 h-8 ${roleConfig.bg} rounded-lg flex items-center justify-center text-white text-[12px] font-bold ring-2 ${roleConfig.ring}`}>
-                    {user?.full_name?.charAt(0)?.toUpperCase() || "U"}
+                  <div
+                    className={`w-8 h-8 ${roleConfig.bg} rounded-lg flex items-center justify-center text-white text-[12px] font-bold ring-2 ${roleConfig.ring} overflow-hidden`}
+                  >
+                    {user?.profile_picture ? (
+                      <img
+                        src={`http://localhost:5000/${user.profile_picture}`}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user?.full_name?.charAt(0)?.toUpperCase() || "U"
+                    )}
                   </div>
                   <div className="text-left hidden xl:block">
                     <p className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 leading-tight">
-                      {user?.full_name?.split(' ')[0]}
+                      {user?.full_name?.split(" ")[0]}
                     </p>
                     <p className={`text-[10px] font-medium ${roleConfig.text}`}>
                       {user?.role}
                     </p>
                   </div>
-                  <ChevronDown size={14} className={`text-gray-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    size={14}
+                    className={`text-gray-400 transition-transform ${showProfileMenu ? "rotate-180" : ""}`}
+                  />
                 </button>
 
                 {/* Dropdown menu */}
@@ -938,7 +1023,6 @@ const Navbar = ({ onMenuClick }) => {
           )}
         </div>
       </div>
-
     </header>
   );
 };

@@ -56,8 +56,9 @@ body {
   background-color: var(--color-background);
   color: var(--text-primary);
   /* Smooth theme transitions */
-  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-              color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Base transition for all elements except transform/opacity driven ones to avoid stutter */
@@ -72,7 +73,7 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* Glassmorphism helpers */
   .glass {
     background: rgba(255, 255, 255, 0.7);
@@ -80,7 +81,7 @@ body {
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
-  
+
   .dark .glass {
     background: rgba(24, 25, 27, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.05);

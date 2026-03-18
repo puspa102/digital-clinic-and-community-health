@@ -3,35 +3,41 @@ import { ArrowRight } from "lucide-react";
 
 const HomeCTA = () => {
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-[2.5rem] p-12 text-center relative overflow-hidden shadow-2xl shadow-purple-500/20">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtNi42MjcgMC0xMiA1LjM3My0xMiAxMnM1LjM3MyAxMiAxMiAxMiAxMi01LjM3MyAxMi0xMi01LjM3My0xMi0xMi0xMnptMCAxOGMtMy4zMTQgMC02LTIuNjg2LTYtNnMyLjY4Ni02IDYtNiA2IDIuNjg2IDYgNi0yLjY4NiA2LTYgNnoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjEiLz48L2c+PC9zdmc+')] opacity-30" />
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl"></div>
-          
-          <div className="relative z-10">
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Ready to Transform Your Healthcare?
+    <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="relative rounded-3xl overflow-hidden bg-blue-600 px-6 py-16 sm:px-16 sm:py-20 lg:flex lg:items-center lg:justify-between lg:px-20">
+          {/* Background decoration */}
+          <div className="absolute top-0 left-0 -mt-10 -ml-10 w-40 h-40 rounded-full bg-white/10 blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 -mb-10 -mr-10 w-40 h-40 rounded-full bg-white/10 blur-3xl"></div>
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+
+          <div className="relative z-10 text-center lg:text-left lg:max-w-xl">
+            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <span className="block">Ready to get started?</span>
+              <span className="block text-blue-200">
+                Join our community today.
+              </span>
             </h2>
-            <p className="text-white/90 mb-10 max-w-2xl mx-auto text-lg leading-relaxed">
-              Join thousands of patients, doctors, and pharmacies already using Digital Clinic for better healthcare management.
+            <p className="mt-4 text-lg text-blue-100">
+              Experience the future of healthcare. Whether you are a patient,
+              doctor, or pharmacy, we have the right tools for you.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                to="/register"
-                className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300"
-              >
-                Get Started Free
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 px-8 py-4 border-2 border-white/50 text-white font-bold rounded-xl hover:bg-white/10 hover:border-white transition-all duration-300 backdrop-blur-sm"
-              >
-                Sign In
-              </Link>
-            </div>
+          </div>
+
+          <div className="relative z-10 mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-end gap-4 lg:mt-0 lg:shrink-0">
+            <Link
+              to="/register"
+              className="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-bold rounded-xl text-blue-600 bg-white hover:bg-blue-50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+            >
+              Get Started
+              <ArrowRight className="ml-2 -mr-1 w-5 h-5" />
+            </Link>
+            <Link
+              to="/login"
+              className="inline-flex items-center justify-center px-8 py-3.5 border border-blue-400 text-base font-bold rounded-xl text-white hover:bg-blue-700 hover:border-blue-500 transition-all duration-300"
+            >
+              Sign In
+            </Link>
           </div>
         </div>
       </div>

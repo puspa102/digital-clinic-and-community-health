@@ -54,7 +54,8 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
       .catch(() => {});
 
     const SOCKET_URL =
-      import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+      import.meta.env.VITE_API_URL?.replace("/api", "") ||
+      "http://localhost:5000";
     const socket = io(SOCKET_URL, {
       auth: { token },
       transports: ["websocket", "polling"],
@@ -83,17 +84,29 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
     Patient: [
       { label: "Dashboard", path: "/patient/dashboard", icon: LayoutDashboard },
       { label: "Find Pharmacies", path: "/patient/pharmacies", icon: Search },
-      { label: "My Appointments", path: "/patient/appointments", icon: Calendar },
+      {
+        label: "My Appointments",
+        path: "/patient/appointments",
+        icon: Calendar,
+      },
       { label: "Emergency", path: "/emergency", icon: Activity },
       { label: "Medical History", path: "/patient/history", icon: FileText },
     ],
 
     Doctor: [
       { label: "Dashboard", path: "/doctor/dashboard", icon: LayoutDashboard },
-      { label: "My Appointments", path: "/doctor/appointments", icon: Calendar },
+      {
+        label: "My Appointments",
+        path: "/doctor/appointments",
+        icon: Calendar,
+      },
       { label: "Patients", path: "/doctor/patients", icon: Users },
       { label: "Schedule", path: "/doctor/schedule", icon: Clock },
-      { label: "Prescriptions", path: "/doctor/prescriptions", icon: FileCheck },
+      {
+        label: "Prescriptions",
+        path: "/doctor/prescriptions",
+        icon: FileCheck,
+      },
     ],
 
     Admin: [
@@ -106,7 +119,11 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
     ],
 
     Pharmacy: [
-      { label: "Dashboard", path: "/pharmacy/dashboard", icon: LayoutDashboard },
+      {
+        label: "Dashboard",
+        path: "/pharmacy/dashboard",
+        icon: LayoutDashboard,
+      },
       { label: "Appointments", path: "/pharmacy/appointments", icon: Calendar },
       { label: "Doctors", path: "/pharmacy/doctors", icon: Users },
       { label: "Inventory", path: "/pharmacy/inventory", icon: Package },
@@ -192,7 +209,9 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
       >
         {/* Logo / Brand */}
         <div className="flex items-center gap-3 px-4 h-16 shrink-0 border-b border-gray-100 dark:border-gray-800">
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${roleConfig.color}`}>
+          <div
+            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${roleConfig.color}`}
+          >
             <Activity size={20} className="text-white" />
           </div>
           {!isMinimized && (
@@ -202,8 +221,12 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               </h1>
               {isAuthenticated && (
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${roleConfig.indicator}`} />
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${roleConfig.textColor}`}>
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full animate-pulse ${roleConfig.indicator}`}
+                  />
+                  <span
+                    className={`text-[10px] font-semibold uppercase tracking-wider ${roleConfig.textColor}`}
+                  >
                     {user?.role}
                   </span>
                 </div>
@@ -221,8 +244,18 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               isMinimized ? "justify-center px-0" : ""
             }`}
           >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${roleConfig.color} text-white`}>
-              {user?.full_name?.charAt(0)?.toUpperCase() || "U"}
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${roleConfig.color} text-white overflow-hidden`}
+            >
+              {user?.profile_picture ? (
+                <img
+                  src={`http://localhost:5000/${user.profile_picture}`}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                user?.full_name?.charAt(0)?.toUpperCase() || "U"
+              )}
             </div>
             {!isMinimized && (
               <div className="overflow-hidden flex-1 min-w-0">
@@ -248,7 +281,9 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
         {isMinimized && <div className="pt-4" />}
 
         {/* Navigation Items */}
-        <nav className={`flex-1 px-3 space-y-0.5 ${isMinimized ? "overflow-hidden" : "overflow-y-auto"}`}>
+        <nav
+          className={`flex-1 px-3 space-y-0.5 ${isMinimized ? "overflow-hidden" : "overflow-y-auto"}`}
+        >
           {navItems.map((item) => {
             const isActive = isActivePath(item.path);
             const Icon = item.icon;
@@ -268,13 +303,17 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               >
                 {/* Active indicator bar */}
                 {isActive && (
-                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full ${roleConfig.indicator}`} />
+                  <div
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full ${roleConfig.indicator}`}
+                  />
                 )}
                 <Icon
                   size={19}
                   className={`shrink-0 transition-colors ${isActive ? roleConfig.activeText : ""}`}
                 />
-                {!isMinimized && <span className="whitespace-nowrap">{item.label}</span>}
+                {!isMinimized && (
+                  <span className="whitespace-nowrap">{item.label}</span>
+                )}
 
                 {/* Tooltip for collapsed state */}
                 {isMinimized && (
@@ -342,7 +381,9 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               }`}
             >
               <Settings size={18} className="shrink-0 transition-colors" />
-              {!isMinimized && <span className="whitespace-nowrap">Settings</span>}
+              {!isMinimized && (
+                <span className="whitespace-nowrap">Settings</span>
+              )}
               {isMinimized && (
                 <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
                   Settings
@@ -358,7 +399,9 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               }`}
             >
               <HelpCircle size={18} className="shrink-0 transition-colors" />
-              {!isMinimized && <span className="whitespace-nowrap">Help & Support</span>}
+              {!isMinimized && (
+                <span className="whitespace-nowrap">Help & Support</span>
+              )}
               {isMinimized && (
                 <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
                   Help & Support
@@ -375,7 +418,9 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
               }`}
             >
               <LogOut size={18} className="shrink-0" />
-              {!isMinimized && <span className="whitespace-nowrap">Logout</span>}
+              {!isMinimized && (
+                <span className="whitespace-nowrap">Logout</span>
+              )}
               {isMinimized && (
                 <div className="absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 bg-gray-900 text-white shadow-lg">
                   Logout

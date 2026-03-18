@@ -6,6 +6,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // Public Pages
 import Home from "./pages/Home";
+import Success from "./pages/Success";
+import Failure from "./pages/Failure";
 
 // Auth Pages
 import Login from "./pages/Login";
@@ -91,6 +93,8 @@ function App() {
       <Route path="/verify-otp" element={<VerifyOtp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/success" element={<Success />} />
+      <Route path="/failure" element={<Failure />} />
 
       {/* Dashboard redirect - redirects to role-based dashboard */}
       <Route
