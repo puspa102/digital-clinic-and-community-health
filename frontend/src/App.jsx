@@ -56,7 +56,8 @@ import PharmacyProfile from "./pages/pharmacy/Profile";
 import PharmacySettings from "./pages/pharmacy/Settings";
 
 // Shared Pages
-import Emergency from "./pages/Emergency";
+import EmergencyDashboard from "./pages/Emergency";
+import ChatPage from "./pages/ChatPage";
 
 // Component to redirect to role-based dashboard
 const DashboardRedirect = () => {
@@ -383,7 +384,15 @@ function App() {
         path="/emergency"
         element={
           <ProtectedRoute roles={["Patient", "Doctor", "Admin", "Pharmacy"]}>
-            <Emergency />
+            <EmergencyDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute roles={["Patient", "Doctor", "Admin", "Pharmacy"]}>
+            <ChatPage />
           </ProtectedRoute>
         }
       />

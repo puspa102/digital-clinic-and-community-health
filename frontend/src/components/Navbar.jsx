@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import logo from "../assets/logo.svg";
 import api, {
   handleApiError,
   formatDate,
@@ -638,10 +639,10 @@ const Navbar = ({ onMenuClick }) => {
         badge: "bg-green-500",
       },
       Patient: {
-        bg: "bg-blue-600",
-        text: "text-blue-600",
-        ring: "ring-blue-500/20",
-        badge: "bg-blue-500",
+        bg: "bg-teal-600",
+        text: "text-teal-600",
+        ring: "ring-teal-500/20",
+        badge: "bg-teal-500",
       },
       Pharmacy: {
         bg: "bg-orange-600",
@@ -684,7 +685,12 @@ const Navbar = ({ onMenuClick }) => {
           </button>
 
           {/* Page title - Mobile */}
-          <h1 className="text-[15px] font-bold text-gray-900 dark:text-white lg:hidden">
+          <h1 className="text-[15px] font-bold text-gray-900 dark:text-white lg:hidden flex items-center gap-2">
+            <img
+              src={logo}
+              alt="Digital Clinic logo"
+              className="w-8 h-8 object-contain"
+            />
             Digital Clinic
           </h1>
         </div>

@@ -52,7 +52,7 @@ const Layout = ({ children }) => {
 
       {/* Main content area */}
       <div
-        className={`transition-all duration-300 ${
+        className={`transition-all duration-300 min-h-screen flex flex-col ${
           sidebarMinimized ? "lg:pl-16" : "lg:pl-60"
         }`}
       >
@@ -65,7 +65,7 @@ const Layout = ({ children }) => {
         />
 
         {/* Page content */}
-        <main className="p-4 lg:p-6">{children}</main>
+        <main className="p-4 lg:p-6 flex-1">{children}</main>
       </div>
     </div>
   );

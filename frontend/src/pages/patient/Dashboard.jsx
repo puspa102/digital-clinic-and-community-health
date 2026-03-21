@@ -192,25 +192,25 @@ const Dashboard = () => {
       label: "Upcoming",
       value: upcomingAppointments.length,
       icon: CalendarDays,
-      colorClass: "bg-[#0ea5e9] dark:bg-[#0284c7]",
+      colorClass: "bg-sky-500 dark:bg-sky-600",
     },
     {
       label: "Confirmed",
       value: confirmedAppointments.length,
       icon: CheckCircle2,
-      colorClass: "bg-[#10b981] dark:bg-[#059669]",
+      colorClass: "bg-emerald-500 dark:bg-emerald-600",
     },
     {
       label: "Completed",
       value: completedCount,
       icon: ClipboardCheck,
-      colorClass: "bg-[#8b5cf6] dark:bg-[#7c3aed]",
+      colorClass: "bg-violet-500 dark:bg-violet-600",
     },
     {
       label: "Pending Fee",
       value: `Rs. ${totalPendingAmount}`,
       icon: Wallet,
-      colorClass: "bg-[#f59e0b] dark:bg-[#d97706]",
+      colorClass: "bg-amber-500 dark:bg-amber-600",
     },
   ];
 
@@ -244,7 +244,7 @@ const Dashboard = () => {
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
               {getGreeting()},{" "}
-              <span className="text-blue-600 dark:text-blue-400">
+              <span className="text-teal-600 dark:text-teal-400">
                 {getFirstName()}
               </span>
             </h1>
@@ -254,7 +254,7 @@ const Dashboard = () => {
           </div>
           <Link
             to="/patient/pharmacies"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30 transition-all duration-300 hover:scale-[1.02]"
           >
             <PlusCircle className="w-5 h-5" />
             Book New Appointment
@@ -262,7 +262,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((stat, i) => (
             <StatCard key={i} {...stat} loading={loading} />
           ))}
@@ -287,48 +287,56 @@ const Dashboard = () => {
               <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
                 Upcoming Appointments
               </h2>
-              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 overflow-hidden shadow-lg">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
                 {loading ? (
-                  <div className="p-10 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                  <div className="p-12 text-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-teal-600 mx-auto mb-4" />
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Loading appointments...
                     </p>
                   </div>
                 ) : nonConfirmedUpcoming.length > 0 ? (
-                  <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700">
                     {nonConfirmedUpcoming.slice(0, 5).map((apt) => (
                       <div
                         key={apt.appointment_id}
-                        className="p-5 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors duration-300"
+                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
                       >
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 min-w-0">
                             <div
-                              className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                              className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                                 apt.status === APPOINTMENT_STATUS.ASSIGNED
-                                  ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800"
-                                  : "bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-orange-800"
+                                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                                  : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400"
                               }`}
                             >
-                              <Calendar className="w-6 h-6" />
+                              <Calendar className="w-5 h-5" />
                             </div>
                             <div className="min-w-0">
-                              <p className="font-bold text-gray-900 dark:text-white text-[15px] truncate">
-                                {apt.reason || "General Checkup"} -{" "}
+                              <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                                {apt.reason || "General Checkup"}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                                 {apt.Doctor?.User?.full_name
                                   ? `Dr. ${apt.Doctor.User.full_name}`
-                                  : apt.Pharmacy?.pharmacy_name || "Pending"}
+                                  : apt.Pharmacy?.pharmacy_name ||
+                                    "Pending Assignment"}
                               </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                  {formatDate(apt.appointment_date)},{" "}
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                                  {formatDate(apt.appointment_date)} •{" "}
                                   {formatTime(
                                     apt.scheduled_time || apt.appointment_time,
                                   )}
-                                </p>
-                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
-                                <span className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                                </span>
+                                <span
+                                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                    apt.status === APPOINTMENT_STATUS.ASSIGNED
+                                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                                      : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                  }`}
+                                >
                                   {apt.status?.replace("_", " ")}
                                 </span>
                               </div>
@@ -337,11 +345,11 @@ const Dashboard = () => {
                           <button
                             onClick={() => handleCancel(apt.appointment_id)}
                             disabled={cancellingId === apt.appointment_id}
-                            className="p-2 text-red-500 hover:text-white dark:text-red-400 dark:hover:text-white hover:bg-red-500 border border-transparent hover:border-red-600 rounded-xl transition-all duration-300 shrink-0 hover:shadow-lg hover:shadow-red-500/20"
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 shrink-0"
                             title="Cancel appointment"
                           >
                             {cancellingId === apt.appointment_id ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
+                              <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               <XCircle className="w-5 h-5" />
                             )}
@@ -351,18 +359,18 @@ const Dashboard = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="p-10 text-center">
-                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-gray-700">
+                  <div className="p-12 text-center">
+                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Calendar className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                     </div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       No upcoming appointments
                     </p>
                     <Link
                       to="/patient/pharmacies"
-                      className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 mt-2 inline-block"
+                      className="text-sm font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 mt-2 inline-block"
                     >
-                      Book an appointment now
+                      Book an appointment
                     </Link>
                   </div>
                 )}
@@ -379,16 +387,16 @@ const Dashboard = () => {
             />
 
             {/* Health Tip */}
-            <div className="bg-gradient-to-br from-[#0ca2e8]/10 to-[#0ca2e8]/5 dark:from-[#0ca2e8]/20 dark:to-[#0ca2e8]/10 rounded-3xl border border-[#0ca2e8]/20 p-6 shadow-sm">
+            <div className="bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 rounded-2xl border border-teal-100 dark:border-teal-800/30 p-5">
               <div className="flex gap-4">
-                <div className="w-10 h-10 bg-white/50 dark:bg-[#0ca2e8]/20 backdrop-blur-sm rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-white/50 dark:border-[#0ca2e8]/30">
-                  <Info className="w-5 h-5 text-[#0ca2e8] dark:text-[#38bdf8]" />
+                <div className="w-10 h-10 bg-white dark:bg-teal-800/30 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-teal-100 dark:border-teal-700/50">
+                  <Info className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#082f49] dark:text-[#bae6fd] tracking-tight">
-                    Today's Health Tip
+                  <h3 className="font-bold text-teal-900 dark:text-teal-100 text-sm uppercase tracking-wide">
+                    Daily Health Tip
                   </h3>
-                  <p className="text-sm font-medium text-[#0c4a6e]/80 dark:text-[#7dd3fc]/80 mt-2 leading-relaxed">
+                  <p className="text-sm text-teal-800/80 dark:text-teal-200/80 mt-1 leading-relaxed">
                     {dailyTip}
                   </p>
                 </div>
@@ -397,24 +405,24 @@ const Dashboard = () => {
 
             {/* Additional Confirmed Appointments (if more than 1) */}
             {confirmedAppointments.length > 1 && (
-              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-lg">
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 tracking-tight uppercase">
-                  More Confirmed ({confirmedAppointments.length - 1})
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm">
+                <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">
+                  Upcoming Confirmed ({confirmedAppointments.length - 1})
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {confirmedAppointments.slice(1, 4).map((apt) => (
                     <div
                       key={apt.appointment_id}
-                      className="flex items-center gap-4 bg-gray-50/50 dark:bg-gray-800/30 p-3 rounded-xl border border-gray-100 dark:border-gray-800"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
-                      <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center shrink-0 shadow-inner">
-                        <CheckCircle2 className="w-5 h-5 text-white" />
+                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[13px] font-bold text-gray-900 dark:text-white truncate">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                           Dr. {apt.Doctor?.User?.full_name || "Doctor"}
                         </p>
-                        <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {formatDate(apt.appointment_date)}
                         </p>
                       </div>

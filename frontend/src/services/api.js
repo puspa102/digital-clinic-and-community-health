@@ -554,6 +554,12 @@ export const emergencyAPI = {
     return response.data;
   },
 
+  // Get active emergencies (pending, accepted, in_progress)
+  getActiveEmergencies: async (params = {}) => {
+    const response = await api.get("/emergencies/active", { params });
+    return response.data;
+  },
+
   // Get public emergencies (all authenticated users)
   getPublicEmergencies: async (params = {}) => {
     const response = await api.get("/emergencies/public", { params });

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Activity, Sun, Moon, Menu, X } from "lucide-react";
+import { Sun, Moon, Menu, X } from "lucide-react";
+import logo from "../../assets/logo.svg";
 
 const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
   const [scrolled, setScrolled] = useState(false);
@@ -33,9 +34,11 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Activity size={22} className="text-white" />
-            </div>
+            <img
+              src={logo}
+              alt="Digital Clinic"
+              className="w-12 h-12 shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform bg-white rounded-xl p-1"
+            />
             <div>
               <h1
                 className={`text-lg font-bold transition-colors ${

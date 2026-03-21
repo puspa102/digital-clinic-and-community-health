@@ -74,9 +74,9 @@ const Dashboard = () => {
 
       // Get unique patients
       const uniquePatients = new Set(
-        allAppointments.map(
-          (apt) => apt.patient_id || apt.Patient?.user_id,
-        ).filter(Boolean),
+        allAppointments
+          .map((apt) => apt.patient_id || apt.Patient?.user_id)
+          .filter(Boolean),
       );
 
       // Calculate total earnings (paid appointments)
@@ -142,12 +142,36 @@ const Dashboard = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      requested: { label: "Requested", class: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700" },
-      assigned: { label: "Assigned", class: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800" },
-      confirmed: { label: "Confirmed", class: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800" },
-      completed: { label: "Completed", class: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-800" },
-      cancelled: { label: "Cancelled", class: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800" },
-      no_show: { label: "No Show", class: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800" },
+      requested: {
+        label: "Requested",
+        class:
+          "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700",
+      },
+      assigned: {
+        label: "Assigned",
+        class:
+          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
+      },
+      confirmed: {
+        label: "Confirmed",
+        class:
+          "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800",
+      },
+      completed: {
+        label: "Completed",
+        class:
+          "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-800",
+      },
+      cancelled: {
+        label: "Cancelled",
+        class:
+          "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800",
+      },
+      no_show: {
+        label: "No Show",
+        class:
+          "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800",
+      },
     };
     const config = statusConfig[status] || statusConfig.requested;
     return (
@@ -178,13 +202,33 @@ const Dashboard = () => {
   };
 
   const statCards = [
-    { label: "Today's Appts", value: stats.todayAppointments, icon: CalendarDays, colorClass: "bg-[#0ea5e9] dark:bg-[#0284c7]" },
-    { label: "Total Patients", value: stats.totalPatients, icon: Users, colorClass: "bg-[#8b5cf6] dark:bg-[#7c3aed]" },
-    { label: "This Month", value: `Rs. ${stats.thisMonthEarnings.toFixed(2)}`, icon: DollarSign, colorClass: "bg-[#10b981] dark:bg-[#059669]" },
+    {
+      label: "Today's Appts",
+      value: stats.todayAppointments,
+      icon: CalendarDays,
+      colorClass: "bg-[#0ea5e9] dark:bg-[#0284c7]",
+    },
+    {
+      label: "Total Patients",
+      value: stats.totalPatients,
+      icon: Users,
+      colorClass: "bg-[#8b5cf6] dark:bg-[#7c3aed]",
+    },
+    {
+      label: "This Month",
+      value: `Rs. ${stats.thisMonthEarnings.toFixed(2)}`,
+      icon: DollarSign,
+      colorClass: "bg-[#10b981] dark:bg-[#059669]",
+    },
   ];
 
   const quickActionsList = [
-    { label: "Appointments", icon: Calendar, href: "/doctor/appointments", accent: false },
+    {
+      label: "Appointments",
+      icon: Calendar,
+      href: "/doctor/appointments",
+      accent: false,
+    },
     { label: "Patients", icon: Users, href: "/doctor/patients", accent: false },
     { label: "Schedule", icon: Clock, href: "/doctor/schedule", accent: false },
     { label: "Profile", icon: Users, href: "/doctor/profile", accent: true },
@@ -249,7 +293,9 @@ const Dashboard = () => {
                   <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-gray-700">
                     <Calendar className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                   </div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">No upcoming appointments</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    No upcoming appointments
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -262,15 +308,19 @@ const Dashboard = () => {
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                             <span className="font-bold text-lg">
-                              {appointment.Patient?.full_name?.charAt(0)?.toUpperCase() || "P"}
+                              {appointment.Patient?.full_name
+                                ?.charAt(0)
+                                ?.toUpperCase() || "P"}
                             </span>
                           </div>
                           <div className="min-w-0">
                             <p className="font-bold text-gray-900 dark:text-white text-[15px] truncate">
-                              {appointment.Patient?.full_name || "Unknown Patient"}
+                              {appointment.Patient?.full_name ||
+                                "Unknown Patient"}
                             </p>
                             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
-                              {formatDate(appointment.appointment_date)} at {formatTime(appointment.appointment_time)}
+                              {formatDate(appointment.appointment_date)} at{" "}
+                              {formatTime(appointment.appointment_time)}
                             </p>
                           </div>
                         </div>
@@ -278,7 +328,10 @@ const Dashboard = () => {
                       </div>
                       {appointment.reason && (
                         <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                          <span className="font-bold text-gray-900 dark:text-gray-200">Reason:</span> {appointment.reason}
+                          <span className="font-bold text-gray-900 dark:text-gray-200">
+                            Reason:
+                          </span>{" "}
+                          {appointment.reason}
                         </p>
                       )}
                     </div>
@@ -307,7 +360,9 @@ const Dashboard = () => {
                   <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-gray-700">
                     <Users className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                   </div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">No recent patients</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    No recent patients
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
@@ -320,15 +375,19 @@ const Dashboard = () => {
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-800">
                             <span className="font-bold text-lg">
-                              {appointment.Patient?.full_name?.charAt(0)?.toUpperCase() || "P"}
+                              {appointment.Patient?.full_name
+                                ?.charAt(0)
+                                ?.toUpperCase() || "P"}
                             </span>
                           </div>
                           <div className="min-w-0">
                             <p className="font-bold text-gray-900 dark:text-white text-[15px] truncate">
-                              {appointment.Patient?.full_name || "Unknown Patient"}
+                              {appointment.Patient?.full_name ||
+                                "Unknown Patient"}
                             </p>
                             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
-                              Last visit: {formatDate(appointment.appointment_date)}
+                              Last visit:{" "}
+                              {formatDate(appointment.appointment_date)}
                             </p>
                           </div>
                         </div>
@@ -349,4 +408,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

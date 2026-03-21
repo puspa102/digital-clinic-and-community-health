@@ -94,7 +94,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex bg-white dark:bg-gray-900">
       {/* Left Side - Login Form (Clean White) */}
-      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24 w-full lg:w-[45%]">
+      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24 w-full md:w-1/2 lg:w-[45%]">
         <div className="mx-auto w-full max-w-sm lg:max-w-[400px]">
           <div className="flex items-center gap-3 mb-10">
             <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20">
@@ -291,12 +291,12 @@ const Login = () => {
       </div>
 
       {/* Right Side - Image Frame */}
-      <div className="hidden lg:block relative w-0 flex-1 p-6">
+      <div className="relative flex-1 p-6">
         <div className="relative h-full w-full overflow-hidden rounded-[2.5rem] shadow-2xl">
           <img
             className="absolute inset-0 h-full w-full object-cover"
-            src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1900&q=80"
-            alt="Medical Professional"
+            src="https://images.unsplash.com/photo-3CAX6wGhwQA?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3"
+            alt="Professional Female Doctor"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-transparent to-transparent"></div>
           <div className="absolute bottom-0 left-0 right-0 p-12 text-white">

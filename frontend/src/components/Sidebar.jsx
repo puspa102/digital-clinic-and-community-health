@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
 import { chatAPI } from "../services/api";
-import Chat from "./Chat";
 import {
   LayoutDashboard,
   Home,
@@ -29,12 +28,12 @@ import {
   LogOut,
   MessageSquare,
 } from "lucide-react";
+import logo from "../assets/logo.svg";
 
 const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [showChat, setShowChat] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const socketRef = useRef(null);
 
@@ -83,14 +82,18 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
 
     Patient: [
       { label: "Dashboard", path: "/patient/dashboard", icon: LayoutDashboard },
-      { label: "Find Pharmacies", path: "/patient/pharmacies", icon: Search },
+      { label: "Book Appointment", path: "/patient/pharmacies", icon: Search },
       {
         label: "My Appointments",
         path: "/patient/appointments",
         icon: Calendar,
       },
-      { label: "Emergency", path: "/emergency", icon: Activity },
-      { label: "Medical History", path: "/patient/history", icon: FileText },
+      {
+        label: "Prescriptions",
+        path: "/patient/prescriptions",
+        icon: Tablet,
+      },
+      { label: "Emergency Hub", path: "/emergency", icon: Activity },
     ],
 
     Doctor: [
@@ -158,11 +161,11 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
         indicator: "bg-green-600",
       },
       Patient: {
-        color: "bg-blue-600",
-        textColor: "text-blue-600",
-        activeColor: "bg-blue-100 dark:bg-blue-900/30",
-        activeText: "text-blue-700 dark:text-blue-400",
-        indicator: "bg-blue-600",
+        color: "bg-teal-600",
+        textColor: "text-teal-600",
+        activeColor: "bg-teal-50 dark:bg-teal-900/20",
+        activeText: "text-teal-700 dark:text-teal-400",
+        indicator: "bg-teal-600",
       },
       Pharmacy: {
         color: "bg-orange-600",
@@ -209,10 +212,12 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
       >
         {/* Logo / Brand */}
         <div className="flex items-center gap-3 px-4 h-16 shrink-0 border-b border-gray-100 dark:border-gray-800">
-          <div
-            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${roleConfig.color}`}
-          >
-            <Activity size={20} className="text-white" />
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-blue-50 dark:bg-gray-800 border border-blue-100 dark:border-blue-900/40">
+            <img
+              src={logo}
+              alt="Digital Clinic logo"
+              className="w-6 h-6 object-contain"
+            />
           </div>
           {!isMinimized && (
             <div className="overflow-hidden">
@@ -327,19 +332,29 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
 
           {/* Chat in main menu for Doctor/Patient */}
           {(user?.role === "Doctor" || user?.role === "Patient") && (
-            <button
-              onClick={() => {
-                setShowChat(true);
-                onClose();
-              }}
+            <Link
+              to="/chat"
+              onClick={onClose}
               title={isMinimized ? "Chat" : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all group relative text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium cursor-pointer transition-all group relative ${
                 isMinimized ? "justify-center" : ""
+              } ${
+                isActivePath("/chat")
+                  ? `${roleConfig.activeColor} ${roleConfig.activeText}`
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
+              {isActivePath("/chat") && (
+                <div
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full ${roleConfig.indicator}`}
+                />
+              )}
               <div className="relative shrink-0">
-                <MessageSquare size={19} className="transition-colors" />
-                {unreadMessages > 0 && (
+                <MessageSquare
+                  size={19}
+                  className={`transition-colors ${isActivePath("/chat") ? roleConfig.activeText : ""}`}
+                />
+                {unreadMessages > 0 && !isActivePath("/chat") && (
                   <span className="absolute -top-2 -right-2 min-w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold px-1">
                     {unreadMessages > 9 ? "9+" : unreadMessages}
                   </span>
@@ -351,7 +366,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
                   Chat
                 </div>
               )}
-            </button>
+            </Link>
           )}
         </nav>
 
@@ -457,14 +472,6 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
           <ChevronLeft size={20} className="text-gray-500 dark:text-gray-400" />
         </button>
       </aside>
-
-      {(user?.role === "Doctor" || user?.role === "Patient") && (
-        <Chat
-          isOpen={showChat}
-          onClose={() => setShowChat(false)}
-          onUnreadChange={setUnreadMessages}
-        />
-      )}
     </>
   );
 };

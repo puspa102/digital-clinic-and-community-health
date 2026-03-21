@@ -1,1466 +1,941 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
-import { emergencyAPI, pharmacyAPI, handleApiError } from "../services/api";
+import { emergencyAPI, handleApiError } from "../services/api";
 import {
-  Phone,
-  MapPin,
-  Clock,
-  AlertTriangle,
-  Heart,
+  Droplets,
   Pill,
   Users,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Plus,
-  Search,
-  Droplets,
+  Clock,
+  MapPin,
   Activity,
-  Stethoscope,
+  Plus,
   X,
-  Send,
   HeartPulse,
-  UserPlus,
+  CheckCircle,
+  Search,
+  Stethoscope,
+  Trash2,
+  AlertCircle,
+  Siren,
+  Phone,
+  Calendar,
+  Filter,
+  MessageCircle,
 } from "lucide-react";
 
-const EMERGENCY_TYPES = {
-  BLOOD: "Blood",
-  MEDICINE: "Medicine",
-  DOCTOR: "Doctor",
-};
-
-const URGENCY_LEVELS = {
-  CRITICAL: "critical",
-  URGENT: "urgent",
-  NORMAL: "normal",
-};
-
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
+const URGENCY_LEVELS = ["Critical", "High", "Medium", "Low"];
 
 const Emergency = () => {
   const { user } = useAuth();
-  const { isDark } = useTheme();
-  
-  const [activeTab, setActiveTab] = useState("blood");
-  const [requestType, setRequestType] = useState("receive");
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  
-  // Emergency data from API
-  const [emergencies, setEmergencies] = useState([]);
+  const navigate = useNavigate();
+
+  // -- STATE --
+  const [publicEmergencies, setPublicEmergencies] = useState([]);
   const [myEmergencies, setMyEmergencies] = useState([]);
-  const [pharmacies, setPharmacies] = useState([]);
-  
-  // Form states
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [showDonorModal, setShowDonorModal] = useState(false);
-  const [selectedBloodType, setSelectedBloodType] = useState("A+");
-  const [location, setLocation] = useState({ latitude: null, longitude: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
+
+  // Filters
+  const [activeTab, setActiveTab] = useState("all"); // 'all', 'blood', 'medicine', 'doctor'
+  const [bloodFilter, setBloodFilter] = useState("All");
+
+  // Modal
+  const [modalType, setModalType] = useState(null); // 'blood' | 'medicine' | 'doctor' | 'donor'
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    emergency_type: EMERGENCY_TYPES.BLOOD,
     description: "",
-    units: "",
-    medicine_name: "",
-    quantity: "",
-    urgency: URGENCY_LEVELS.URGENT,
-    location: "",
-    contact: user?.phone || "",
-  });
-  const [donorFormData, setDonorFormData] = useState({
     bloodType: "O+",
+    units: "1",
+    medicineName: "",
+    quantity: "1",
     location: "",
-    phone: user?.phone || "",
-    available: true,
+    urgency: "High",
+    contact: "",
   });
 
-  // Stats
-  const [stats, setStats] = useState({
-    activeBloodRequests: 0,
-    activeMedicineRequests: 0,
-    activeDoctorRequests: 0,
-    resolvedRequests: 0,
-  });
-
-  // Check if user can accept emergencies (Doctor/Pharmacy/Admin)
-  const canAcceptEmergency = user && ["Doctor", "Pharmacy", "Admin"].includes(user.role);
-
-  // Get user's geolocation on mount
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-        },
-        (error) => {
-          console.log("Geolocation not available:", error.message);
-        }
-      );
-    }
-  }, []);
-
-  // Fetch emergencies
-  const fetchEmergencies = useCallback(async (isRefresh = false) => {
+  // -- DATA FETCHING --
+  const fetchData = useCallback(async () => {
     try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
-      // Use public endpoint for viewing emergencies (accessible by all authenticated users)
-      const [allRes, myRes, pharmacyRes] = await Promise.all([
-        emergencyAPI.getPublicEmergencies({ limit: 50 }).catch(() => ({ data: [] })),
-        user ? emergencyAPI.getMyEmergencies({ limit: 20 }).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
-        pharmacyAPI.getAllPharmacies({ limit: 20 }).catch(() => ({ data: [] })),
+      const [publicRes, myRes] = await Promise.all([
+        emergencyAPI.getPublicEmergencies(),
+        user ? emergencyAPI.getMyEmergencies() : Promise.resolve({ data: [] }),
       ]);
 
-      const allEmergencies = allRes?.data || [];
-      setEmergencies(allEmergencies);
-      setMyEmergencies(myRes?.data || []);
-      setPharmacies(pharmacyRes?.data || []);
+      if (publicRes.success) {
+        setPublicEmergencies(publicRes.data || []);
+      }
 
-      // Calculate stats
-      const bloodRequests = allEmergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.BLOOD && e.status !== "resolved" && e.status !== "expired");
-      const medicineRequests = allEmergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.MEDICINE && e.status !== "resolved" && e.status !== "expired");
-      const doctorRequests = allEmergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.DOCTOR && e.status !== "resolved" && e.status !== "expired");
-      const resolved = allEmergencies.filter(e => e.status === "resolved");
+      if (myRes.success || Array.isArray(myRes.data)) {
+        setMyEmergencies(myRes.data || []);
+      }
 
-      setStats({
-        activeBloodRequests: bloodRequests.length,
-        activeMedicineRequests: medicineRequests.length,
-        activeDoctorRequests: doctorRequests.length,
-        resolvedRequests: resolved.length,
-      });
+      setError(null);
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
+      console.error("Fetch error:", err);
+      if (loading) {
+        setError(handleApiError(err).message);
+      }
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, [user]);
+  }, [user, loading]);
 
   useEffect(() => {
-    fetchEmergencies();
-  }, [fetchEmergencies]);
+    fetchData();
+    const interval = setInterval(fetchData, 10000); // Poll every 10s
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
-  const handleRefresh = () => {
-    fetchEmergencies(true);
-  };
-
-  // Handle form input change
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Handle donor form input change
-  const handleDonorInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setDonorFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
-  };
-
-  // Submit emergency request
-  const handleSubmitRequest = async (e) => {
+  // -- HANDLERS --
+  const handleCreateRequest = async (e) => {
     e.preventDefault();
-    
-    if (!user) {
-      setError("Please log in to submit an emergency request");
-      return;
-    }
+    setIsSubmitting(true);
+    setError(null);
 
     try {
-      setLoading(true);
-      setError(null);
+      let type = "Blood";
+      let description = "";
 
-      const requestData = {
-        emergency_type: formData.emergency_type,
-        description: buildDescription(),
-        ...(location.latitude && { latitude: location.latitude }),
-        ...(location.longitude && { longitude: location.longitude }),
-      };
+      if (modalType === "blood") {
+        type = "Blood";
+        description = `Blood Type: ${formData.bloodType}, Units: ${formData.units}, Location: ${formData.location}, Contact: ${formData.contact}, Urgency: ${formData.urgency}, Notes: ${formData.description}`;
+      } else if (modalType === "medicine") {
+        type = "Medicine";
+        description = `Medicine: ${formData.medicineName}, Qty: ${formData.quantity}, Location: ${formData.location}, Contact: ${formData.contact}, Urgency: ${formData.urgency}, Notes: ${formData.description}`;
+      } else if (modalType === "doctor") {
+        type = "Doctor";
+        description = `Symptoms: ${formData.description}, Location: ${formData.location}, Contact: ${formData.contact}, Urgency: ${formData.urgency}`;
+      }
 
-      await emergencyAPI.createEmergency(requestData);
-      
-      setSuccess("Emergency request submitted successfully!");
-      setShowRequestModal(false);
-      setFormData({
-        emergency_type: EMERGENCY_TYPES.BLOOD,
-        description: "",
-        units: "",
-        medicine_name: "",
-        quantity: "",
-        urgency: URGENCY_LEVELS.URGENT,
-        location: "",
-        contact: user?.phone || "",
+      await emergencyAPI.createEmergency({
+        emergency_type: type,
+        description,
+        latitude: 27.7172,
+        longitude: 85.324,
       });
-      
-      fetchEmergencies();
-      
-      setTimeout(() => setSuccess(null), 5000);
+
+      setSuccessMsg("Emergency broadcasted successfully!");
+      fetchData();
+
+      setTimeout(() => {
+        setModalType(null);
+        setSuccessMsg(null);
+        setFormData({
+          description: "",
+          bloodType: "O+",
+          units: "1",
+          medicineName: "",
+          quantity: "1",
+          location: "",
+          urgency: "High",
+          contact: user?.phone || "",
+        });
+      }, 2000);
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
+      setError(handleApiError(err).message);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  // Cancel emergency request
-  const handleCancelEmergency = async (emergencyId) => {
-    if (!window.confirm("Are you sure you want to cancel this emergency request?")) {
+  const handleCancelRequest = async (id) => {
+    if (!window.confirm("Are you sure you want to cancel this request?"))
       return;
-    }
 
     try {
-      setLoading(true);
-      setError(null);
-      await emergencyAPI.cancelEmergency(emergencyId);
-      setSuccess("Emergency request cancelled successfully");
-      fetchEmergencies();
-      setTimeout(() => setSuccess(null), 5000);
+      await emergencyAPI.cancelEmergency(id);
+      setSuccessMsg("Request cancelled.");
+      fetchData();
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-    } finally {
-      setLoading(false);
+      setError(handleApiError(err).message);
     }
   };
 
-  // Accept emergency request (Doctor/Pharmacy/Admin)
-  const handleAcceptEmergency = async (emergencyId) => {
-    if (!canAcceptEmergency) {
-      setError("Only doctors, pharmacies, or admins can accept emergency requests");
+  const handleAcceptRequest = async (id) => {
+    if (
+      !window.confirm(
+        "Accept this emergency? You will be responsible for helping.",
+      )
+    )
       return;
-    }
-
-    if (!window.confirm("Are you sure you want to accept this emergency request? You will be responsible for helping this person.")) {
-      return;
-    }
 
     try {
-      setLoading(true);
-      setError(null);
-      await emergencyAPI.acceptEmergency(emergencyId, user.user_id);
-      setSuccess("Emergency request accepted! Please contact the requester.");
-      fetchEmergencies();
-      setTimeout(() => setSuccess(null), 5000);
+      await emergencyAPI.acceptEmergency(id, user?.user_id);
+      setSuccessMsg("Request accepted! Please contact the requester.");
+      fetchData();
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
-      const errorInfo = handleApiError(err);
-      setError(errorInfo.message);
-    } finally {
-      setLoading(false);
+      setError(handleApiError(err).message);
     }
   };
 
-  // Submit donor registration (this would need backend support - for now show success)
-  const handleDonorRegistration = async (e) => {
-    e.preventDefault();
-    // Note: Backend donor registration would need to be implemented
-    setSuccess("Thank you for registering as a donor! You will be contacted when there's a matching request.");
-    setShowDonorModal(false);
-    setTimeout(() => setSuccess(null), 5000);
+  const handleChat = (userId) => {
+    navigate("/chat", { state: { recipientId: userId } });
   };
 
-  const buildDescription = () => {
-    if (formData.emergency_type === EMERGENCY_TYPES.BLOOD) {
-      return `Blood Type: ${selectedBloodType}, Units: ${formData.units || "N/A"}, Location: ${formData.location || "N/A"}, Contact: ${formData.contact || "N/A"}, Urgency: ${formData.urgency}`;
-    } else if (formData.emergency_type === EMERGENCY_TYPES.MEDICINE) {
-      return `Medicine: ${formData.medicine_name || "N/A"}, Quantity: ${formData.quantity || "N/A"}, Location: ${formData.location || "N/A"}, Contact: ${formData.contact || "N/A"}, Urgency: ${formData.urgency}`;
-    } else if (formData.emergency_type === EMERGENCY_TYPES.DOCTOR) {
-      return `Symptoms: ${formData.description || "N/A"}, Location: ${formData.location || "N/A"}, Contact: ${formData.contact || "N/A"}, Urgency: ${formData.urgency}`;
-    }
-    return formData.description;
-  };
-
-  // Parse emergency description for display
-  const parseDescription = (description) => {
+  // -- HELPERS --
+  const parseDescription = (desc) => {
+    if (!desc) return {};
     const parts = {};
-    if (description) {
-      description.split(", ").forEach(part => {
-        const [key, value] = part.split(": ");
-        if (key && value) {
-          parts[key.toLowerCase().replace(" ", "_")] = value;
-        }
-      });
-    }
+    desc.split(", ").forEach((part) => {
+      const [key, ...val] = part.split(": ");
+      if (key && val.length) {
+        parts[key.trim()] = val.join(": ").trim();
+      }
+    });
     return parts;
   };
 
-  // Get urgency styling
-  const getUrgencyStyle = (urgency) => {
-    switch (urgency?.toLowerCase()) {
-      case "critical":
-        return {
-          bg: "bg-red-100 dark:bg-red-900/30",
-          text: "text-red-700 dark:text-red-400",
-          border: "border-red-200 dark:border-red-800",
-          dot: "bg-red-500",
-        };
-      case "urgent":
-        return {
-          bg: "bg-orange-100 dark:bg-orange-900/30",
-          text: "text-orange-700 dark:text-orange-400",
-          border: "border-orange-200 dark:border-orange-800",
-          dot: "bg-orange-500",
-        };
-      default:
-        return {
-          bg: "bg-green-100 dark:bg-green-900/30",
-          text: "text-green-700 dark:text-green-400",
-          border: "border-green-200 dark:border-green-800",
-          dot: "bg-green-500",
-        };
-    }
+  const getBloodTypeBadge = (desc) => {
+    if (!desc) return null;
+    const match = desc.match(/Blood Type:\s*([ABO]+[+-])/i);
+    return match ? match[1] : null;
   };
 
-  // Get status styling
-  const getStatusStyle = (status) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
-      case "accepted":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-      case "in_progress":
-        return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400";
-      case "resolved":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-      case "cancelled":
-        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400";
-      default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400";
-    }
-  };
+  const canAccept = user && ["Doctor", "Pharmacy", "Admin"].includes(user.role);
 
-  // Filter emergencies by type
-  const bloodEmergencies = emergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.BLOOD);
-  const medicineEmergencies = emergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.MEDICINE);
-  const doctorEmergencies = emergencies.filter(e => e.emergency_type === EMERGENCY_TYPES.DOCTOR);
+  // -- FILTERING --
+  const filteredEmergencies = publicEmergencies.filter((e) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "blood") return e.emergency_type === "Blood";
+    if (activeTab === "medicine") return e.emergency_type === "Medicine";
+    if (activeTab === "doctor") return e.emergency_type === "Doctor";
+    return true;
+  });
 
-  // Mock blood donors for display (in real app, this would come from API - donor registration system)
-  const bloodDonors = [
-    { id: 1, name: "John Smith", bloodType: "O+", lastDonation: "3 months ago", location: "Downtown Area", available: true, contact: "+1 234 567 897" },
-    { id: 2, name: "Emily Davis", bloodType: "A-", lastDonation: "6 months ago", location: "Westside", available: true, contact: "+1 234 567 898" },
-    { id: 3, name: "Michael Brown", bloodType: "B+", lastDonation: "1 month ago", location: "Uptown", available: false, contact: "+1 234 567 899" },
-  ];
-
-  if (loading && emergencies.length === 0) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500 dark:text-gray-400">Loading emergency portal...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const displayEmergencies =
+    activeTab === "blood" && bloodFilter !== "All"
+      ? filteredEmergencies.filter((e) =>
+          e.description.includes(`Blood Type: ${bloodFilter}`),
+        )
+      : filteredEmergencies;
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto space-y-4 pb-6">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg">
-              <HeartPulse className="w-5 h-5 text-white" />
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-500">
+        {/* HEADER SECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -ml-32 -mb-32 opacity-50"></div>
+
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                Critical Care Portal
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+                <Siren className="text-rose-500 animate-pulse" size={32} />
+                Emergency Response
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Real-time emergency resource management
+              <p className="text-slate-500 mt-2 font-medium max-w-xl">
+                Real-time coordination for life-saving Blood, Medicine, and
+                Doctor needs.
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              <span className="text-green-700 dark:text-green-400 text-sm font-semibold">LIVE</span>
-            </div>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm rounded-lg transition-colors font-medium"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
-          </div>
-        </div>
 
-        {/* Alerts */}
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">
-            <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <span className="text-red-700 dark:text-red-400">{error}</span>
-            <button onClick={() => setError(null)} className="ml-auto text-red-500 hover:text-red-700">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-            <span className="text-green-700 dark:text-green-400">{success}</span>
-            <button onClick={() => setSuccess(null)} className="ml-auto text-green-500 hover:text-green-700">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <Droplets className="w-5 h-5 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.activeBloodRequests}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Blood Requests</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Pill className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.activeMedicineRequests}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Medicine Requests</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.resolvedRequests}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Resolved</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{bloodDonors.filter(d => d.available).length}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Available Donors</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Request Blood Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                  <Droplets className="w-5 h-5 text-red-600 dark:text-red-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Request Blood</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Find blood donors nearby</p>
-                </div>
-              </div>
-              <span className="px-2 py-1 text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
-                LIFE-SAVING
-              </span>
-            </div>
-            
-            <div className="mb-4">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-2">
-                Select Blood Group
-              </label>
-              <div className="grid grid-cols-4 gap-2">
-                {BLOOD_TYPES.map(bt => (
-                  <button
-                    key={bt}
-                    onClick={() => setSelectedBloodType(bt)}
-                    className={`py-2 rounded-lg font-semibold text-sm transition-all ${
-                      selectedBloodType === bt
-                        ? "bg-red-500 text-white shadow-md"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                    }`}
-                  >
-                    {bt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.BLOOD }));
-                setShowRequestModal(true);
-              }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
-            >
-              <Search className="w-4 h-4" />
-              Request Blood
-            </button>
-          </div>
-
-          {/* Request Medicine Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Pill className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Request Medicine</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Get help with urgent medication</p>
-                </div>
-              </div>
-              <span className="px-2 py-1 text-xs font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded">
-                URGENT
-              </span>
-            </div>
-
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
-                  Medicine Name
-                </label>
-                <input
-                  type="text"
-                  name="medicine_name"
-                  value={formData.medicine_name}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Insulin, Antibiotics"
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.MEDICINE }));
-                setShowRequestModal(true);
-              }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors"
-            >
-              <Send className="w-4 h-4" />
-              Request Medicine
-            </button>
-          </div>
-
-          {/* Request Doctor Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Stethoscope className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Need a Doctor</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Request emergency medical help</p>
-                </div>
-              </div>
-              <span className="px-2 py-1 text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">
-                MEDICAL
-              </span>
-            </div>
-
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">
-                  Describe Symptoms
-                </label>
-                <input
-                  type="text"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Chest pain, difficulty breathing"
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.DOCTOR }));
-                setShowRequestModal(true);
-              }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors"
-            >
-              <Stethoscope className="w-4 h-4" />
-              Request Doctor
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content Tabs */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          {/* Tab Header */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-            {[
-              { key: "blood", label: "Blood Requests", icon: Droplets, count: stats.activeBloodRequests },
-              { key: "medicine", label: "Medicine Requests", icon: Pill, count: stats.activeMedicineRequests },
-              { key: "doctor", label: "Doctor Requests", icon: Stethoscope, count: stats.activeDoctorRequests },
-              { key: "donors", label: "Donors & Pharmacies", icon: Users },
-            ].map(tab => (
+            <div className="flex gap-3">
               <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.key
-                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 -mb-px"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                onClick={() => setModalType("blood")}
+                className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-rose-200 transform hover:-translate-y-0.5"
+              >
+                <Droplets size={18} /> Request Blood
+              </button>
+              <button
+                onClick={() => setModalType("medicine")}
+                className="flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-sky-200 transform hover:-translate-y-0.5"
+              >
+                <Pill size={18} /> Medicine
+              </button>
+              <button
+                onClick={() => setModalType("doctor")}
+                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-violet-200 transform hover:-translate-y-0.5"
+              >
+                <Stethoscope size={18} /> Doctor
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ALERTS */}
+        {error && (
+          <div className="mb-6 bg-rose-50 text-rose-700 p-4 rounded-xl border border-rose-200 flex items-center gap-3 animate-in slide-in-from-top-2">
+            <AlertCircle size={20} />
+            <span className="font-medium">{error}</span>
+            <button onClick={() => setError(null)} className="ml-auto">
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="mb-6 bg-emerald-50 text-emerald-700 p-4 rounded-xl border border-emerald-200 flex items-center gap-3 animate-in slide-in-from-top-2">
+            <CheckCircle size={20} />
+            <span className="font-medium">{successMsg}</span>
+          </div>
+        )}
+
+        {/* TABS & FILTERS */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <div className="flex bg-slate-100 p-1 rounded-xl">
+            {[
+              { id: "all", label: "All Needs", icon: Activity },
+              { id: "blood", label: "Blood", icon: Droplets },
+              { id: "medicine", label: "Medicine", icon: Pill },
+              { id: "doctor", label: "Doctor", icon: Stethoscope },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                  activeTab === tab.id
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{tab.count}</span>
-                )}
+                <tab.icon size={16} /> {tab.label}
               </button>
             ))}
           </div>
 
-          {/* Tab Content */}
-          <div className="p-4">
-            {/* Blood Requests Tab */}
-            {activeTab === "blood" && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-900 dark:text-white">Urgent Blood Requests</h2>
-                  <button
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.BLOOD }));
-                      setShowRequestModal(true);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Post Request
-                  </button>
-                </div>
-
-                {bloodEmergencies.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Droplets className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">No active blood requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {bloodEmergencies.map(emergency => {
-                      const details = parseDescription(emergency.description);
-                      const urgencyStyle = getUrgencyStyle(details.urgency || emergency.priority);
-                      const isOwnRequest = user && emergency.patient_id === user.user_id;
-                      
-                      return (
-                        <div
-                          key={emergency.emergency_id}
-                          className={`p-4 rounded-xl border-l-4 ${urgencyStyle.border} bg-gray-50 dark:bg-gray-700/50`}
-                          style={{ borderLeftColor: urgencyStyle.dot.replace("bg-", "") }}
-                        >
-                          <div className="flex items-start justify-between flex-wrap gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-14 h-14 bg-red-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                                {details.blood_type || "?"}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-gray-900 dark:text-white">
-                                    {details.units || "?"} Units Required
-                                  </span>
-                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${urgencyStyle.bg} ${urgencyStyle.text}`}>
-                                    {(details.urgency || emergency.priority || "normal").toUpperCase()}
-                                  </span>
-                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${getStatusStyle(emergency.status)}`}>
-                                    {emergency.status?.toUpperCase()}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  <MapPin className="w-3 h-3 inline mr-1" />
-                                  {details.location || "Location not specified"}
-                                </p>
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                  <Clock className="w-3 h-3 inline mr-1" />
-                                  {new Date(emergency.created_at).toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {details.contact && (
-                                <a
-                                  href={`tel:${details.contact}`}
-                                  className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
-                                >
-                                  <Phone className="w-4 h-4" />
-                                  Contact
-                                </a>
-                              )}
-                              {!isOwnRequest && canAcceptEmergency && emergency.status === "pending" && (
-                                <button 
-                                  onClick={() => handleAcceptEmergency(emergency.emergency_id)}
-                                  disabled={loading}
-                                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                  Accept & Help
-                                </button>
-                              )}
-                              {!isOwnRequest && !canAcceptEmergency && emergency.status === "pending" && (
-                                <button 
-                                  onClick={() => setShowDonorModal(true)}
-                                  className="px-4 py-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 font-medium rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                >
-                                  I Can Donate
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Blood Donors Tab */}
-            {activeTab === "donors" && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-900 dark:text-white">Blood Donors & Pharmacies</h2>
-                  <button 
-                    onClick={() => setShowDonorModal(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Register as Donor
-                  </button>
-                </div>
-
-                {/* Blood Donors Section */}
-                <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Blood Donors</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  {bloodDonors.map(donor => (
-                    <div
-                      key={donor.id}
-                      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600"
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                          {donor.bloodType}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900 dark:text-white">{donor.name}</span>
-                            <span className={`w-2 h-2 rounded-full ${donor.available ? "bg-green-500" : "bg-gray-400"}`}></span>
-                          </div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{donor.location}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">Last donation: {donor.lastDonation}</p>
-                        </div>
-                      </div>
-                      <a
-                        href={donor.available ? `tel:${donor.contact}` : undefined}
-                        className={`flex items-center justify-center gap-2 w-full py-2 rounded-lg font-medium transition-colors ${
-                          donor.available
-                            ? "bg-green-500 hover:bg-green-600 text-white cursor-pointer"
-                            : "bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                        }`}
-                      >
-                        <Phone className="w-4 h-4" />
-                        {donor.available ? "Contact" : "Unavailable"}
-                      </a>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Pharmacies Section */}
-                <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Pharmacies & Medicine Providers</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {pharmacies.length > 0 ? pharmacies.map(pharmacy => (
-                    <div
-                      key={pharmacy.pharmacy_id}
-                      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600"
-                    >
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center shrink-0">
-                          <Pill className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-gray-900 dark:text-white">{pharmacy.name}</span>
-                            <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded">
-                              Pharmacy
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{pharmacy.address || "Address not specified"}</p>
-                          {pharmacy.User && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">Contact: {pharmacy.User.phone || pharmacy.User.email}</p>
-                          )}
-                        </div>
-                      </div>
-                      <a
-                        href={pharmacy.User?.phone ? `tel:${pharmacy.User.phone}` : `mailto:${pharmacy.User?.email}`}
-                        className="flex items-center justify-center gap-2 w-full py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
-                      >
-                        <Phone className="w-4 h-4" />
-                        Contact
-                      </a>
-                    </div>
-                  )) : (
-                    <div className="col-span-2 text-center py-8">
-                      <Pill className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No pharmacies registered yet</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Medicine Requests Tab */}
-            {activeTab === "medicine" && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-900 dark:text-white">Medicine Requests</h2>
-                  <button
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.MEDICINE }));
-                      setShowRequestModal(true);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Post Request
-                  </button>
-                </div>
-
-                {medicineEmergencies.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Pill className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">No active medicine requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {medicineEmergencies.map(emergency => {
-                      const details = parseDescription(emergency.description);
-                      const urgencyStyle = getUrgencyStyle(details.urgency || emergency.priority);
-                      const isOwnRequest = user && emergency.patient_id === user.user_id;
-                      
-                      return (
-                        <div
-                          key={emergency.emergency_id}
-                          className={`p-4 rounded-xl border-l-4 ${urgencyStyle.border} bg-gray-50 dark:bg-gray-700/50`}
-                        >
-                          <div className="flex items-start justify-between flex-wrap gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center justify-center">
-                                <Pill className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-gray-900 dark:text-white">
-                                    {details.medicine || "Medicine Request"}
-                                  </span>
-                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${urgencyStyle.bg} ${urgencyStyle.text}`}>
-                                    {(details.urgency || emergency.priority || "normal").toUpperCase()}
-                                  </span>
-                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${getStatusStyle(emergency.status)}`}>
-                                    {emergency.status?.toUpperCase()}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Qty: {details.quantity || "N/A"}
-                                </p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  <MapPin className="w-3 h-3 inline mr-1" />
-                                  {details.location || "Location not specified"}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {details.contact && (
-                                <a
-                                  href={`tel:${details.contact}`}
-                                  className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
-                                >
-                                  <Phone className="w-4 h-4" />
-                                  Contact
-                                </a>
-                              )}
-                              {!isOwnRequest && canAcceptEmergency && emergency.status === "pending" && (
-                                <button 
-                                  onClick={() => handleAcceptEmergency(emergency.emergency_id)}
-                                  disabled={loading}
-                                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                  Accept & Help
-                                </button>
-                              )}
-                              {!isOwnRequest && !canAcceptEmergency && emergency.status === "pending" && (
-                                <button 
-                                  onClick={() => {
-                                    if (details.contact) {
-                                      window.location.href = `tel:${details.contact}`;
-                                    }
-                                  }}
-                                  className="px-4 py-2 border border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 font-medium rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                                >
-                                  I Can Help
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Doctor Requests Tab */}
-            {activeTab === "doctor" && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-900 dark:text-white">Doctor Requests</h2>
-                  <button
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, emergency_type: EMERGENCY_TYPES.DOCTOR }));
-                      setShowRequestModal(true);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Post Request
-                  </button>
-                </div>
-
-                {doctorEmergencies.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Stethoscope className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">No active doctor requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {doctorEmergencies.map(emergency => {
-                      const details = parseDescription(emergency.description);
-                      const urgencyStyle = getUrgencyStyle(details.urgency || emergency.priority);
-                      const isOwnRequest = user && emergency.patient_id === user.user_id;
-                      
-                      return (
-                        <div
-                          key={emergency.emergency_id}
-                          className={`p-4 rounded-xl border-l-4 ${urgencyStyle.border} bg-gray-50 dark:bg-gray-700/50`}
-                        >
-                          <div className="flex items-start justify-between flex-wrap gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-xl flex items-center justify-center">
-                                <Stethoscope className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-gray-900 dark:text-white">
-                                    Medical Emergency
-                                  </span>
-                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${urgencyStyle.bg} ${urgencyStyle.text}`}>
-                                    {(details.urgency || emergency.priority || "normal").toUpperCase()}
-                                  </span>
-                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${getStatusStyle(emergency.status)}`}>
-                                    {emergency.status?.toUpperCase()}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Symptoms: {details.symptoms || emergency.description || "Not specified"}
-                                </p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  <MapPin className="w-3 h-3 inline mr-1" />
-                                  {details.location || "Location not specified"}
-                                </p>
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                  <Clock className="w-3 h-3 inline mr-1" />
-                                  {new Date(emergency.created_at).toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {details.contact && (
-                                <a
-                                  href={`tel:${details.contact}`}
-                                  className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
-                                >
-                                  <Phone className="w-4 h-4" />
-                                  Contact
-                                </a>
-                              )}
-                              {!isOwnRequest && canAcceptEmergency && emergency.status === "pending" && (
-                                <button 
-                                  onClick={() => handleAcceptEmergency(emergency.emergency_id)}
-                                  disabled={loading}
-                                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                  Accept & Respond
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {activeTab === "blood" && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto">
+              <span className="text-xs font-bold text-slate-400 uppercase mr-2">
+                Filter:
+              </span>
+              <button
+                onClick={() => setBloodFilter("All")}
+                className={`px-3 py-1 text-xs font-bold rounded-full border transition-all whitespace-nowrap ${
+                  bloodFilter === "All"
+                    ? "bg-slate-800 text-white border-slate-800"
+                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"
+                }`}
+              >
+                All
+              </button>
+              {BLOOD_TYPES.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setBloodFilter(type)}
+                  className={`px-3 py-1 text-xs font-bold rounded-full border transition-all min-w-12 ${
+                    bloodFilter === type
+                      ? "bg-rose-500 text-white border-rose-500"
+                      : "bg-white text-slate-500 border-slate-200 hover:border-rose-300 hover:text-rose-500"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* My Emergency Requests */}
-        {user && myEmergencies.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900 dark:text-white">My Emergency Requests</h2>
-              <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
-                {myEmergencies.filter(e => e.status !== "resolved" && e.status !== "expired").length} Active
-              </span>
-            </div>
-            <div className="space-y-3">
-              {myEmergencies.map(emergency => {
-                const details = parseDescription(emergency.description);
-                const statusStyle = getStatusStyle(emergency.status);
-                const isActive = !["resolved", "expired"].includes(emergency.status);
-                
+        {/* MAIN CONTENT GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* LEFT: FEED */}
+          <div className="lg:col-span-2 space-y-4">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                <Activity
+                  className="animate-spin mb-4 text-indigo-500"
+                  size={48}
+                />
+                <p>Scanning network...</p>
+              </div>
+            ) : displayEmergencies.length === 0 ? (
+              <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-200">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                  <Siren size={32} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-700">
+                  No Active Requests
+                </h3>
+                <p className="text-slate-500 text-sm mt-1">
+                  There are currently no emergency requests matching your
+                  filters.
+                </p>
+              </div>
+            ) : (
+              displayEmergencies.map((req) => {
+                const isBlood = req.emergency_type === "Blood";
+                const isMed = req.emergency_type === "Medicine";
+                const details = parseDescription(req.description);
+                const bType =
+                  isBlood && details["Blood Type"]
+                    ? details["Blood Type"]
+                    : getBloodTypeBadge(req.description);
+
+                const icon = isBlood ? (
+                  <Droplets size={20} className="text-rose-500" />
+                ) : isMed ? (
+                  <Pill size={20} className="text-sky-500" />
+                ) : (
+                  <HeartPulse size={20} className="text-violet-500" />
+                );
+
                 return (
                   <div
-                    key={emergency.emergency_id}
-                    className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600"
+                    key={req.emergency_id}
+                    className="group bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-indigo-100 flex flex-col overflow-hidden"
                   >
-                    <div className="flex items-start justify-between flex-wrap gap-4">
+                    {/* Header */}
+                    <div
+                      className={`flex justify-between items-start p-4 border-b ${
+                        isBlood
+                          ? "bg-rose-50/50 border-rose-100"
+                          : isMed
+                            ? "bg-sky-50/50 border-sky-100"
+                            : "bg-violet-50/50 border-violet-100"
+                      }`}
+                    >
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          emergency.emergency_type === EMERGENCY_TYPES.BLOOD 
-                            ? "bg-red-100 dark:bg-red-900/30" 
-                            : emergency.emergency_type === EMERGENCY_TYPES.MEDICINE
-                              ? "bg-blue-100 dark:bg-blue-900/30"
-                              : "bg-purple-100 dark:bg-purple-900/30"
-                        }`}>
-                          {emergency.emergency_type === EMERGENCY_TYPES.BLOOD 
-                            ? <Droplets className="w-5 h-5 text-red-600 dark:text-red-400" />
-                            : emergency.emergency_type === EMERGENCY_TYPES.MEDICINE
-                              ? <Pill className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                              : <Stethoscope className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                          }
+                        <div
+                          className={`p-2.5 rounded-xl bg-white shadow-sm ${
+                            isBlood
+                              ? "text-rose-500"
+                              : isMed
+                                ? "text-sky-500"
+                                : "text-violet-500"
+                          }`}
+                        >
+                          {icon}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-gray-900 dark:text-white">
-                              {emergency.emergency_type === EMERGENCY_TYPES.BLOOD 
-                                ? `Blood (${details.blood_type || "N/A"})` 
-                                : emergency.emergency_type === EMERGENCY_TYPES.MEDICINE
-                                  ? details.medicine || "Medicine Request"
-                                  : "Doctor Emergency Request"
-                              }
-                            </span>
-                            <span className={`px-2 py-0.5 text-xs font-bold rounded ${statusStyle}`}>
-                              {emergency.status?.toUpperCase()}
-                            </span>
+                          <h3 className="font-bold text-slate-800 text-lg leading-tight">
+                            {isBlood
+                              ? "Blood Needed"
+                              : isMed
+                                ? "Medicine Required"
+                                : "Doctor Requested"}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                            <Clock size={12} />
+                            {new Date(req.created_at).toLocaleString([], {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            <Clock className="w-3 h-3 inline mr-1" />
-                            {new Date(emergency.created_at).toLocaleString()}
-                          </p>
                         </div>
                       </div>
-                      {isActive && (
+                      <span
+                        className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-white border ${
+                          isBlood
+                            ? "text-rose-700 border-rose-200"
+                            : isMed
+                              ? "text-sky-700 border-sky-200"
+                              : "text-violet-700 border-violet-200"
+                        }`}
+                      >
+                        {req.status}
+                      </span>
+                    </div>
+
+                    <div className="p-5 flex flex-col flex-1 gap-4">
+                      {/* Content Details */}
+                      <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                        {Object.keys(details).length === 0 ? (
+                          <p className="text-sm text-slate-600">
+                            {req.description}
+                          </p>
+                        ) : (
+                          <>
+                            {isBlood && (
+                              <div className="flex gap-4">
+                                <div className="flex-1 bg-white p-2 rounded-lg border border-slate-100 shadow-sm text-center">
+                                  <span className="block text-[10px] uppercase font-bold text-slate-400">
+                                    Type
+                                  </span>
+                                  <span className="block text-lg font-black text-rose-600">
+                                    {details["Blood Type"] || bType || "?"}
+                                  </span>
+                                </div>
+                                <div className="flex-1 bg-white p-2 rounded-lg border border-slate-100 shadow-sm text-center">
+                                  <span className="block text-[10px] uppercase font-bold text-slate-400">
+                                    Units
+                                  </span>
+                                  <span className="block text-lg font-black text-slate-700">
+                                    {details["Units"] || "1"}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {isMed && (
+                              <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                                <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
+                                  Medicine
+                                </span>
+                                <div className="flex justify-between items-center">
+                                  <span className="font-bold text-slate-800">
+                                    {details["Medicine"] || "Unspecified"}
+                                  </span>
+                                  <span className="text-xs bg-sky-100 text-sky-700 px-2 py-1 rounded font-bold">
+                                    Qty: {details["Qty"] || "1"}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {(details["Location"] || details["Symptoms"]) && (
+                              <div className="space-y-2 pt-1">
+                                {details["Symptoms"] && (
+                                  <div className="flex gap-2 text-sm text-slate-700">
+                                    <HeartPulse
+                                      size={14}
+                                      className="text-violet-500 mt-0.5 shrink-0"
+                                    />
+                                    <span className="font-medium">
+                                      {details["Symptoms"]}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="flex gap-2 text-sm text-slate-700">
+                                  <MapPin
+                                    size={14}
+                                    className="text-slate-400 mt-0.5 shrink-0"
+                                  />
+                                  <span>
+                                    {details["Location"] ||
+                                      "No location provided"}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {details["Notes"] && (
+                              <div className="text-xs text-slate-500 italic pt-2 border-t border-slate-200">
+                                "{details["Notes"]}"
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="grid grid-cols-2 gap-3 mt-auto">
+                        {details["Contact"] ? (
+                          <a
+                            href={`tel:${details["Contact"]}`}
+                            className="col-span-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <Phone size={16} /> Call
+                          </a>
+                        ) : (
+                          <button
+                            disabled
+                            className="col-span-1 bg-slate-50 text-slate-400 border border-slate-100 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                          >
+                            <Phone size={16} /> Call
+                          </button>
+                        )}
+
                         <button
-                          onClick={() => handleCancelEmergency(emergency.emergency_id)}
-                          disabled={loading}
-                          className="flex items-center gap-2 px-3 py-1.5 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                          onClick={() => handleChat(req.patient_id)}
+                          className="col-span-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
                         >
-                          <XCircle className="w-4 h-4" />
-                          Cancel
+                          <MessageCircle size={16} /> Chat
                         </button>
-                      )}
+
+                        {canAccept && (
+                          <button
+                            onClick={() =>
+                              handleAcceptRequest(req.emergency_id)
+                            }
+                            className="col-span-2 bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-slate-200"
+                          >
+                            Accept Request <span className="opacity-75">→</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              })
+            )}
           </div>
-        )}
 
-        {/* Emergency Tips */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Emergency Tips</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              {
-                icon: Droplets,
-                iconColor: "text-red-500",
-                bgColor: "bg-red-100 dark:bg-red-900/30",
-                title: "Blood Donation Eligibility",
-                text: "You can donate blood if you're 18-65 years old, weigh at least 50kg, and are in good health.",
-              },
-              {
-                icon: Clock,
-                iconColor: "text-blue-500",
-                bgColor: "bg-blue-100 dark:bg-blue-900/30",
-                title: "Response Time",
-                text: "In critical emergencies, every minute counts. Contact multiple donors simultaneously.",
-              },
-              {
-                icon: CheckCircle,
-                iconColor: "text-green-500",
-                bgColor: "bg-green-100 dark:bg-green-900/30",
-                title: "Verify Before Use",
-                text: "Always verify medicine expiry dates and proper storage conditions before accepting donations.",
-              },
-            ].map((tip, i) => (
-              <div key={i} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div className={`w-10 h-10 ${tip.bgColor} rounded-lg flex items-center justify-center mb-3`}>
-                  <tip.icon className={`w-5 h-5 ${tip.iconColor}`} />
+          {/* RIGHT: SIDEBAR */}
+          <div className="space-y-6">
+            {/* MY REQUESTS WIDGET */}
+            {myEmergencies.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <Activity className="text-indigo-500" size={18} />
+                  My Active Requests
+                </h3>
+                <div className="space-y-3">
+                  {myEmergencies.map((req) => (
+                    <div
+                      key={req.emergency_id}
+                      className="text-sm border border-slate-100 rounded-xl p-3 bg-slate-50 hover:bg-white transition-colors"
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <span
+                          className={`font-bold text-xs ${
+                            req.emergency_type === "Blood"
+                              ? "text-rose-600"
+                              : req.emergency_type === "Medicine"
+                                ? "text-sky-600"
+                                : "text-violet-600"
+                          }`}
+                        >
+                          {req.emergency_type}
+                        </span>
+                        <button
+                          onClick={() => handleCancelRequest(req.emergency_id)}
+                          className="text-slate-400 hover:text-rose-500 transition-colors"
+                          title="Cancel Request"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      <p className="text-slate-600 text-xs line-clamp-2">
+                        {req.description}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{tip.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{tip.text}</p>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
-        {/* Emergency Hotline */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 border-l-red-500 border border-gray-100 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-2.5 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <Phone className="w-5 h-5 text-red-500" />
+            {/* DONOR CTA */}
+            <div className="bg-linear-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-6 text-center">
+              <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm text-emerald-600">
+                <Users size={24} />
               </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">24/7 Emergency Hotline</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">1-800-EMERGENCY</p>
-              </div>
+              <h3 className="font-bold text-emerald-900 mb-2">
+                Become a Donor
+              </h3>
+              <p className="text-emerald-700 text-xs mb-4 leading-relaxed">
+                Join our verified donor network to receive alerts when someone
+                nearby needs your blood type.
+              </p>
+              <button
+                onClick={() => setModalType("donor")}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-md shadow-emerald-200 transition-all"
+              >
+                Register Now
+              </button>
             </div>
-            <a
-              href="tel:1800363743629"
-              className="flex items-center gap-2 px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
-            >
-              <Phone className="w-4 h-4" />
-              Call Now
-            </a>
+
+            {/* INFO WIDGET */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+              <h3 className="font-bold text-slate-800 mb-3 text-sm">
+                Emergency Guide
+              </h3>
+              <ul className="space-y-3">
+                <li className="flex gap-3 items-start text-xs text-slate-500">
+                  <div className="bg-rose-100 text-rose-600 p-1 rounded shrink-0">
+                    <Phone size={12} />
+                  </div>
+                  <span>
+                    For immediate life-threatening emergencies, always call
+                    national emergency services (100/102).
+                  </span>
+                </li>
+                <li className="flex gap-3 items-start text-xs text-slate-500">
+                  <div className="bg-indigo-100 text-indigo-600 p-1 rounded shrink-0">
+                    <CheckCircle size={12} />
+                  </div>
+                  <span>
+                    Your location is shared securely only with verified medical
+                    responders.
+                  </span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Request Modal */}
-      {showRequestModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 dark:text-white">
-                {formData.emergency_type === EMERGENCY_TYPES.BLOOD 
-                  ? "Blood Request" 
-                  : formData.emergency_type === EMERGENCY_TYPES.MEDICINE 
-                    ? "Medicine Request"
-                    : "Doctor Request"
-                }
-              </h3>
+      {/* MODALS */}
+      {modalType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                {modalType === "blood" && (
+                  <Droplets className="text-rose-500" />
+                )}
+                {modalType === "medicine" && <Pill className="text-sky-500" />}
+                {modalType === "doctor" && (
+                  <Stethoscope className="text-violet-500" />
+                )}
+                {modalType === "donor" && (
+                  <Users className="text-emerald-500" />
+                )}
+                {modalType === "blood"
+                  ? "Request Blood"
+                  : modalType === "medicine"
+                    ? "Request Medicine"
+                    : modalType === "doctor"
+                      ? "Request Doctor"
+                      : "Register as Donor"}
+              </h2>
               <button
-                onClick={() => setShowRequestModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                onClick={() => setModalType(null)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X size={20} />
               </button>
             </div>
-            
-            <form onSubmit={handleSubmitRequest} className="p-4 space-y-4">
-              {formData.emergency_type === EMERGENCY_TYPES.BLOOD && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Blood Type
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {BLOOD_TYPES.map(bt => (
-                        <button
-                          key={bt}
-                          type="button"
-                          onClick={() => setSelectedBloodType(bt)}
-                          className={`py-2 rounded-lg font-semibold text-sm transition-all ${
-                            selectedBloodType === bt
-                              ? "bg-red-500 text-white"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                          }`}
-                        >
-                          {bt}
-                        </button>
-                      ))}
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <form onSubmit={handleCreateRequest} className="space-y-4">
+                {modalType === "donor" ? (
+                  <div className="text-center py-6">
+                    <div className="mx-auto w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
+                      <Users size={32} className="text-emerald-600" />
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Units Required
-                    </label>
-                    <input
-                      type="number"
-                      name="units"
-                      value={formData.units}
-                      onChange={handleInputChange}
-                      placeholder="Number of units"
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                      required
-                    />
-                  </div>
-                </>
-              )}
-              
-              {formData.emergency_type === EMERGENCY_TYPES.MEDICINE && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Medicine Name
-                    </label>
-                    <input
-                      type="text"
-                      name="medicine_name"
-                      value={formData.medicine_name}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Insulin, Antibiotics"
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Quantity
-                    </label>
-                    <input
-                      type="text"
-                      name="quantity"
-                      value={formData.quantity}
-                      onChange={handleInputChange}
-                      placeholder="e.g. 5 vials, 20 tablets"
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                      required
-                    />
-                  </div>
-                </>
-              )}
-
-              {formData.emergency_type === EMERGENCY_TYPES.DOCTOR && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Describe Symptoms
-                    </label>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      placeholder="Describe your symptoms or medical emergency..."
-                      rows={3}
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white resize-none"
-                      required
-                    />
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder="City, Area"
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Contact Number
-                </label>
-                <input
-                  type="tel"
-                  name="contact"
-                  value={formData.contact}
-                  onChange={handleInputChange}
-                  placeholder="+1 234 567 890"
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Urgency Level
-                </label>
-                <select
-                  name="urgency"
-                  value={formData.urgency}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                >
-                  <option value={URGENCY_LEVELS.CRITICAL}>Critical (Immediate)</option>
-                  <option value={URGENCY_LEVELS.URGENT}>Urgent</option>
-                  <option value={URGENCY_LEVELS.NORMAL}>Normal</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowRequestModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors disabled:opacity-50 ${
-                    formData.emergency_type === EMERGENCY_TYPES.BLOOD
-                      ? "bg-red-500 hover:bg-red-600 text-white"
-                      : formData.emergency_type === EMERGENCY_TYPES.MEDICINE
-                        ? "bg-blue-500 hover:bg-blue-600 text-white"
-                        : "bg-purple-500 hover:bg-purple-600 text-white"
-                  }`}
-                >
-                  {loading ? "Submitting..." : "Submit Request"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Donor Registration Modal */}
-      {showDonorModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Register as Blood Donor</h3>
-              <button
-                onClick={() => setShowDonorModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleDonorRegistration} className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Your Blood Type
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {BLOOD_TYPES.map(bt => (
+                    <h3 className="text-lg font-bold text-slate-800 mb-2">
+                      Join the Network
+                    </h3>
+                    <p className="text-slate-500 text-sm mb-6">
+                      By registering, you agree to be contacted for emergency
+                      blood donations in your area.
+                    </p>
+                    <div className="mb-4 text-left">
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                        Blood Type
+                      </label>
+                      <select
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all outline-none"
+                        value={formData.bloodType}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            bloodType: e.target.value,
+                          })
+                        }
+                      >
+                        {BLOOD_TYPES.map((t) => (
+                          <option key={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
                     <button
-                      key={bt}
                       type="button"
-                      onClick={() => setDonorFormData(prev => ({ ...prev, bloodType: bt }))}
-                      className={`py-2 rounded-lg font-semibold text-sm transition-all ${
-                        donorFormData.bloodType === bt
-                          ? "bg-red-500 text-white"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      }`}
+                      onClick={() => {
+                        setSuccessMsg("Registration feature coming soon!");
+                        setModalType(null);
+                      }}
+                      className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors"
                     >
-                      {bt}
+                      Confirm Registration
                     </button>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Dynamic Type Inputs */}
+                      {modalType === "blood" && (
+                        <>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                              Blood Type
+                            </label>
+                            <select
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
+                              value={formData.bloodType}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  bloodType: e.target.value,
+                                })
+                              }
+                            >
+                              {BLOOD_TYPES.map((t) => (
+                                <option key={t}>{t}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                              Units
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
+                              value={formData.units}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  units: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </>
+                      )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Your Location
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={donorFormData.location}
-                  onChange={handleDonorInputChange}
-                  placeholder="City, Area"
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
+                      {modalType === "medicine" && (
+                        <>
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                              Medicine Name
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all outline-none"
+                              placeholder="e.g. Insulin, Ventolin"
+                              value={formData.medicineName}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  medicineName: e.target.value,
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                              Quantity
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all outline-none"
+                              value={formData.quantity}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  quantity: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Contact Number
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={donorFormData.phone}
-                  onChange={handleDonorInputChange}
-                  placeholder="+1 234 567 890"
-                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-                  required
-                />
-              </div>
+                    {modalType === "doctor" && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                          Symptoms / Situation
+                        </label>
+                        <textarea
+                          rows="3"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all outline-none"
+                          placeholder="Describe the medical situation..."
+                          value={formData.description}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              description: e.target.value,
+                            })
+                          }
+                          required
+                        ></textarea>
+                      </div>
+                    )}
 
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  name="available"
-                  checked={donorFormData.available}
-                  onChange={handleDonorInputChange}
-                  className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
-                />
-                <label className="text-sm text-gray-700 dark:text-gray-300">
-                  I am currently available to donate
-                </label>
-              </div>
+                    {/* Common Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                          Location / Hospital
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                          placeholder="e.g. Bir Hospital"
+                          value={formData.location}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              location: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                          Urgency Level
+                        </label>
+                        <select
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                          value={formData.urgency}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              urgency: e.target.value,
+                            })
+                          }
+                        >
+                          {URGENCY_LEVELS.map((u) => (
+                            <option key={u}>{u}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
 
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                  <AlertTriangle className="w-4 h-4 inline mr-1" />
-                  By registering, you agree to be contacted for blood donation requests matching your blood type.
-                </p>
-              </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                        Contact Number
+                      </label>
+                      <input
+                        type="tel"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                        placeholder="+977 98..."
+                        value={formData.contact}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contact: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowDonorModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? "Registering..." : "Register as Donor"}
-                </button>
-              </div>
-            </form>
+                    {modalType !== "doctor" && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                          Additional Notes
+                        </label>
+                        <textarea
+                          rows="2"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                          placeholder="Contact info, specific requirements..."
+                          value={formData.description}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              description: e.target.value,
+                            })
+                          }
+                        ></textarea>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full mt-4 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all flex justify-center items-center gap-2 shadow-lg shadow-slate-200"
+                    >
+                      {isSubmitting ? (
+                        <Activity className="animate-spin" size={20} />
+                      ) : (
+                        <>
+                          <Siren size={20} /> Broadcast Request
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+              </form>
+            </div>
           </div>
         </div>
       )}

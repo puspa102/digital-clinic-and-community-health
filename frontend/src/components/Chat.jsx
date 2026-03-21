@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
 import { chatAPI, handleApiError, formatDateTime } from "../services/api";
@@ -14,10 +15,12 @@ import {
   CheckCheck,
 } from "lucide-react";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+const SOCKET_URL =
+  import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
-const Chat = ({ isOpen, onClose, onUnreadChange }) => {
+const Chat = ({ isOpen, onClose, onUnreadChange, isFullPage = false }) => {
   const { user } = useAuth();
+  const location = useLocation();
   const [socket, setSocket] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -41,7 +44,7 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
 
   // Initialize socket connection
   useEffect(() => {
-    if (!isOpen || !user) return;
+    if ((!isOpen && !isFullPage) || !user) return;
 
     const token = localStorage.getItem("accessToken");
     if (!token) return;
@@ -106,9 +109,7 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
       const currentConv = selectedConversationRef.current;
       if (data.conversationId === currentConv?.conversation_id) {
         setMessages((prev) =>
-          prev.map((msg) =>
-            msg.is_own ? { ...msg, is_read: true } : msg
-          )
+          prev.map((msg) => (msg.is_own ? { ...msg, is_read: true } : msg)),
         );
       }
     });
@@ -118,7 +119,7 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [isOpen, user]);
+  }, [isOpen, isFullPage, user]);
 
   // Fetch conversations
   const fetchConversations = useCallback(async () => {
@@ -156,16 +157,19 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
 
   // Initial data fetch
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || isFullPage) {
       fetchConversations();
       // Fetch accurate unread count when chat opens
-      chatAPI.getUnreadCount().then(response => {
-        if (response.success) {
-          setUnreadCount(response.data.unread_count || 0);
-        }
-      }).catch(() => {});
+      chatAPI
+        .getUnreadCount()
+        .then((response) => {
+          if (response.success) {
+            setUnreadCount(response.data.unread_count || 0);
+          }
+        })
+        .catch(() => {});
     }
-  }, [isOpen, fetchConversations]);
+  }, [isOpen, isFullPage, fetchConversations]);
 
   // Join all conversation rooms when conversations are loaded
   useEffect(() => {
@@ -191,7 +195,7 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
       try {
         setLoading(true);
         const response = await chatAPI.getMessages(
-          selectedConversation.conversation_id
+          selectedConversation.conversation_id,
         );
         if (response.success) {
           setMessages(response.data || []);
@@ -201,7 +205,9 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
         // Mark as read
         await chatAPI.markAsRead(selectedConversation.conversation_id);
         // Update unread count locally instead of API call
-        setUnreadCount(prev => Math.max(0, prev - (selectedConversation.unread_count || 0)));
+        setUnreadCount((prev) =>
+          Math.max(0, prev - (selectedConversation.unread_count || 0)),
+        );
       } catch (error) {
         console.error("Error fetching messages:", handleApiError(error));
       } finally {
@@ -233,7 +239,7 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
     try {
       const response = await chatAPI.sendMessage(
         selectedConversation.conversation_id,
-        messageContent
+        messageContent,
       );
 
       if (response.success) {
@@ -277,10 +283,11 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
   };
 
   // Start new conversation
-  const startConversation = async (contact) => {
+  const startConversation = async (contactOrId) => {
+    const userId = contactOrId?.user_id || contactOrId;
     try {
       setLoading(true);
-      const response = await chatAPI.getOrCreateConversation(contact.user_id);
+      const response = await chatAPI.getOrCreateConversation(userId);
       if (response.success) {
         setSelectedConversation({
           conversation_id: response.data.conversation_id,
@@ -297,8 +304,15 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
   };
 
   // Format message time
-  const formatMessageTime = (dateString) => {
-    const date = new Date(dateString);
+  useEffect(() => {
+    if (location.state?.recipientId) {
+      startConversation(location.state.recipientId);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  const formatMessageTime = (timestamp) => {
+    const date = new Date(timestamp);
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
 
@@ -317,14 +331,26 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
     });
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !isFullPage) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-4xl h-[600px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex overflow-hidden">
+    <div
+      className={
+        isFullPage
+          ? "absolute inset-0 w-full h-full"
+          : "fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      }
+    >
+      <div
+        className={
+          isFullPage
+            ? "w-full h-full bg-white dark:bg-gray-800 flex overflow-hidden"
+            : "w-full max-w-4xl h-[600px] bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex overflow-hidden"
+        }
+      >
         {/* Sidebar - Conversations List */}
         <div
-          className={`w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col ${
+          className={`w-full md:w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800 h-full ${
             selectedConversation ? "hidden md:flex" : "flex"
           }`}
         >
@@ -340,12 +366,14 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
                   </span>
                 )}
               </h2>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              {!isFullPage && (
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              )}
             </div>
 
             {/* Search / New Chat Toggle */}
@@ -354,7 +382,11 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder={showContacts ? "Search contacts..." : "Search conversations..."}
+                  placeholder={
+                    showContacts
+                      ? "Search contacts..."
+                      : "Search conversations..."
+                  }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -406,7 +438,8 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {contact.role}
-                        {contact.specialization && ` - ${contact.specialization}`}
+                        {contact.specialization &&
+                          ` - ${contact.specialization}`}
                       </p>
                     </div>
                   </button>
@@ -416,8 +449,8 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
                   {searchQuery
                     ? "No contacts found"
                     : user?.role === "Patient"
-                    ? "Your doctor will appear here after appointment is accepted"
-                    : "Your patients will appear here"}
+                      ? "Your doctor will appear here after appointment is accepted"
+                      : "Your patients will appear here"}
                 </div>
               )
             ) : // Conversations List
@@ -428,14 +461,15 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
                     !searchQuery ||
                     conv.participant?.full_name
                       ?.toLowerCase()
-                      .includes(searchQuery.toLowerCase())
+                      .includes(searchQuery.toLowerCase()),
                 )
                 .map((conv) => (
                   <button
                     key={conv.conversation_id}
                     onClick={() => setSelectedConversation(conv)}
                     className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 ${
-                      selectedConversation?.conversation_id === conv.conversation_id
+                      selectedConversation?.conversation_id ===
+                      conv.conversation_id
                         ? "bg-blue-50 dark:bg-blue-900/20"
                         : ""
                     }`}
@@ -447,7 +481,8 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
                           : "bg-blue-500"
                       }`}
                     >
-                      {conv.participant?.full_name?.charAt(0)?.toUpperCase() || "U"}
+                      {conv.participant?.full_name?.charAt(0)?.toUpperCase() ||
+                        "U"}
                     </div>
                     <div className="flex-1 text-left min-w-0">
                       <div className="flex items-center justify-between">
@@ -483,7 +518,7 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
 
         {/* Chat Area */}
         <div
-          className={`flex-1 flex flex-col ${
+          className={`flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 h-full ${
             !selectedConversation ? "hidden md:flex" : "flex"
           }`}
         >
@@ -547,13 +582,12 @@ const Chat = ({ isOpen, onClose, onUnreadChange }) => {
                             }`}
                           >
                             <span>{formatMessageTime(msg.created_at)}</span>
-                            {msg.is_own && (
-                              msg.is_read ? (
+                            {msg.is_own &&
+                              (msg.is_read ? (
                                 <CheckCheck className="w-3 h-3" />
                               ) : (
                                 <Check className="w-3 h-3" />
-                              )
-                            )}
+                              ))}
                           </div>
                         </div>
                       </div>
