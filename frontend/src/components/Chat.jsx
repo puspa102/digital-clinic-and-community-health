@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { useAuth } from "../context/AuthContext";
 import { chatAPI, handleApiError, formatDateTime } from "../services/api";
@@ -21,6 +21,7 @@ const SOCKET_URL =
 const Chat = ({ isOpen, onClose, onUnreadChange, isFullPage = false }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [socket, setSocket] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -307,9 +308,9 @@ const Chat = ({ isOpen, onClose, onUnreadChange, isFullPage = false }) => {
   useEffect(() => {
     if (location.state?.recipientId) {
       startConversation(location.state.recipientId);
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state]);
+  }, [location.state, navigate, location.pathname]);
 
   const formatMessageTime = (timestamp) => {
     const date = new Date(timestamp);
