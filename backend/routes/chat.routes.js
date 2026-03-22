@@ -51,95 +51,95 @@ const validateSendMessage = [
 ];
 
 // ============================================
-// Chat Routes (Doctor & Patient only)
+// Chat Routes
 // ============================================
 
 /**
  * @route   GET /api/chat/contacts
  * @desc    Get available chat contacts
- * @access  Private (Doctor, Patient)
+ * @access  Private (Doctor, Patient, Pharmacy, Admin)
  */
 router.get(
   "/contacts",
   verifyToken,
-  authorizeRoles("Doctor", "Patient"),
-  getChatContacts
+  authorizeRoles("Doctor", "Patient", "Pharmacy", "Admin"),
+  getChatContacts,
 );
 
 /**
  * @route   GET /api/chat/unread-count
  * @desc    Get unread message count
- * @access  Private (Doctor, Patient)
+ * @access  Private (Doctor, Patient, Pharmacy, Admin)
  */
 router.get(
   "/unread-count",
   verifyToken,
-  authorizeRoles("Doctor", "Patient"),
-  getUnreadCount
+  authorizeRoles("Doctor", "Patient", "Pharmacy", "Admin"),
+  getUnreadCount,
 );
 
 /**
  * @route   GET /api/chat/conversations
  * @desc    Get all conversations for current user
- * @access  Private (Doctor, Patient)
+ * @access  Private (Doctor, Patient, Pharmacy, Admin)
  */
 router.get(
   "/conversations",
   verifyToken,
-  authorizeRoles("Doctor", "Patient"),
-  getConversations
+  authorizeRoles("Doctor", "Patient", "Pharmacy", "Admin"),
+  getConversations,
 );
 
 /**
  * @route   POST /api/chat/conversations
  * @desc    Get or create a conversation with another user
- * @access  Private (Doctor, Patient)
+ * @access  Private (Doctor, Patient, Pharmacy, Admin)
  */
 router.post(
   "/conversations",
   verifyToken,
-  authorizeRoles("Doctor", "Patient"),
+  authorizeRoles("Doctor", "Patient", "Pharmacy", "Admin"),
   validateCreateConversation,
-  getOrCreateConversation
+  getOrCreateConversation,
 );
 
 /**
  * @route   GET /api/chat/conversations/:conversationId/messages
  * @desc    Get messages in a conversation
- * @access  Private (Doctor, Patient)
+ * @access  Private (Doctor, Patient, Pharmacy, Admin)
  */
 router.get(
   "/conversations/:conversationId/messages",
   verifyToken,
-  authorizeRoles("Doctor", "Patient"),
+  authorizeRoles("Doctor", "Patient", "Pharmacy", "Admin"),
   validateConversationId,
-  getMessages
+  getMessages,
 );
 
 /**
  * @route   POST /api/chat/conversations/:conversationId/messages
  * @desc    Send a message in a conversation
- * @access  Private (Doctor, Patient)
+ * @access  Private (Doctor, Patient, Pharmacy, Admin)
  */
 router.post(
   "/conversations/:conversationId/messages",
   verifyToken,
-  authorizeRoles("Doctor", "Patient"),
+  authorizeRoles("Doctor", "Patient", "Pharmacy", "Admin"),
   validateSendMessage,
-  sendMessage
+  sendMessage,
 );
 
 /**
  * @route   PUT /api/chat/conversations/:conversationId/read
  * @desc    Mark messages as read
- * @access  Private (Doctor, Patient)
+ * @access  Private (Doctor, Patient, Pharmacy, Admin)
  */
 router.put(
   "/conversations/:conversationId/read",
   verifyToken,
-  authorizeRoles("Doctor", "Patient"),
+  authorizeRoles("Doctor", "Patient", "Pharmacy", "Admin"),
   validateConversationId,
-  markAsRead
+  markAsRead,
 );
 
 export default router;
