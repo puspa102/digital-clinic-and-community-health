@@ -91,6 +91,10 @@ export const createEmergency = async (req, res) => {
     });
 
     // TODO: Send notifications to nearby doctors/pharmacies
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("new_emergency", createdEmergency);
+    }
 
     return successResponse(
       res,
