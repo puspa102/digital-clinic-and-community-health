@@ -165,7 +165,7 @@ const Emergency = () => {
       return;
 
     try {
-      await emergencyAPI.acceptEmergency(id, user?.user_id);
+      await emergencyAPI.acceptEmergency(id, user?.id);
       setSuccessMsg("Request accepted! Please contact the requester.");
       fetchData();
       setTimeout(() => setSuccessMsg(null), 3000);
@@ -174,8 +174,9 @@ const Emergency = () => {
     }
   };
 
-  const handleChat = (userId) => {
-    navigate("/chat", { state: { recipientId: userId } });
+  const handleChat = (id) => {
+    if (!id) return;
+    navigate("/chat", { state: { recipientId: id } });
   };
 
   // -- HELPERS --
@@ -219,17 +220,17 @@ const Emergency = () => {
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-500">
         {/* HEADER SECTION */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -ml-32 -mb-32 opacity-50"></div>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 mb-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 dark:bg-rose-900/10 rounded-full blur-3xl -mr-32 -mt-32 opacity-50"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-50 dark:bg-indigo-900/10 rounded-full blur-3xl -ml-32 -mb-32 opacity-50"></div>
 
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+              <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
                 <Siren className="text-rose-500 animate-pulse" size={32} />
                 Emergency Response
               </h1>
-              <p className="text-slate-500 mt-2 font-medium max-w-xl">
+              <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium max-w-xl">
                 Real-time coordination for life-saving Blood, Medicine, and
                 Doctor needs.
               </p>
@@ -278,7 +279,7 @@ const Emergency = () => {
 
         {/* TABS & FILTERS */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <div className="flex bg-slate-100 p-1 rounded-xl">
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             {[
               { id: "all", label: "All Needs", icon: Activity },
               { id: "blood", label: "Blood", icon: Droplets },
@@ -290,8 +291,8 @@ const Emergency = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all ${
                   activeTab === tab.id
-                    ? "bg-white text-slate-800 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 }`}
               >
                 <tab.icon size={16} /> {tab.label}
@@ -308,8 +309,8 @@ const Emergency = () => {
                 onClick={() => setBloodFilter("All")}
                 className={`px-3 py-1 text-xs font-bold rounded-full border transition-all whitespace-nowrap ${
                   bloodFilter === "All"
-                    ? "bg-slate-800 text-white border-slate-800"
-                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"
+                    ? "bg-slate-800 dark:bg-slate-700 text-white border-slate-800 dark:border-slate-600"
+                    : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400"
                 }`}
               >
                 All
@@ -321,7 +322,7 @@ const Emergency = () => {
                   className={`px-3 py-1 text-xs font-bold rounded-full border transition-all min-w-12 ${
                     bloodFilter === type
                       ? "bg-rose-500 text-white border-rose-500"
-                      : "bg-white text-slate-500 border-slate-200 hover:border-rose-300 hover:text-rose-500"
+                      : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-rose-300 hover:text-rose-500"
                   }`}
                 >
                   {type}
@@ -338,20 +339,20 @@ const Emergency = () => {
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64 text-slate-400">
                 <Activity
-                  className="animate-spin mb-4 text-indigo-500"
+                  className="animate-spin mb-4 text-indigo-500 dark:text-indigo-400"
                   size={48}
                 />
-                <p>Scanning network...</p>
+                <p className="dark:text-slate-400">Scanning network...</p>
               </div>
             ) : displayEmergencies.length === 0 ? (
-              <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-200">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 text-center border border-dashed border-slate-200 dark:border-slate-800">
+                <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-600">
                   <Siren size={32} />
                 </div>
-                <h3 className="text-lg font-bold text-slate-700">
+                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">
                   No Active Requests
                 </h3>
-                <p className="text-slate-500 text-sm mt-1">
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                   There are currently no emergency requests matching your
                   filters.
                 </p>
@@ -377,32 +378,32 @@ const Emergency = () => {
                 return (
                   <div
                     key={req.emergency_id}
-                    className="group bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-indigo-100 flex flex-col overflow-hidden"
+                    className="group bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:border-indigo-100 dark:hover:border-indigo-900 flex flex-col overflow-hidden"
                   >
                     {/* Header */}
                     <div
                       className={`flex justify-between items-start p-4 border-b ${
                         isBlood
-                          ? "bg-rose-50/50 border-rose-100"
+                          ? "bg-rose-50/50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-900/30"
                           : isMed
-                            ? "bg-sky-50/50 border-sky-100"
-                            : "bg-violet-50/50 border-violet-100"
+                            ? "bg-sky-50/50 dark:bg-sky-900/10 border-sky-100 dark:border-sky-900/30"
+                            : "bg-violet-50/50 dark:bg-violet-900/10 border-violet-100 dark:border-violet-900/30"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`p-2.5 rounded-xl bg-white shadow-sm ${
+                          className={`p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm ${
                             isBlood
-                              ? "text-rose-500"
+                              ? "text-rose-500 dark:text-rose-400"
                               : isMed
-                                ? "text-sky-500"
-                                : "text-violet-500"
+                                ? "text-sky-500 dark:text-sky-400"
+                                : "text-violet-500 dark:text-violet-400"
                           }`}
                         >
                           {icon}
                         </div>
                         <div>
-                          <h3 className="font-bold text-slate-800 text-lg leading-tight">
+                          <h3 className="font-bold text-slate-800 dark:text-white text-lg leading-tight">
                             {isBlood
                               ? "Blood Needed"
                               : isMed
@@ -421,12 +422,12 @@ const Emergency = () => {
                         </div>
                       </div>
                       <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-white border ${
+                        className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-white dark:bg-slate-800 border ${
                           isBlood
-                            ? "text-rose-700 border-rose-200"
+                            ? "text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
                             : isMed
-                              ? "text-sky-700 border-sky-200"
-                              : "text-violet-700 border-violet-200"
+                              ? "text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800"
+                              : "text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800"
                         }`}
                       >
                         {req.status}
@@ -435,7 +436,7 @@ const Emergency = () => {
 
                     <div className="p-5 flex flex-col flex-1 gap-4">
                       {/* Content Details */}
-                      <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700 space-y-3">
                         {Object.keys(details).length === 0 ? (
                           <p className="text-sm text-slate-600">
                             {req.description}
@@ -444,19 +445,19 @@ const Emergency = () => {
                           <>
                             {isBlood && (
                               <div className="flex gap-4">
-                                <div className="flex-1 bg-white p-2 rounded-lg border border-slate-100 shadow-sm text-center">
+                                <div className="flex-1 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm text-center">
                                   <span className="block text-[10px] uppercase font-bold text-slate-400">
                                     Type
                                   </span>
-                                  <span className="block text-lg font-black text-rose-600">
+                                  <span className="block text-lg font-black text-rose-600 dark:text-rose-400">
                                     {details["Blood Type"] || bType || "?"}
                                   </span>
                                 </div>
-                                <div className="flex-1 bg-white p-2 rounded-lg border border-slate-100 shadow-sm text-center">
+                                <div className="flex-1 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm text-center">
                                   <span className="block text-[10px] uppercase font-bold text-slate-400">
                                     Units
                                   </span>
-                                  <span className="block text-lg font-black text-slate-700">
+                                  <span className="block text-lg font-black text-slate-700 dark:text-slate-200">
                                     {details["Units"] || "1"}
                                   </span>
                                 </div>
@@ -464,15 +465,15 @@ const Emergency = () => {
                             )}
 
                             {isMed && (
-                              <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                              <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
                                 <span className="block text-[10px] uppercase font-bold text-slate-400 mb-1">
                                   Medicine
                                 </span>
                                 <div className="flex justify-between items-center">
-                                  <span className="font-bold text-slate-800">
+                                  <span className="font-bold text-slate-800 dark:text-white">
                                     {details["Medicine"] || "Unspecified"}
                                   </span>
-                                  <span className="text-xs bg-sky-100 text-sky-700 px-2 py-1 rounded font-bold">
+                                  <span className="text-xs bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 px-2 py-1 rounded font-bold">
                                     Qty: {details["Qty"] || "1"}
                                   </span>
                                 </div>
@@ -482,7 +483,7 @@ const Emergency = () => {
                             {(details["Location"] || details["Symptoms"]) && (
                               <div className="space-y-2 pt-1">
                                 {details["Symptoms"] && (
-                                  <div className="flex gap-2 text-sm text-slate-700">
+                                  <div className="flex gap-2 text-sm text-slate-700 dark:text-slate-300">
                                     <HeartPulse
                                       size={14}
                                       className="text-violet-500 mt-0.5 shrink-0"
@@ -492,7 +493,7 @@ const Emergency = () => {
                                     </span>
                                   </div>
                                 )}
-                                <div className="flex gap-2 text-sm text-slate-700">
+                                <div className="flex gap-2 text-sm text-slate-700 dark:text-slate-300">
                                   <MapPin
                                     size={14}
                                     className="text-slate-400 mt-0.5 shrink-0"
@@ -506,7 +507,7 @@ const Emergency = () => {
                             )}
 
                             {details["Notes"] && (
-                              <div className="text-xs text-slate-500 italic pt-2 border-t border-slate-200">
+                              <div className="text-xs text-slate-500 dark:text-slate-400 italic pt-2 border-t border-slate-200 dark:border-slate-700">
                                 "{details["Notes"]}"
                               </div>
                             )}
@@ -519,32 +520,41 @@ const Emergency = () => {
                         {details["Contact"] ? (
                           <a
                             href={`tel:${details["Contact"]}`}
-                            className="col-span-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                            className="col-span-1 bg-emerald-50 dark:bg-emerald-900/10 hover:bg-emerald-100 dark:hover:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
                           >
                             <Phone size={16} /> Call
                           </a>
                         ) : (
                           <button
                             disabled
-                            className="col-span-1 bg-slate-50 text-slate-400 border border-slate-100 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                            className="col-span-1 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-slate-100 dark:border-slate-800 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed"
                           >
                             <Phone size={16} /> Call
                           </button>
                         )}
 
-                        <button
-                          onClick={() => handleChat(req.patient_id)}
-                          className="col-span-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                        >
-                          <MessageCircle size={16} /> Chat
-                        </button>
+                        {/* Chat Button */}
+                        {(user?.id === req.patient_id ? req.accepted_by : req.patient_id) && (
+                          <button
+                            onClick={() =>
+                              handleChat(
+                                user?.id === req.patient_id
+                                  ? req.accepted_by
+                                  : req.patient_id,
+                              )
+                            }
+                            className="col-span-1 bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <MessageCircle size={16} /> Chat
+                          </button>
+                        )}
 
                         {canAccept && (
                           <button
                             onClick={() =>
                               handleAcceptRequest(req.emergency_id)
                             }
-                            className="col-span-2 bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-slate-200"
+                            className="col-span-2 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-slate-200 dark:shadow-none"
                           >
                             Accept Request <span className="opacity-75">→</span>
                           </button>
@@ -561,25 +571,25 @@ const Emergency = () => {
           <div className="space-y-6">
             {/* MY REQUESTS WIDGET */}
             {myEmergencies.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <Activity className="text-indigo-500" size={18} />
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-5">
+                <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                  <Activity className="text-indigo-500 dark:text-indigo-400" size={18} />
                   My Active Requests
                 </h3>
                 <div className="space-y-3">
                   {myEmergencies.map((req) => (
                     <div
                       key={req.emergency_id}
-                      className="text-sm border border-slate-100 rounded-xl p-3 bg-slate-50 hover:bg-white transition-colors"
+                      className="text-sm border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 transition-colors"
                     >
                       <div className="flex justify-between items-center mb-2">
                         <span
                           className={`font-bold text-xs ${
                             req.emergency_type === "Blood"
-                              ? "text-rose-600"
+                              ? "text-rose-600 dark:text-rose-400"
                               : req.emergency_type === "Medicine"
-                                ? "text-sky-600"
-                                : "text-violet-600"
+                                ? "text-sky-600 dark:text-sky-400"
+                                : "text-violet-600 dark:text-violet-400"
                           }`}
                         >
                           {req.emergency_type}
@@ -592,7 +602,7 @@ const Emergency = () => {
                           <Trash2 size={14} />
                         </button>
                       </div>
-                      <p className="text-slate-600 text-xs line-clamp-2">
+                      <p className="text-slate-600 dark:text-slate-400 text-xs line-clamp-2">
                         {req.description}
                       </p>
                     </div>
@@ -602,14 +612,14 @@ const Emergency = () => {
             )}
 
             {/* DONOR CTA */}
-            <div className="bg-linear-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-6 text-center">
-              <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm text-emerald-600">
+            <div className="bg-linear-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800 p-6 text-center">
+              <div className="bg-white dark:bg-slate-800 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm text-emerald-600 dark:text-emerald-400">
                 <Users size={24} />
               </div>
-              <h3 className="font-bold text-emerald-900 mb-2">
+              <h3 className="font-bold text-emerald-900 dark:text-emerald-100 mb-2">
                 Become a Donor
               </h3>
-              <p className="text-emerald-700 text-xs mb-4 leading-relaxed">
+              <p className="text-emerald-700 dark:text-emerald-400 text-xs mb-4 leading-relaxed">
                 Join our verified donor network to receive alerts when someone
                 nearby needs your blood type.
               </p>
@@ -622,8 +632,8 @@ const Emergency = () => {
             </div>
 
             {/* INFO WIDGET */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-              <h3 className="font-bold text-slate-800 mb-3 text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-5">
+              <h3 className="font-bold text-slate-800 dark:text-white mb-3 text-sm">
                 Emergency Guide
               </h3>
               <ul className="space-y-3">
@@ -636,8 +646,8 @@ const Emergency = () => {
                     national emergency services (100/102).
                   </span>
                 </li>
-                <li className="flex gap-3 items-start text-xs text-slate-500">
-                  <div className="bg-indigo-100 text-indigo-600 p-1 rounded shrink-0">
+                <li className="flex gap-3 items-start text-xs text-slate-500 dark:text-slate-400">
+                  <div className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 p-1 rounded shrink-0">
                     <CheckCircle size={12} />
                   </div>
                   <span>
@@ -655,12 +665,12 @@ const Emergency = () => {
       {modalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95"
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <div className="bg-slate-50 dark:bg-slate-800 px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                 {modalType === "blood" && (
                   <Droplets className="text-rose-500" />
                 )}
@@ -692,22 +702,22 @@ const Emergency = () => {
               <form onSubmit={handleCreateRequest} className="space-y-4">
                 {modalType === "donor" ? (
                   <div className="text-center py-6">
-                    <div className="mx-auto w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
-                      <Users size={32} className="text-emerald-600" />
+                    <div className="mx-auto w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-4">
+                      <Users size={32} className="text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
                       Join the Network
                     </h3>
-                    <p className="text-slate-500 text-sm mb-6">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
                       By registering, you agree to be contacted for emergency
                       blood donations in your area.
                     </p>
                     <div className="mb-4 text-left">
-                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                         Blood Type
                       </label>
                       <select
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all outline-none"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-900/50 transition-all outline-none text-slate-900 dark:text-white"
                         value={formData.bloodType}
                         onChange={(e) =>
                           setFormData({
@@ -739,11 +749,11 @@ const Emergency = () => {
                       {modalType === "blood" && (
                         <>
                           <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                               Blood Type
                             </label>
                             <select
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-900/50 transition-all outline-none text-slate-900 dark:text-white"
                               value={formData.bloodType}
                               onChange={(e) =>
                                 setFormData({
@@ -758,13 +768,13 @@ const Emergency = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                               Units
                             </label>
                             <input
                               type="number"
                               min="1"
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 dark:focus:ring-rose-900/50 transition-all outline-none text-slate-900 dark:text-white"
                               value={formData.units}
                               onChange={(e) =>
                                 setFormData({
@@ -780,12 +790,12 @@ const Emergency = () => {
                       {modalType === "medicine" && (
                         <>
                           <div className="md:col-span-2">
-                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                               Medicine Name
                             </label>
                             <input
                               type="text"
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all outline-none"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 transition-all outline-none text-slate-900 dark:text-white"
                               placeholder="e.g. Insulin, Ventolin"
                               value={formData.medicineName}
                               onChange={(e) =>
@@ -798,13 +808,13 @@ const Emergency = () => {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                               Quantity
                             </label>
                             <input
                               type="number"
                               min="1"
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all outline-none"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 transition-all outline-none text-slate-900 dark:text-white"
                               value={formData.quantity}
                               onChange={(e) =>
                                 setFormData({
@@ -820,12 +830,12 @@ const Emergency = () => {
 
                     {modalType === "doctor" && (
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                           Symptoms / Situation
                         </label>
                         <textarea
                           rows="3"
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all outline-none"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-900/50 transition-all outline-none text-slate-900 dark:text-white"
                           placeholder="Describe the medical situation..."
                           value={formData.description}
                           onChange={(e) =>
@@ -842,12 +852,12 @@ const Emergency = () => {
                     {/* Common Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                           Location / Hospital
                         </label>
                         <input
                           type="text"
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50 transition-all outline-none text-slate-900 dark:text-white"
                           placeholder="e.g. Bir Hospital"
                           value={formData.location}
                           onChange={(e) =>
@@ -860,11 +870,11 @@ const Emergency = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                           Urgency Level
                         </label>
                         <select
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50 transition-all outline-none text-slate-900 dark:text-white"
                           value={formData.urgency}
                           onChange={(e) =>
                             setFormData({
@@ -881,12 +891,12 @@ const Emergency = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                         Contact Number
                       </label>
                       <input
                         type="tel"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50 transition-all outline-none text-slate-900 dark:text-white"
                         placeholder="+977 98..."
                         value={formData.contact}
                         onChange={(e) =>
@@ -901,12 +911,12 @@ const Emergency = () => {
 
                     {modalType !== "doctor" && (
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                           Additional Notes
                         </label>
                         <textarea
                           rows="2"
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50 transition-all outline-none text-slate-900 dark:text-white"
                           placeholder="Contact info, specific requirements..."
                           value={formData.description}
                           onChange={(e) =>
@@ -922,7 +932,7 @@ const Emergency = () => {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full mt-4 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all flex justify-center items-center gap-2 shadow-lg shadow-slate-200"
+                      className="w-full mt-4 py-3 bg-slate-900 dark:bg-indigo-600 text-white rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-indigo-500 transition-all flex justify-center items-center gap-2 shadow-lg shadow-slate-200 dark:shadow-none"
                     >
                       {isSubmitting ? (
                         <Activity className="animate-spin" size={20} />
