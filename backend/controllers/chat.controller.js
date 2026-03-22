@@ -30,8 +30,10 @@ const hasAcceptedDoctorPatientAppointment = async (userOne, userTwo) => {
     return false;
   }
 
-  const doctorUserId = userOne.role === "Doctor" ? userOne.user_id : userTwo.user_id;
-  const patientUserId = userOne.role === "Patient" ? userOne.user_id : userTwo.user_id;
+  const doctorUserId =
+    userOne.role === "Doctor" ? userOne.user_id : userTwo.user_id;
+  const patientUserId =
+    userOne.role === "Patient" ? userOne.user_id : userTwo.user_id;
 
   const doctorProfile = await Doctor.findOne({
     where: { user_id: doctorUserId },
@@ -64,11 +66,19 @@ export const getOrCreateConversation = async (req, res) => {
     const userId = req.user.id;
 
     if (!participant_id) {
-      return errorResponse(res, HTTP_STATUS.BAD_REQUEST, "Participant ID is required");
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Participant ID is required",
+      );
     }
 
     if (participant_id === userId) {
-      return errorResponse(res, HTTP_STATUS.BAD_REQUEST, "Cannot start a conversation with yourself");
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Cannot start a conversation with yourself",
+      );
     }
 
     // Verify the other participant exists and is a Doctor or Patient
@@ -77,31 +87,33 @@ export const getOrCreateConversation = async (req, res) => {
       return errorResponse(res, HTTP_STATUS.NOT_FOUND, "User not found");
     }
 
-    if (!["Doctor", "Patient"].includes(participant.role)) {
-      return errorResponse(res, HTTP_STATUS.BAD_REQUEST, "Can only chat with doctors or patients");
-    }
-
     const currentUser = await User.findByPk(userId, {
       attributes: ["user_id", "role"],
     });
 
     if (!currentUser) {
-      return errorResponse(res, HTTP_STATUS.NOT_FOUND, ERROR_MESSAGES.USER_NOT_FOUND);
-    }
-
-    const isEligible = await hasAcceptedDoctorPatientAppointment(currentUser, participant);
-    if (!isEligible) {
       return errorResponse(
         res,
-        HTTP_STATUS.FORBIDDEN,
-        "Chat is available only after the doctor accepts your appointment",
+        HTTP_STATUS.NOT_FOUND,
+        ERROR_MESSAGES.USER_NOT_FOUND,
       );
     }
 
+    // Bypass eligibility check to allow chatting for emergencies
+    // const isEligible = await hasAcceptedDoctorPatientAppointment(currentUser, participant);
+    // if (!isEligible) {
+    //   return errorResponse(
+    //     res,
+    //     HTTP_STATUS.FORBIDDEN,
+    //     "Chat is available only after the doctor accepts your appointment",
+    //   );
+    // }
+
     // Ensure participants are ordered consistently (lower ID first)
-    const [participantOne, participantTwo] = userId < participant_id
-      ? [userId, participant_id]
-      : [participant_id, userId];
+    const [participantOne, participantTwo] =
+      userId < participant_id
+        ? [userId, participant_id]
+        : [participant_id, userId];
 
     // Find existing conversation or create new one
     let conversation = await Conversation.findOne({
@@ -147,9 +159,10 @@ export const getOrCreateConversation = async (req, res) => {
     }
 
     // Get the other participant's info
-    const otherParticipant = conversation.ParticipantOne.user_id === userId
-      ? conversation.ParticipantTwo
-      : conversation.ParticipantOne;
+    const otherParticipant =
+      conversation.ParticipantOne.user_id === userId
+        ? conversation.ParticipantTwo
+        : conversation.ParticipantOne;
 
     return successResponse(res, HTTP_STATUS.OK, "Conversation retrieved", {
       conversation_id: conversation.conversation_id,
@@ -207,23 +220,26 @@ export const getConversations = async (req, res) => {
 
     // Format conversations to show the other participant
     const formattedConversations = conversations.map((conv) => {
-      const otherParticipant = conv.ParticipantOne.user_id === userId
-        ? conv.ParticipantTwo
-        : conv.ParticipantOne;
+      const otherParticipant =
+        conv.ParticipantOne.user_id === userId
+          ? conv.ParticipantTwo
+          : conv.ParticipantOne;
 
       const lastMessage = conv.Messages?.[0] || null;
-      const unreadCount = conv.Messages?.filter(
-        (m) => !m.is_read && m.sender_id !== userId
-      ).length || 0;
+      const unreadCount =
+        conv.Messages?.filter((m) => !m.is_read && m.sender_id !== userId)
+          .length || 0;
 
       return {
         conversation_id: conv.conversation_id,
         participant: otherParticipant,
-        last_message: lastMessage ? {
-          content: lastMessage.content,
-          created_at: lastMessage.created_at,
-          is_own: lastMessage.sender_id === userId,
-        } : null,
+        last_message: lastMessage
+          ? {
+              content: lastMessage.content,
+              created_at: lastMessage.created_at,
+              is_own: lastMessage.sender_id === userId,
+            }
+          : null,
         unread_count: unreadCount,
         last_message_at: conv.last_message_at,
       };
@@ -233,7 +249,7 @@ export const getConversations = async (req, res) => {
       res,
       HTTP_STATUS.OK,
       "Conversations retrieved",
-      formatPaginatedResponse(formattedConversations, count, page, limitNum)
+      formatPaginatedResponse(formattedConversations, count, page, limitNum),
     );
   } catch (error) {
     console.error("Get conversations error:", error);
@@ -256,14 +272,22 @@ export const getMessages = async (req, res) => {
     // Verify user is part of this conversation
     const conversation = await Conversation.findByPk(conversationId);
     if (!conversation) {
-      return errorResponse(res, HTTP_STATUS.NOT_FOUND, "Conversation not found");
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        "Conversation not found",
+      );
     }
 
     if (
       conversation.participant_one_id !== userId &&
       conversation.participant_two_id !== userId
     ) {
-      return errorResponse(res, HTTP_STATUS.FORBIDDEN, "Access denied to this conversation");
+      return errorResponse(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        "Access denied to this conversation",
+      );
     }
 
     // Build where clause
@@ -295,25 +319,27 @@ export const getMessages = async (req, res) => {
           sender_id: { [Op.ne]: userId },
           is_read: false,
         },
-      }
+      },
     );
 
     // Format messages
-    const formattedMessages = messages.map((msg) => ({
-      message_id: msg.message_id,
-      content: msg.content,
-      message_type: msg.message_type,
-      is_own: msg.sender_id === userId,
-      sender: msg.Sender,
-      is_read: msg.is_read,
-      created_at: msg.created_at,
-    })).reverse(); // Reverse to get chronological order
+    const formattedMessages = messages
+      .map((msg) => ({
+        message_id: msg.message_id,
+        content: msg.content,
+        message_type: msg.message_type,
+        is_own: msg.sender_id === userId,
+        sender: msg.Sender,
+        is_read: msg.is_read,
+        created_at: msg.created_at,
+      }))
+      .reverse(); // Reverse to get chronological order
 
     return successResponse(
       res,
       HTTP_STATUS.OK,
       "Messages retrieved",
-      formatPaginatedResponse(formattedMessages, count, page, limitNum)
+      formatPaginatedResponse(formattedMessages, count, page, limitNum),
     );
   } catch (error) {
     console.error("Get messages error:", error);
@@ -333,20 +359,32 @@ export const sendMessage = async (req, res) => {
     const userId = req.user.id;
 
     if (!content || !content.trim()) {
-      return errorResponse(res, HTTP_STATUS.BAD_REQUEST, "Message content is required");
+      return errorResponse(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        "Message content is required",
+      );
     }
 
     // Verify user is part of this conversation
     const conversation = await Conversation.findByPk(conversationId);
     if (!conversation) {
-      return errorResponse(res, HTTP_STATUS.NOT_FOUND, "Conversation not found");
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        "Conversation not found",
+      );
     }
 
     if (
       conversation.participant_one_id !== userId &&
       conversation.participant_two_id !== userId
     ) {
-      return errorResponse(res, HTTP_STATUS.FORBIDDEN, "Access denied to this conversation");
+      return errorResponse(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        "Access denied to this conversation",
+      );
     }
 
     // Create the message
@@ -376,9 +414,10 @@ export const sendMessage = async (req, res) => {
     };
 
     // Get the recipient ID for socket notification
-    const recipientId = conversation.participant_one_id === userId
-      ? conversation.participant_two_id
-      : conversation.participant_one_id;
+    const recipientId =
+      conversation.participant_one_id === userId
+        ? conversation.participant_two_id
+        : conversation.participant_one_id;
 
     return successResponse(res, HTTP_STATUS.CREATED, "Message sent", {
       message: responseMessage,
@@ -521,11 +560,13 @@ export const getChatContacts = async (req, res) => {
       contacts = contacts.filter(
         (c) =>
           c.full_name.toLowerCase().includes(searchLower) ||
-          c.email.toLowerCase().includes(searchLower)
+          c.email.toLowerCase().includes(searchLower),
       );
     }
 
-    return successResponse(res, HTTP_STATUS.OK, "Contacts retrieved", { contacts });
+    return successResponse(res, HTTP_STATUS.OK, "Contacts retrieved", {
+      contacts,
+    });
   } catch (error) {
     console.error("Get contacts error:", error);
     return errorResponse(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
@@ -545,14 +586,22 @@ export const markAsRead = async (req, res) => {
     // Verify user is part of this conversation
     const conversation = await Conversation.findByPk(conversationId);
     if (!conversation) {
-      return errorResponse(res, HTTP_STATUS.NOT_FOUND, "Conversation not found");
+      return errorResponse(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        "Conversation not found",
+      );
     }
 
     if (
       conversation.participant_one_id !== userId &&
       conversation.participant_two_id !== userId
     ) {
-      return errorResponse(res, HTTP_STATUS.FORBIDDEN, "Access denied to this conversation");
+      return errorResponse(
+        res,
+        HTTP_STATUS.FORBIDDEN,
+        "Access denied to this conversation",
+      );
     }
 
     // Mark all messages from other user as read
@@ -564,7 +613,7 @@ export const markAsRead = async (req, res) => {
           sender_id: { [Op.ne]: userId },
           is_read: false,
         },
-      }
+      },
     );
 
     return successResponse(res, HTTP_STATUS.OK, "Messages marked as read", {
