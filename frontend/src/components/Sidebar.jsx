@@ -38,7 +38,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    if (!isAuthenticated || !["Doctor", "Patient"].includes(user?.role)) return;
+    if (!isAuthenticated) return;
 
     const token = localStorage.getItem("accessToken");
     if (!token) return;
@@ -93,7 +93,7 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
         path: "/patient/prescriptions",
         icon: Tablet,
       },
-      { label: "Emergency Hub", path: "/emergency", icon: Activity },
+      { label: "Emergency", path: "/emergency", icon: Activity },
     ],
 
     Doctor: [
@@ -330,8 +330,8 @@ const Sidebar = ({ isOpen, onClose, isMinimized, onToggleMinimize }) => {
             );
           })}
 
-          {/* Chat in main menu for Doctor/Patient */}
-          {(user?.role === "Doctor" || user?.role === "Patient") && (
+          {/* Chat in main menu */}
+          {isAuthenticated && (
             <Link
               to="/chat"
               onClick={onClose}
