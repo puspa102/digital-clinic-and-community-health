@@ -37,7 +37,7 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
             <img
               src={logo}
               alt="Digital Clinic"
-              className="w-12 h-12 shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform bg-white rounded-xl p-1"
+              className="w-12 h-12 shadow-lg shadow-teal-500/30 group-hover:scale-110 transition-transform duration-300 bg-white rounded-xl p-1"
             />
             <div>
               <h1
@@ -50,8 +50,8 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
               <p
                 className={`text-[10px] font-medium tracking-wider uppercase transition-colors ${
                   scrolled
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-blue-200"
+                    ? "text-teal-600 dark:text-teal-400"
+                    : "text-teal-200"
                 }`}
               >
                 Community Health
@@ -65,9 +65,9 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
               <a
                 key={link.name}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-blue-500 ${
+                className={`text-sm font-medium transition-colors hover:text-teal-400 ${
                   scrolled
-                    ? "text-gray-600 dark:text-gray-300"
+                    ? "text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400"
                     : "text-gray-200 hover:text-white"
                 }`}
               >
@@ -93,7 +93,7 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
-                className="px-5 py-2.5 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
+                className="px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-teal-600 to-teal-500 text-white rounded-xl hover:from-teal-700 hover:to-teal-600 transition-all duration-300 shadow-lg shadow-teal-500/30 hover:shadow-teal-500/50 hover:-translate-y-0.5"
               >
                 Dashboard
               </Link>
@@ -103,15 +103,15 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
                   to="/login"
                   className={`px-4 py-2 text-sm font-medium transition-colors ${
                     scrolled
-                      ? "text-gray-700 dark:text-gray-200 hover:text-blue-600"
-                      : "text-white hover:text-blue-200"
+                      ? "text-gray-700 dark:text-gray-200 hover:text-teal-600 dark:hover:text-teal-400"
+                      : "text-white hover:text-teal-200"
                   }`}
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="px-5 py-2.5 text-sm font-semibold bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-colors shadow-lg"
+                  className="px-5 py-2.5 text-sm font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl hover:from-teal-600 hover:to-cyan-600 transition-all duration-300 shadow-lg shadow-teal-500/30 hover:shadow-teal-500/50 hover:-translate-y-0.5"
                 >
                   Get Started
                 </Link>
@@ -166,7 +166,7 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
           {isAuthenticated ? (
             <Link
               to="/dashboard"
-              className="w-full py-3 text-center text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+              className="w-full py-3 text-center text-sm font-semibold bg-gradient-to-r from-teal-600 to-teal-500 text-white rounded-xl hover:from-teal-700 hover:to-teal-600 transition-all duration-300 shadow-lg shadow-teal-500/30"
             >
               Go to Dashboard
             </Link>
@@ -174,13 +174,13 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
             <div className="flex flex-col gap-3">
               <Link
                 to="/login"
-                className="w-full py-3 text-center text-sm font-medium text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="w-full py-3 text-center text-sm font-medium text-teal-600 dark:text-teal-400 border-2 border-teal-200 dark:border-teal-700/50 rounded-xl hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
               >
                 Sign In
               </Link>
               <Link
                 to="/register"
-                className="w-full py-3 text-center text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+                className="w-full py-3 text-center text-sm font-semibold bg-gradient-to-r from-teal-600 to-cyan-500 text-white rounded-xl hover:from-teal-700 hover:to-cyan-600 transition-all duration-300 shadow-lg shadow-teal-500/30"
               >
                 Get Started
               </Link>

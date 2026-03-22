@@ -6,17 +6,22 @@ import {
   ChevronRight,
   PlayCircle,
   Activity,
+  Sparkles,
+  Heart,
+  Zap,
+  Shield,
 } from "lucide-react";
 
 const slides = [
   {
     id: 1,
     image:
-      "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1964&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1758691462126-2ee47c8bf9e7?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     title: "Modern Healthcare",
     highlight: "At Your Fingertips",
     description:
       "Connect seamlessly with top doctors, manage your prescriptions, and access pharmacy services instantly. Experience the future of medical care today.",
+    icon: Heart,
     primaryCta: { text: "Get Started", link: "/register" },
     secondaryCta: { text: "Watch Demo", link: "#how-it-works" },
   },
@@ -28,6 +33,7 @@ const slides = [
     highlight: "Available 24/7",
     description:
       "Consult with specialized healthcare professionals from the comfort of your home. Video consultations, chat support, and more.",
+    icon: Activity,
     primaryCta: { text: "Find a Doctor", link: "/register" },
     secondaryCta: { text: "Our Specialists", link: "#features" },
   },
@@ -39,164 +45,241 @@ const slides = [
     highlight: "Delivered Fast",
     description:
       "Order medicines online and get them delivered to your doorstep quickly and securely. Digital prescriptions made easy.",
+    icon: Zap,
     primaryCta: { text: "Order Medicines", link: "/register" },
     secondaryCta: { text: "View Pharmacies", link: "#how-it-works" },
+  },
+  {
+    id: 4,
+    image:
+      "https://images.unsplash.com/photo-1633488781325-d36e6818d0c8?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    title: "Health Records",
+    highlight: "Always Secure",
+    description:
+      "Keep your complete medical history secure and accessible. Manage your health records, test results, prescriptions, and medical documents in one encrypted vault.",
+    icon: Shield,
+    primaryCta: { text: "View Records", link: "/register" },
+    secondaryCta: { text: "Learn More", link: "#features" },
   },
 ];
 
 const Hero = ({ isVisible }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
 
-  // Auto-play logic
   useEffect(() => {
+    if (!autoPlay) return;
+
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    }, 6000); // Change slide every 6 seconds
+    }, 6000);
+
     return () => clearInterval(timer);
-  }, []);
+  }, [autoPlay]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+    setAutoPlay(false);
   };
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+    setAutoPlay(false);
+  };
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+    setAutoPlay(false);
   };
 
   return (
-    <section className="relative h-[600px] lg:h-[750px] w-full overflow-hidden bg-gray-900">
-      {slides.map((slide, index) => (
-        <div
-          key={slide.id}
-          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-            index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
-          }`}
-        >
-          {/* Background Image */}
-          <div className="absolute inset-0">
-            <img
-              src={slide.image}
-              alt={slide.title}
-              className={`w-full h-full object-cover transition-transform duration-[6000ms] ease-linear ${
-                index === currentSlide ? "scale-105" : "scale-100"
-              }`}
-            />
-            {/* Overlay Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent dark:from-black/90 dark:via-gray-900/60"></div>
-          </div>
+    <section className="relative w-full overflow-hidden bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 min-h-screen flex items-center">
+      {/* Animated Background Gradients */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl opacity-40 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl opacity-40 animate-pulse"></div>
+      </div>
 
-          {/* Content Overlay */}
-          <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
-            <div
-              className={`max-w-3xl transition-all duration-1000 delay-300 ${
-                isVisible && index === currentSlide
-                  ? "translate-y-0 opacity-100"
-                  : "translate-y-10 opacity-0"
-              }`}
-            >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm font-semibold mb-6 backdrop-blur-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                </span>
-                #1 Digital Health Platform
-              </div>
+      {/* Slides Container */}
+      {slides.map((slide, index) => {
+        const SlideIcon = slide.icon;
+        const isActive = index === currentSlide;
 
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-tight tracking-tight mb-6 drop-shadow-lg">
-                {slide.title} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
-                  {slide.highlight}
-                </span>
-              </h1>
+        return (
+          <div
+            key={slide.id}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              isActive
+                ? "opacity-100 z-10"
+                : "opacity-0 z-0 pointer-events-none"
+            }`}
+          >
+            {/* Background Image with Overlay */}
+            <div className="absolute inset-0">
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className={`w-full h-full object-cover transition-transform duration-[6000ms] ease-linear ${
+                  isActive ? "scale-110" : "scale-100"
+                }`}
+              />
+              {/* Premium Gradient Overlays */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/90"></div>
+            </div>
 
-              <p className="text-lg sm:text-xl text-gray-200 mb-8 max-w-2xl leading-relaxed drop-shadow-md">
-                {slide.description}
-              </p>
+            {/* Content Container */}
+            <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
+              <div
+                className={`max-w-3xl w-full transition-all duration-1000 delay-300 ${
+                  isVisible && isActive
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-10 opacity-0"
+                }`}
+              >
+                {/* Icon Badge */}
+                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500/20 to-indigo-500/20 border border-teal-400/30 backdrop-blur-md mb-6 group cursor-default">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-500 shadow-lg shadow-teal-500/50">
+                    <SlideIcon size={18} className="text-white" />
+                  </div>
+                  <span className="text-sm font-semibold text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-indigo-300">
+                    Healthcare Innovation
+                  </span>
+                  <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse ml-auto"></div>
+                </div>
 
-              <div className="flex flex-col sm:flex-row items-start gap-4">
-                <Link
-                  to={slide.primaryCta.link}
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1"
-                >
-                  {slide.primaryCta.text}
-                  <ArrowRight size={18} />
-                </Link>
-                <a
-                  href={slide.secondaryCta.link}
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold rounded-xl backdrop-blur-md transition-all"
-                >
-                  <PlayCircle size={18} />
-                  {slide.secondaryCta.text}
-                </a>
+                {/* Main Title */}
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight tracking-tight mb-6 text-white drop-shadow-2xl">
+                  {slide.title} <br className="hidden sm:block" />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-300 to-indigo-400">
+                    {slide.highlight}
+                  </span>
+                </h1>
+
+                {/* Description */}
+                <p className="text-xl sm:text-2xl text-slate-200 mb-10 max-w-2xl leading-relaxed drop-shadow-lg font-light">
+                  {slide.description}
+                </p>
+
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row items-start gap-5 mb-10">
+                  <Link
+                    to={slide.primaryCta.link}
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-teal-500/40 hover:shadow-teal-500/60 transition-all duration-300 hover:-translate-y-1 group"
+                  >
+                    {slide.primaryCta.text}
+                    <ArrowRight
+                      size={20}
+                      className="group-hover:translate-x-1 transition-transform"
+                    />
+                  </Link>
+                  <a
+                    href={slide.secondaryCta.link}
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/40 text-white font-bold rounded-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 group"
+                  >
+                    <PlayCircle size={20} />
+                    {slide.secondaryCta.text}
+                  </a>
+                </div>
+
+                {/* Stats Row */}
+                <div className="flex flex-wrap gap-6 text-slate-300 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-teal-400"></div>
+                    <span>Trusted by 10k+ users</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
+                    <span>500+ verified doctors</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+                    <span>24/7 support available</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Navigation Controls */}
       <div className="absolute bottom-8 left-0 right-0 z-30 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Dots */}
+          {/* Slide Indicators */}
           <div className="flex gap-3">
             {slides.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
+                onClick={() => goToSlide(index)}
+                className={`h-1.5 rounded-full transition-all duration-500 backdrop-blur-sm ${
                   index === currentSlide
-                    ? "bg-blue-500 w-8"
-                    : "bg-white/40 w-2 hover:bg-white/60"
+                    ? "bg-gradient-to-r from-teal-400 to-indigo-400 w-8 shadow-lg shadow-teal-400/50"
+                    : "bg-white/30 w-2 hover:bg-white/50"
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}
           </div>
 
-          {/* Arrows */}
-          <div className="flex gap-2">
+          {/* Navigation Arrows */}
+          <div className="flex gap-3">
             <button
               onClick={prevSlide}
-              className="p-3 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-sm border border-white/10 transition-all hover:scale-110"
+              className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all duration-300 hover:scale-110 active:scale-95 group"
               aria-label="Previous slide"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft
+                size={24}
+                className="group-hover:-translate-x-1 transition-transform"
+              />
             </button>
             <button
               onClick={nextSlide}
-              className="p-3 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-sm border border-white/10 transition-all hover:scale-110"
+              className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all duration-300 hover:scale-110 active:scale-95 group"
               aria-label="Next slide"
             >
-              <ChevronRight size={24} />
+              <ChevronRight
+                size={24}
+                className="group-hover:translate-x-1 transition-transform"
+              />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Stats Strip Overlay (Optional decoration) */}
-      <div className="absolute bottom-0 right-0 z-20 hidden lg:block p-8">
-        <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex gap-8 text-white">
-          <div>
-            <div className="flex items-center gap-2 text-blue-400 mb-1">
-              <Activity size={16} />
-              <span className="text-xs font-bold uppercase tracking-wider">
-                Status
-              </span>
+      {/* Floating Stats Card (Right Side) */}
+      <div className="absolute top-1/3 right-8 z-20 hidden lg:block animate-float">
+        <div className="bg-white/10 dark:bg-slate-800/50 backdrop-blur-xl border border-white/20 dark:border-slate-700/30 rounded-2xl p-6 shadow-2xl max-w-xs">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles size={18} className="text-teal-400 animate-pulse-glow" />
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
+              System Status
+            </span>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <p className="text-white font-semibold mb-1">Operational</p>
+              <div className="w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-teal-500 to-teal-400 rounded-full w-full"></div>
+              </div>
             </div>
-            <p className="font-semibold">System Operational</p>
-          </div>
-          <div className="w-px bg-white/10"></div>
-          <div>
-            <p className="text-2xl font-bold">10k+</p>
-            <p className="text-xs text-gray-300">Active Users</p>
-          </div>
-          <div className="w-px bg-white/10"></div>
-          <div>
-            <p className="text-2xl font-bold">500+</p>
-            <p className="text-xs text-gray-300">Doctors</p>
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
+              <div>
+                <p className="text-2xl font-bold text-white">10k+</p>
+                <p className="text-xs text-slate-400">Active Users</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">500+</p>
+                <p className="text-xs text-slate-400">Doctors</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Bottom Gradient Fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent z-10"></div>
     </section>
   );
 };

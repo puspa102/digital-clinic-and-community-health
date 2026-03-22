@@ -11,6 +11,7 @@ import {
   AlertCircle,
   ShieldCheck,
 } from "lucide-react";
+import logo from "../assets/logo.svg";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -161,6 +162,17 @@ const ForgotPassword = () => {
       {/* Right Side - Form */}
       <div className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-900">
         <div className="w-full max-w-md space-y-6">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-3 mb-2 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+            title="Go to Home"
+          >
+            <img src={logo} alt="Digital Clinic Logo" className="w-10 h-10" />
+            <span className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
+              Digital Clinic
+            </span>
+          </button>
+
           <div className="text-center lg:text-left">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               {step === "request" ? "Forgot Password?" : "Reset Password"}

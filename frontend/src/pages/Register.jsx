@@ -17,6 +17,7 @@ import {
   Star,
   Users,
 } from "lucide-react";
+import logo from "../assets/logo.svg";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -132,14 +133,16 @@ const Register = () => {
       {/* Left Side - Registration Form (Clean White) */}
       <div className="flex-1 flex flex-col justify-center py-8 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24 w-full lg:w-[45%] h-screen">
         <div className="mx-auto w-full max-w-sm lg:max-w-[400px]">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center justify-center w-10 h-10 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-600/20">
-              <UserPlus size={20} className="text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+            title="Go to Home"
+          >
+            <img src={logo} alt="Digital Clinic Logo" className="w-12 h-12" />
+            <span className="text-xl font-bold bg-gradient-to-r from-teal-600 to-indigo-600 bg-clip-text text-transparent hover:from-teal-700 hover:to-indigo-700 transition-all duration-300 tracking-tight">
               Digital Clinic
             </span>
-          </div>
+          </button>
 
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">

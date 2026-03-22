@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogIn, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import logo from "../assets/logo.svg";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,6 +19,10 @@ const Login = () => {
 
   // Get redirect path from location state or default to dashboard
   const from = location.state?.from?.pathname || "/dashboard";
+
+  const handleLogoClick = () => {
+    navigate("/");
+  };
 
   const validateForm = () => {
     const errors = {};
@@ -96,14 +101,16 @@ const Login = () => {
       {/* Left Side - Login Form (Clean White) */}
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24 w-full md:w-1/2 lg:w-[45%]">
         <div className="mx-auto w-full max-w-sm lg:max-w-[400px]">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20">
-              <LogIn size={20} className="text-white" />
-            </div>
+          <button
+            onClick={handleLogoClick}
+            className="flex items-center gap-3 mb-10 hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+            title="Go to Home"
+          >
+            <img src={logo} alt="Digital Clinic Logo" className="w-12 h-12" />
             <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
               Digital Clinic
             </span>
-          </div>
+          </button>
 
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
@@ -291,26 +298,29 @@ const Login = () => {
       </div>
 
       {/* Right Side - Image Frame */}
-      <div className="relative flex-1 p-6">
+      <div className="hidden lg:block relative w-0 flex-1 p-6">
         <div className="relative h-full w-full overflow-hidden rounded-[2.5rem] shadow-2xl">
           <img
             className="absolute inset-0 h-full w-full object-cover"
-            src="https://images.unsplash.com/photo-3CAX6wGhwQA?q=80&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3"
+            src="https://images.unsplash.com/photo-1675270548942-b03f0672e708?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OTN8fGZlbWFsZSUyMGRvY3RvcnxlbnwwfHwwfHx8Mg%3D%3D"
             alt="Professional Female Doctor"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-transparent to-transparent"></div>
+
           <div className="absolute bottom-0 left-0 right-0 p-12 text-white">
             <div className="max-w-md">
-              <div className="flex gap-1 mb-4">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <svg
-                    key={i}
-                    className="w-5 h-5 text-yellow-400 fill-current"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
+              <div className="flex gap-4 mb-6">
+                <div className="flex -space-x-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`w-10 h-10 rounded-full border-2 border-blue-900 bg-blue-${
+                        i * 100 + 100
+                      }`}
+                    ></div>
+                  ))}
+                </div>
+                <div className="flex items-center font-bold">10k+ Patients</div>
               </div>
               <h3 className="text-2xl font-bold mb-2">
                 Top-tier healthcare management.
