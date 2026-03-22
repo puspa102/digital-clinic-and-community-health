@@ -11,12 +11,22 @@ import {
 } from "lucide-react";
 import api, { handleApiError } from "../../services/api";
 
-const DoctorStatsCard = ({ title, value, subtitle, icon: Icon, color, trend }) => {
+const DoctorStatsCard = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  color,
+  trend,
+}) => {
   const colorClasses = {
     blue: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
-    green: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
-    purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
-    orange: "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
+    green:
+      "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
+    purple:
+      "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
+    orange:
+      "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400",
     red: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
     cyan: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
   };
@@ -37,15 +47,21 @@ const DoctorStatsCard = ({ title, value, subtitle, icon: Icon, color, trend }) =
             </p>
           )}
           {trend !== undefined && (
-            <div className={`flex items-center gap-1 mt-2 text-xs ${
-              trend >= 0 ? "text-green-600" : "text-red-600"
-            }`}>
-              <TrendingUp className={`w-3 h-3 ${trend < 0 ? "rotate-180" : ""}`} />
+            <div
+              className={`flex items-center gap-1 mt-2 text-xs ${
+                trend >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              <TrendingUp
+                className={`w-3 h-3 ${trend < 0 ? "rotate-180" : ""}`}
+              />
               <span>{Math.abs(trend)}% from last week</span>
             </div>
           )}
         </div>
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
+        <div
+          className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}
+        >
           <Icon className="w-6 h-6" />
         </div>
       </div>
@@ -175,29 +191,35 @@ const DoctorDashboardStats = () => {
           Appointment Status Overview
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          {stats.statusBreakdown && Object.entries(stats.statusBreakdown).map(([status, count]) => {
-            const statusConfig = {
-              requested: { label: "Requested", color: "bg-gray-500" },
-              assigned: { label: "Assigned", color: "bg-blue-500" },
-              confirmed: { label: "Confirmed", color: "bg-green-500" },
-              completed: { label: "Completed", color: "bg-purple-500" },
-              cancelled: { label: "Cancelled", color: "bg-red-500" },
-              no_show: { label: "No Show", color: "bg-orange-500" },
-            };
-            const config = statusConfig[status] || { label: status, color: "bg-gray-500" };
+          {stats.statusBreakdown &&
+            Object.entries(stats.statusBreakdown).map(([status, count]) => {
+              const statusConfig = {
+                requested: { label: "Requested", color: "bg-gray-500" },
+                assigned: { label: "Assigned", color: "bg-blue-500" },
+                confirmed: { label: "Confirmed", color: "bg-green-500" },
+                completed: { label: "Completed", color: "bg-purple-500" },
+                cancelled: { label: "Cancelled", color: "bg-red-500" },
+                no_show: { label: "No Show", color: "bg-orange-500" },
+              };
+              const config = statusConfig[status] || {
+                label: status,
+                color: "bg-gray-500",
+              };
 
-            return (
-              <div key={status} className="text-center">
-                <div className={`w-full h-2 ${config.color} rounded-full mb-2`} />
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {count}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {config.label}
-                </p>
-              </div>
-            );
-          })}
+              return (
+                <div key={status} className="text-center">
+                  <div
+                    className={`w-full h-2 ${config.color} rounded-full mb-2`}
+                  />
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {count}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {config.label}
+                  </p>
+                </div>
+              );
+            })}
         </div>
       </div>
 
@@ -209,13 +231,17 @@ const DoctorDashboardStats = () => {
           </h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600 dark:text-gray-400">Total Appointments</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Total Appointments
+              </span>
               <span className="font-semibold text-gray-900 dark:text-white">
                 {stats.thisWeekAppointments}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600 dark:text-gray-400">Completed</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Completed
+              </span>
               <span className="font-semibold text-green-600 dark:text-green-400">
                 {stats.thisWeekCompleted}
               </span>
@@ -235,13 +261,17 @@ const DoctorDashboardStats = () => {
           </h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600 dark:text-gray-400">Total Appointments</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Total Appointments
+              </span>
               <span className="font-semibold text-gray-900 dark:text-white">
                 {stats.thisMonthAppointments}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600 dark:text-gray-400">Completed</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Completed
+              </span>
               <span className="font-semibold text-green-600 dark:text-green-400">
                 {stats.thisMonthCompleted}
               </span>

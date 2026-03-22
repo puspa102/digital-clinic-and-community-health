@@ -1,6 +1,6 @@
 import { Star, Quote } from "lucide-react";
 
-const Testimonials = () => {
+const Reviews = () => {
   const testimonials = [
     {
       name: "Dr. Sarah Johnson",
@@ -45,7 +45,7 @@ const Testimonials = () => {
 
   return (
     <section
-      id="testimonials"
+      id="reviews"
       className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-950 relative overflow-hidden"
     >
       {/* Background decorative elements */}
@@ -59,15 +59,15 @@ const Testimonials = () => {
         <div className="text-center max-w-3xl mx-auto mb-16 animate-in fade-in duration-500">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-100 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-700/50 mb-6">
             <span className="text-sm font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300">
-              ⭐ Real Testimonials
+               Real Reviews
             </span>
           </div>
           <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
             Loved by Thousands
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            Hear from the doctors, patients, and pharmacy partners who trust
-            Digital Clinic daily
+            Hear what doctors, patients, and pharmacy partners say about Digital
+            Clinic
           </p>
         </div>
 
@@ -139,4 +139,4 @@ const Testimonials = () => {
   );
 };
 
-export default Testimonials;
+export default Reviews;

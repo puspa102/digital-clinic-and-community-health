@@ -18,8 +18,7 @@ const HomeNavbar = ({ isDark, toggleTheme, isAuthenticated }) => {
   const navLinks = [
     { name: "Features", href: "#features" },
     { name: "How it Works", href: "#how-it-works" },
-    { name: "Testimonials", href: "#testimonials" },
-    { name: "Contact", href: "#contact" },
+    { name: "Reviews", href: "#reviews" },
   ];
 
   return (

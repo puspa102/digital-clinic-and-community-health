@@ -182,7 +182,7 @@ const Features = () => {
         <div className="text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-100 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-700/50 mb-6">
             <span className="text-sm font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300">
-              ✨ Premium Features
+               Premium Features
             </span>
           </div>
           <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
