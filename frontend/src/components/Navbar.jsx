@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -30,6 +31,8 @@ import {
   Users,
   Package,
   ChevronDown,
+  MessageSquare,
+  Activity,
 } from "lucide-react";
 
 const Navbar = ({ onMenuClick }) => {
@@ -381,7 +384,71 @@ const Navbar = ({ onMenuClick }) => {
       fetchNotifications();
       // Refresh notifications every 60 seconds
       const interval = setInterval(fetchNotifications, 60000);
-      return () => clearInterval(interval);
+
+      const token = localStorage.getItem("accessToken");
+      let socket = null;
+      if (token) {
+        const SOCKET_URL =
+          import.meta.env.VITE_API_URL?.replace("/api", "") ||
+          "http://localhost:5000";
+        socket = io(SOCKET_URL, {
+          auth: { token },
+          transports: ["websocket", "polling"],
+        });
+
+        socket.on("message_notification", (data) => {
+          setNotifications((prev) => {
+            const senderName = data.message?.sender?.full_name || "Someone";
+            const contentSnippet = data.message?.content
+              ? data.message.content.length > 30
+                ? data.message.content.substring(0, 30) + "..."
+                : data.message.content
+              : "sent you a message";
+
+            const newNotif = {
+              id: `msg-${Date.now()}`,
+              type: "message",
+              title: `New Message from ${senderName}`,
+              message: contentSnippet,
+              time: new Date().toISOString(),
+              icon: MessageSquare,
+              color: "blue",
+              link: "/chat",
+            };
+            setUnseenCount((c) => c + 1);
+            return [newNotif, ...prev];
+          });
+        });
+
+        socket.on("new_emergency", (data) => {
+          setNotifications((prev) => {
+            const emergencyType = data.emergency_type || "Emergency";
+            const patientName = data.User?.full_name
+              ? ` by ${data.User.full_name}`
+              : "";
+
+            const newNotif = {
+              id: `emg-${data.emergency_id || Date.now()}`,
+              type: "emergency",
+              title: `New ${emergencyType} Request`,
+              message: `A new ${emergencyType.toLowerCase()} emergency was reported${patientName}.`,
+              time: new Date().toISOString(),
+              icon: Activity,
+              color: "red",
+              link: "/emergency",
+            };
+            setUnseenCount((c) => c + 1);
+            return [newNotif, ...prev];
+          });
+        });
+      }
+
+      return () => {
+        clearInterval(interval);
+        if (socket) {
+          socket.disconnect();
+        }
+      };
     }
   }, [isAuthenticated, user]);
 
@@ -563,13 +630,22 @@ const Navbar = ({ onMenuClick }) => {
         });
       }
 
-      setNotifications(notifs);
+      setNotifications((prev) => {
+        // Preserve socket-based notifications
+        const socketNotifs = prev.filter(
+          (n) =>
+            String(n.id).startsWith("msg-") || String(n.id).startsWith("emg-"),
+        );
+        const combined = [...socketNotifs, ...notifs];
 
-      // Count only notifications not seen yet
-      const unseen = notifs.filter(
-        (n) => !seenNotificationIdsRef.current.has(n.id),
-      );
-      setUnseenCount(unseen.length);
+        // Count only notifications not seen yet
+        const unseen = combined.filter(
+          (n) => !seenNotificationIdsRef.current.has(n.id),
+        );
+        setUnseenCount(unseen.length);
+
+        return combined;
+      });
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     } finally {
