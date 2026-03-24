@@ -4,12 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import logo from "../assets/logo.svg";
-import api, {
-  handleApiError,
-  formatDate,
-  formatTime,
-  APPOINTMENT_STATUS,
-} from "../services/api";
+import api, { formatTime, APPOINTMENT_STATUS } from "../services/api";
 import {
   Menu,
   Search,
@@ -33,11 +28,18 @@ import {
   ChevronDown,
   MessageSquare,
   Activity,
+  LayoutDashboard,
+  FileText,
+  ShoppingBag,
+  Tablet,
+  FileCheck,
+  BarChart3,
+  HelpCircle,
 } from "lucide-react";
 
 const Navbar = ({ onMenuClick }) => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unseenCount, setUnseenCount] = useState(0);
@@ -120,7 +122,66 @@ const Navbar = ({ onMenuClick }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Debounced search
+  // Handle keyboard shortcut (Ctrl+K or Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchRef.current?.querySelector("input")?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const getDashboardFeatures = () => {
+    if (!user) return [];
+    const role = user.role;
+    
+    const features = {
+      Patient: [
+        { title: "Health Dashboard", subtitle: "Overview of your health", link: "/patient/dashboard", icon: LayoutDashboard, color: "blue" },
+        { title: "Book Pharmacy", subtitle: "Find and book pharmacies", link: "/patient/pharmacies", icon: Search, color: "teal" },
+        { title: "My Appointments", subtitle: "View scheduled visits", link: "/patient/appointments", icon: Calendar, color: "purple" },
+        { title: "My Prescriptions", subtitle: "View your medications", link: "/patient/prescriptions", icon: Tablet, color: "green" },
+        { title: "Emergency Hub", subtitle: "Get immediate help", link: "/emergency", icon: Activity, color: "red" },
+      ],
+      Doctor: [
+        { title: "Doctor Dashboard", subtitle: "Practice overview", link: "/doctor/dashboard", icon: LayoutDashboard, color: "blue" },
+        { title: "Manage Appointments", subtitle: "Your daily schedule", link: "/doctor/appointments", icon: Calendar, color: "purple" },
+        { title: "My Patients", subtitle: "Patient health records", link: "/doctor/patients", icon: Users, color: "green" },
+        { title: "Set Schedule", subtitle: "Availability settings", link: "/doctor/schedule", icon: Clock, color: "teal" },
+        { title: "Issue Prescriptions", subtitle: "Create new prescriptions", link: "/doctor/prescriptions", icon: FileCheck, color: "orange" },
+      ],
+      Admin: [
+        { title: "Admin Dashboard", subtitle: "Platform statistics", link: "/admin/dashboard", icon: LayoutDashboard, color: "purple" },
+        { title: "Verify Users", subtitle: "Manage user accounts", link: "/admin/users", icon: Users, color: "blue" },
+        { title: "Verify Doctors", subtitle: "Approve medical staff", link: "/admin/doctors", icon: CheckCircle, color: "green" },
+        { title: "Platform Appointments", subtitle: "View all bookings", link: "/admin/appointments", icon: Calendar, color: "orange" },
+        { title: "Manage Pharmacies", subtitle: "Partner pharmacies", link: "/admin/pharmacies", icon: ShoppingBag, color: "teal" },
+        { title: "System Reports", subtitle: "Analytics and logs", link: "/admin/reports", icon: BarChart3, color: "red" },
+      ],
+      Pharmacy: [
+        { title: "Pharmacy Dashboard", subtitle: "Business overview", link: "/pharmacy/dashboard", icon: LayoutDashboard, color: "orange" },
+        { title: "View Appointments", subtitle: "Pharmacy schedule", link: "/pharmacy/appointments", icon: Calendar, color: "blue" },
+        { title: "Partner Doctors", subtitle: "Collaborating staff", link: "/pharmacy/doctors", icon: Users, color: "teal" },
+        { title: "Inventory Management", subtitle: "Stock and pricing", link: "/pharmacy/inventory", icon: Package, color: "green" },
+        { title: "Order Tracking", subtitle: "Manage patient orders", link: "/pharmacy/orders", icon: ShoppingBag, color: "purple" },
+        { title: "Pharmacy Reports", subtitle: "Sales analytics", link: "/pharmacy/reports", icon: BarChart3, color: "red" },
+      ],
+    };
+
+    const common = [
+      { title: "My Profile", subtitle: "Account and security", link: `/${role.toLowerCase()}/profile`, icon: User, color: "gray" },
+      { title: "Messaging Center", subtitle: "Chat with others", link: "/chat", icon: MessageSquare, color: "blue" },
+      { title: "Account Settings", subtitle: "Preferences", link: `/${role.toLowerCase()}/settings`, icon: Settings, color: "gray" },
+      { title: "Help & Support", subtitle: "Get assistance", link: "#", icon: HelpCircle, color: "gray" },
+    ];
+
+    return [...(features[role] || []), ...common];
+  };
+
+  // Simple global search for doctors, pharmacies and dashboard features
   const handleSearch = async (query) => {
     if (!query.trim() || query.length < 2) {
       setSearchResults([]);
@@ -133,204 +194,88 @@ const Navbar = ({ onMenuClick }) => {
     const results = [];
 
     try {
-      const searchLower = query.toLowerCase();
+      // Add dashboard feature results
+      const features = getDashboardFeatures();
+      const matchedFeatures = features
+        .filter(
+          (f) =>
+            f.title.toLowerCase().includes(query.toLowerCase()) ||
+            f.subtitle.toLowerCase().includes(query.toLowerCase()),
+        )
+        .map((f) => ({
+          id: `feat-${f.link}`,
+          type: "feature",
+          title: f.title,
+          subtitle: f.subtitle,
+          icon: f.icon,
+          color: f.color || "blue",
+          link: f.link,
+        }));
 
-      if (user?.role === "Patient") {
-        // Search doctors
-        const doctorsRes = await api.get("/doctors").catch(() => null);
-        if (doctorsRes?.data?.data) {
-          doctorsRes.data.data
-            .filter(
-              (d) =>
-                d.User?.name?.toLowerCase().includes(searchLower) ||
-                d.specialization?.toLowerCase().includes(searchLower),
-            )
-            .slice(0, 5)
-            .forEach((doc) => {
-              results.push({
-                id: `doc-${doc.doctor_id}`,
-                type: "doctor",
-                title: doc.User?.name || "Doctor",
-                subtitle: doc.specialization,
-                icon: Stethoscope,
-                color: "green",
-                link: `/patient/doctors?search=${encodeURIComponent(doc.User?.name || "")}`,
-              });
-            });
-        }
+      // Search doctors using dedicated search endpoint
+      try {
+        const doctorsRes = await api.get("/doctors/search", {
+          params: { q: query },
+        });
 
-        // Search pharmacies
-        const pharmaciesRes = await api.get("/pharmacies").catch(() => null);
-        if (pharmaciesRes?.data?.data) {
-          pharmaciesRes.data.data
-            .filter(
-              (p) =>
-                p.name?.toLowerCase().includes(searchLower) ||
-                p.address?.toLowerCase().includes(searchLower),
-            )
-            .slice(0, 5)
-            .forEach((pharm) => {
-              results.push({
-                id: `pharm-${pharm.pharmacy_id}`,
-                type: "pharmacy",
-                title: pharm.name,
-                subtitle: pharm.address,
-                icon: Building2,
-                color: "teal",
-                link: "/patient/pharmacies",
-              });
+        if (
+          doctorsRes &&
+          doctorsRes.data &&
+          Array.isArray(doctorsRes.data.data)
+        ) {
+          const doctors = doctorsRes.data.data;
+          doctors.forEach((doc) => {
+            const doctorName = doc.User?.full_name || doc.full_name || "Doctor";
+            const specialization = doc.specialization || "";
+
+            results.push({
+              id: `doc-${doc.doctor_id}`,
+              type: "doctor",
+              title: doctorName,
+              subtitle: specialization,
+              icon: Stethoscope,
+              color: "green",
+              link: "/doctors",
             });
-        }
-      } else if (user?.role === "Doctor") {
-        // Search patients (from appointments)
-        const appointmentsRes = await api
-          .get("/appointments/doctor/me")
-          .catch(() => null);
-        if (appointmentsRes?.data?.data) {
-          const uniquePatients = new Map();
-          appointmentsRes.data.data.forEach((apt) => {
-            if (apt.User && !uniquePatients.has(apt.User.user_id)) {
-              if (
-                apt.User.name?.toLowerCase().includes(searchLower) ||
-                apt.User.email?.toLowerCase().includes(searchLower)
-              ) {
-                uniquePatients.set(apt.User.user_id, apt.User);
-              }
-            }
           });
-          Array.from(uniquePatients.values())
-            .slice(0, 5)
-            .forEach((patient) => {
-              results.push({
-                id: `patient-${patient.user_id}`,
-                type: "patient",
-                title: patient.name,
-                subtitle: patient.email,
-                icon: Users,
-                color: "blue",
-                link: "/doctor/patients",
-              });
-            });
         }
-      } else if (user?.role === "Pharmacy") {
-        // Search inventory
-        const inventoryRes = await api.get("/inventory").catch(() => null);
-        if (inventoryRes?.data?.data) {
-          inventoryRes.data.data
-            .filter(
-              (item) =>
-                item.medicine_name?.toLowerCase().includes(searchLower) ||
-                item.category?.toLowerCase().includes(searchLower),
-            )
-            .slice(0, 5)
-            .forEach((item) => {
-              results.push({
-                id: `inv-${item.inventory_id}`,
-                type: "inventory",
-                title: item.medicine_name,
-                subtitle: `${item.quantity} ${item.unit} - रु ${item.price}`,
-                icon: Package,
-                color: "orange",
-                link: "/pharmacy/inventory",
-              });
-            });
-        }
-
-        // Search doctors
-        const doctorsRes = await api.get("/doctors").catch(() => null);
-        if (doctorsRes?.data?.data) {
-          doctorsRes.data.data
-            .filter(
-              (d) =>
-                d.User?.name?.toLowerCase().includes(searchLower) ||
-                d.specialization?.toLowerCase().includes(searchLower),
-            )
-            .slice(0, 3)
-            .forEach((doc) => {
-              results.push({
-                id: `doc-${doc.doctor_id}`,
-                type: "doctor",
-                title: doc.User?.name || "Doctor",
-                subtitle: doc.specialization,
-                icon: Stethoscope,
-                color: "green",
-                link: "/pharmacy/doctors",
-              });
-            });
-        }
-      } else if (user?.role === "Admin") {
-        // Search users
-        const usersRes = await api.get("/auth/users").catch(() => null);
-        if (usersRes?.data?.data) {
-          usersRes.data.data
-            .filter(
-              (u) =>
-                u.name?.toLowerCase().includes(searchLower) ||
-                u.email?.toLowerCase().includes(searchLower) ||
-                u.role?.toLowerCase().includes(searchLower),
-            )
-            .slice(0, 5)
-            .forEach((usr) => {
-              results.push({
-                id: `user-${usr.user_id}`,
-                type: "user",
-                title: usr.name,
-                subtitle: `${usr.role} - ${usr.email}`,
-                icon: Users,
-                color: "purple",
-                link: "/admin/users",
-              });
-            });
-        }
-
-        // Search doctors
-        const doctorsRes = await api.get("/doctors").catch(() => null);
-        if (doctorsRes?.data?.data) {
-          doctorsRes.data.data
-            .filter(
-              (d) =>
-                d.User?.name?.toLowerCase().includes(searchLower) ||
-                d.specialization?.toLowerCase().includes(searchLower),
-            )
-            .slice(0, 3)
-            .forEach((doc) => {
-              results.push({
-                id: `doc-${doc.doctor_id}`,
-                type: "doctor",
-                title: doc.User?.name || "Doctor",
-                subtitle: doc.specialization,
-                icon: Stethoscope,
-                color: "green",
-                link: "/admin/doctors",
-              });
-            });
-        }
-
-        // Search pharmacies
-        const pharmaciesRes = await api.get("/pharmacies").catch(() => null);
-        if (pharmaciesRes?.data?.data) {
-          pharmaciesRes.data.data
-            .filter(
-              (p) =>
-                p.name?.toLowerCase().includes(searchLower) ||
-                p.address?.toLowerCase().includes(searchLower),
-            )
-            .slice(0, 3)
-            .forEach((pharm) => {
-              results.push({
-                id: `pharm-${pharm.pharmacy_id}`,
-                type: "pharmacy",
-                title: pharm.name,
-                subtitle: pharm.address,
-                icon: Building2,
-                color: "teal",
-                link: "/admin/pharmacies",
-              });
-            });
-        }
+      } catch (err) {
+        console.error("Error searching doctors:", err.message);
       }
 
-      setSearchResults(results);
+      // Search pharmacies using search parameter
+      try {
+        const pharmaciesRes = await api.get("/pharmacies", {
+          params: { search: query },
+        });
+
+        if (
+          pharmaciesRes &&
+          pharmaciesRes.data &&
+          Array.isArray(pharmaciesRes.data.data)
+        ) {
+          const pharmacies = pharmaciesRes.data.data;
+          pharmacies.forEach((pharm) => {
+            const pharmacyName = pharm.pharmacy_name || pharm.name || "";
+            const address = pharm.address || "";
+
+            results.push({
+              id: `pharm-${pharm.pharmacy_id}`,
+              type: "pharmacy",
+              title: pharmacyName,
+              subtitle: address,
+              icon: Building2,
+              color: "teal",
+              link: "/pharmacies",
+            });
+          });
+        }
+      } catch (err) {
+        console.error("Error searching pharmacies:", err.message);
+      }
+
+      const combinedResults = [...matchedFeatures, ...results];
+      setSearchResults(combinedResults);
     } catch (error) {
       console.error("Search error:", error);
       setSearchResults([]);
@@ -374,6 +319,8 @@ const Navbar = ({ onMenuClick }) => {
         "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
       orange:
         "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
+      red: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+      gray: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
     };
     return colors[color] || colors.blue;
   };
@@ -780,64 +727,84 @@ const Navbar = ({ onMenuClick }) => {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onFocus={() => searchQuery.length >= 2 && setShowSearch(true)}
-                placeholder="Search doctors, patients, appointments..."
-                className="w-full h-10 pl-10 pr-4 text-[13px] border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all"
+                placeholder="Search doctors, features, records..."
+                className="w-full h-10 pl-10 pr-16 text-[13px] border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 bg-gray-50/50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-300 group-focus-within:bg-white dark:group-focus-within:bg-gray-800 shadow-sm"
               />
               <Search
                 size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors"
               />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-40 group-focus-within:opacity-10 transition-opacity">
+                <kbd className="px-1.5 py-0.5 text-[10px] font-sans font-medium bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md">
+                  {navigator.platform.toUpperCase().indexOf("MAC") >= 0
+                    ? "⌘"
+                    : "Ctrl"}
+                </kbd>
+                <kbd className="px-1.5 py-0.5 text-[10px] font-sans font-medium bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md">
+                  K
+                </kbd>
+              </div>
 
               {/* Search Results Dropdown */}
               {showSearch && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-gray-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-gray-100 dark:border-gray-700/50 max-h-[450px] overflow-hidden z-50 animate-in fade-in slide-in-from-top-3 duration-300">
                   {searchLoading ? (
-                    <div className="p-6 text-center">
-                      <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
-                      <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-3">
+                    <div className="p-10 text-center">
+                      <div className="relative inline-flex mb-4">
+                        <div className="w-8 h-8 border-2 border-blue-500/20 rounded-full"></div>
+                        <div className="absolute inset-0 w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <p className="text-[14px] font-medium text-gray-600 dark:text-gray-300">
                         Searching...
                       </p>
                     </div>
                   ) : searchResults.length > 0 ? (
                     <div className="py-2">
-                      {searchResults.map((result) => {
-                        const Icon = result.icon;
-                        return (
-                          <button
-                            key={result.id}
-                            onClick={() => handleResultClick(result.link)}
-                            className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
-                          >
-                            <div
-                              className={`p-2 rounded-lg ${getResultColor(result.color)}`}
+                      <div className="px-4 py-2 border-b border-gray-50 dark:border-gray-700/50 mb-1">
+                        <h4 className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                          Search Results
+                        </h4>
+                      </div>
+                      <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                        {searchResults.map((result) => {
+                          const Icon = result.icon;
+                          return (
+                            <button
+                              key={result.id}
+                              onClick={() => handleResultClick(result.link)}
+                              className="w-full px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all text-left group/result"
                             >
-                              <Icon size={16} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-medium text-gray-900 dark:text-gray-100 truncate">
-                                {result.title}
-                              </p>
-                              <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                                {result.subtitle}
-                              </p>
-                            </div>
-                            <span className="text-[10px] px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md capitalize font-medium">
-                              {result.type}
-                            </span>
-                          </button>
-                        );
-                      })}
+                              <div
+                                className={`p-2.5 rounded-xl ${getResultColor(result.color)} group-hover/result:scale-105 transition-transform`}
+                              >
+                                <Icon size={18} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[14px] font-medium text-gray-900 dark:text-gray-100 truncate">
+                                  {result.title}
+                                </p>
+                                <p className="text-[12px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                  {result.subtitle}
+                                </p>
+                              </div>
+                              <span className="text-[10px] px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg capitalize font-bold">
+                                {result.type}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : (
-                    <div className="p-6 text-center">
-                      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Search size={18} className="text-gray-400" />
+                    <div className="p-12 text-center">
+                      <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <Search size={28} className="text-gray-300 dark:text-gray-500" />
                       </div>
-                      <p className="text-[13px] font-medium text-gray-600 dark:text-gray-300">
-                        No results found
+                      <p className="text-[15px] font-bold text-gray-700 dark:text-gray-200">
+                        No matches found
                       </p>
-                      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
-                        Try a different search term
+                      <p className="text-[12px] text-gray-400 dark:text-gray-500 mt-2 max-w-[200px] mx-auto leading-relaxed">
+                        We couldn't find anything matching your search term.
                       </p>
                     </div>
                   )}
