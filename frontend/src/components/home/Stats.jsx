@@ -7,7 +7,7 @@ const Stats = ({ counters }) => {
       value: counters.doctors,
       suffix: "+",
       icon: Stethoscope,
-      bg: "bg-gradient-to-br from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30",
+      bg: "bg-teal-50 dark:bg-teal-900/20",
       text: "text-teal-600 dark:text-teal-400",
       accent: "bg-teal-500",
       border:
@@ -18,7 +18,7 @@ const Stats = ({ counters }) => {
       value: counters.patients,
       suffix: "+",
       icon: Users,
-      bg: "bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30",
+      bg: "bg-emerald-50 dark:bg-emerald-900/20",
       text: "text-emerald-600 dark:text-emerald-400",
       accent: "bg-emerald-500",
       border:
@@ -29,7 +29,7 @@ const Stats = ({ counters }) => {
       value: counters.appointments,
       suffix: "+",
       icon: Calendar,
-      bg: "bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
       text: "text-indigo-600 dark:text-indigo-400",
       accent: "bg-indigo-500",
       border:
@@ -40,7 +40,7 @@ const Stats = ({ counters }) => {
       value: counters.pharmacies,
       suffix: "+",
       icon: Building2,
-      bg: "bg-gradient-to-br from-cyan-100 to-sky-100 dark:from-cyan-900/30 dark:to-sky-900/30",
+      bg: "bg-cyan-50 dark:bg-cyan-900/20",
       text: "text-cyan-600 dark:text-cyan-400",
       accent: "bg-cyan-500",
       border:
@@ -59,18 +59,12 @@ const Stats = ({ counters }) => {
           {statItems.map((stat, i) => (
             <div
               key={i}
-              className={`group relative overflow-hidden p-6 sm:p-8 rounded-2xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-2 ${stat.border} transition-all duration-300 hover:shadow-xl hover:shadow-${stat.accent}/20 hover:-translate-y-2 flex flex-col items-center text-center shadow-md`}
+              className={`group relative overflow-hidden p-6 sm:p-8 rounded-2xl ${stat.bg} backdrop-blur-xl border-2 ${stat.border} transition-all duration-300 hover:shadow-xl hover:-translate-y-2 flex flex-col items-center text-center shadow-md`}
             >
-              {/* Animated gradient background on hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/10 dark:to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
               {/* Icon Container */}
               <div
                 className={`relative z-10 p-4 rounded-2xl mb-6 transition-all duration-300 group-hover:scale-125 ${stat.bg}`}
               >
-                <div
-                  className={`absolute inset-0 rounded-2xl ${stat.accent}/20 blur-lg opacity-0 group-hover:opacity-100 transition-opacity`}
-                />
                 <stat.icon className={`w-8 h-8 relative z-10 ${stat.text}`} />
               </div>
 

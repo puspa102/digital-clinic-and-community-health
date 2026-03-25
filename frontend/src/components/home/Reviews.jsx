@@ -11,9 +11,10 @@ const Reviews = () => {
       rating: 5,
       image:
         "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=100&q=80",
-      color:
-        "from-teal-100 to-cyan-100 dark:from-teal-900/30 dark:to-cyan-900/30",
+      bgColor: "bg-teal-50 dark:bg-teal-900/20",
       accent: "text-teal-600 dark:text-teal-400",
+      badgeBg:
+        "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
     },
     {
       name: "Michael Chen",
@@ -24,9 +25,10 @@ const Reviews = () => {
       rating: 5,
       image:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
-      color:
-        "from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30",
+      bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
       accent: "text-emerald-600 dark:text-emerald-400",
+      badgeBg:
+        "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
     },
     {
       name: "Priya Patel",
@@ -37,9 +39,10 @@ const Reviews = () => {
       rating: 5,
       image:
         "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=100&q=80",
-      color:
-        "from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30",
+      bgColor: "bg-indigo-50 dark:bg-indigo-900/20",
       accent: "text-indigo-600 dark:text-indigo-400",
+      badgeBg:
+        "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
     },
   ];
 
@@ -59,13 +62,13 @@ const Reviews = () => {
         <div className="text-center max-w-3xl mx-auto mb-16 animate-in fade-in duration-500">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-100 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-700/50 mb-6">
             <span className="text-sm font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300">
-               Real Reviews
+              Real Reviews
             </span>
           </div>
           <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
             Loved by Thousands
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-gray-600 dark:text-gray-400 font-semibold">
             Hear what doctors, patients, and pharmacy partners say about Digital
             Clinic
           </p>
@@ -76,21 +79,16 @@ const Reviews = () => {
           {testimonials.map((item, i) => (
             <div
               key={i}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-2 border-gray-100 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-8"
+              className={`group relative overflow-hidden rounded-2xl ${item.bgColor} border-2 border-gray-100 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-8`}
               style={{ animationDelay: `${i * 100}ms` }}
             >
-              {/* Animated gradient overlay */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`}
-              />
-
               {/* Quote Icon */}
               <Quote className="absolute top-6 right-6 text-teal-200 dark:text-teal-900/30 w-12 h-12 group-hover:text-teal-300 dark:group-hover:text-teal-800/50 transition-colors" />
 
               {/* Category Badge */}
               <div className="inline-flex items-center gap-2 mb-4">
                 <span
-                  className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-gradient-to-r ${item.color} ${item.accent}`}
+                  className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${item.badgeBg}`}
                 >
                   {item.category}
                 </span>
@@ -108,7 +106,7 @@ const Reviews = () => {
               </div>
 
               {/* Testimonial Content */}
-              <p className="text-gray-700 dark:text-gray-300 mb-8 leading-relaxed relative z-10 font-medium">
+              <p className="text-gray-700 dark:text-gray-300 mb-8 leading-relaxed relative z-10 font-semibold">
                 "{item.content}"
               </p>
 
@@ -130,7 +128,7 @@ const Reviews = () => {
               </div>
 
               {/* Hover Indicator */}
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-0 bg-gradient-to-r from-teal-500 to-indigo-500 group-hover:w-2/3 transition-all duration-300 rounded-full" />
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1 w-0 bg-teal-500 group-hover:w-2/3 transition-all duration-300 rounded-full" />
             </div>
           ))}
         </div>

@@ -28,7 +28,7 @@ const NextAppointment = ({
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
             {/* Doctor Info */}
             <div className="flex items-start gap-5">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group relative overflow-hidden">
+              <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group relative overflow-hidden">
                 <div className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-150 transition-transform duration-500 rounded-full"></div>
                 <Stethoscope className="w-8 h-8 text-white relative z-10" />
               </div>
@@ -41,11 +41,11 @@ const NextAppointment = ({
                     Confirmed
                   </span>
                 </div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mt-1">
                   {nextConfirmed.Doctor?.specialization || "Specialist"} •{" "}
                   {nextConfirmed.Doctor?.hospital_name || "Hospital"}
                 </p>
-                <div className="flex items-center gap-5 mt-4 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 px-4 py-2 rounded-xl">
+                <div className="flex items-center gap-5 mt-4 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 px-4 py-2 rounded-xl">
                   <span className="flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-blue-500" />
                     {nextConfirmed.Pharmacy?.pharmacy_name}
@@ -55,7 +55,7 @@ const NextAppointment = ({
                     <Wallet className="w-4 h-4 text-amber-500" />
                     Fee: Rs. {nextConfirmed.payment_amount || 0}
                     <span
-                      className={`text-xs ml-1 px-2 py-0.5 rounded-md ${nextConfirmed.payment_status === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"}`}
+                      className={`text-xs ml-1 px-2 py-0.5 rounded-md font-semibold ${nextConfirmed.payment_status === "paid" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"}`}
                     >
                       {nextConfirmed.payment_status === "paid"
                         ? "Paid"
@@ -72,7 +72,7 @@ const NextAppointment = ({
         {(nextConfirmed.consultation_type === "online" &&
           nextConfirmed.meeting_link) ||
         nextConfirmed.doctor_notes ? (
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-t border-blue-100 dark:border-blue-800/30">
+          <div className="px-6 py-4 bg-blue-50 dark:bg-blue-900/20 border-t border-blue-100 dark:border-blue-800/30">
             {nextConfirmed.consultation_type === "online" &&
               nextConfirmed.meeting_link && (
                 <a
@@ -84,7 +84,7 @@ const NextAppointment = ({
                   <Video className="w-5 h-5 text-blue-500" />
                   Join Video Meeting
                   {getMeetingTimeLabel(nextConfirmed) && (
-                    <span className="text-blue-500 dark:text-blue-300 font-medium ml-1 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md">
+                    <span className="text-blue-500 dark:text-blue-300 font-semibold ml-1 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md">
                       ({getMeetingTimeLabel(nextConfirmed)})
                     </span>
                   )}
@@ -92,7 +92,7 @@ const NextAppointment = ({
               )}
             {nextConfirmed.doctor_notes && (
               <div className="mt-3 p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
-                <p className="text-sm text-gray-700 dark:text-gray-300">
+                <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">
                   <span className="font-bold text-blue-600 dark:text-blue-400 mr-2">
                     Note:
                   </span>

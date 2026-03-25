@@ -93,8 +93,8 @@ const Hero = ({ isVisible }) => {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 min-h-screen flex items-center">
-      {/* Animated Background Gradients */}
+    <section className="relative w-full overflow-hidden bg-slate-900 min-h-screen flex items-center">
+      {/* Animated Background Solid Colors */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl opacity-40 animate-pulse"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl opacity-40 animate-pulse"></div>
@@ -123,9 +123,9 @@ const Hero = ({ isVisible }) => {
                   isActive ? "scale-110" : "scale-100"
                 }`}
               />
-              {/* Premium Gradient Overlays */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent"></div>
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/90"></div>
+              {/* Solid Color Overlays */}
+              <div className="absolute inset-0 bg-black/80"></div>
+              <div className="absolute inset-0 bg-slate-900/30"></div>
             </div>
 
             {/* Content Container */}
@@ -138,11 +138,11 @@ const Hero = ({ isVisible }) => {
                 }`}
               >
                 {/* Icon Badge */}
-                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500/20 to-indigo-500/20 border border-teal-400/30 backdrop-blur-md mb-6 group cursor-default">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-500 shadow-lg shadow-teal-500/50">
+                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-teal-500/20 border border-teal-400/30 backdrop-blur-md mb-6 group cursor-default">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-teal-500 shadow-lg shadow-teal-500/50">
                     <SlideIcon size={18} className="text-white" />
                   </div>
-                  <span className="text-sm font-semibold text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-indigo-300">
+                  <span className="text-sm font-semibold text-teal-300">
                     Healthcare Innovation
                   </span>
                   <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse ml-auto"></div>
@@ -151,13 +151,11 @@ const Hero = ({ isVisible }) => {
                 {/* Main Title */}
                 <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight tracking-tight mb-6 text-white drop-shadow-2xl">
                   {slide.title} <br className="hidden sm:block" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-300 to-indigo-400">
-                    {slide.highlight}
-                  </span>
+                  <span className="text-teal-300">{slide.highlight}</span>
                 </h1>
 
                 {/* Description */}
-                <p className="text-xl sm:text-2xl text-slate-200 mb-10 max-w-2xl leading-relaxed drop-shadow-lg font-light">
+                <p className="text-xl sm:text-2xl text-slate-200 mb-10 max-w-2xl leading-relaxed font-semibold drop-shadow-lg">
                   {slide.description}
                 </p>
 
@@ -165,7 +163,7 @@ const Hero = ({ isVisible }) => {
                 <div className="flex flex-col sm:flex-row items-start gap-5 mb-10">
                   <Link
                     to={slide.primaryCta.link}
-                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-600 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-teal-500/40 hover:shadow-teal-500/60 transition-all duration-300 hover:-translate-y-1 group"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/40 hover:shadow-teal-500/60 transition-all duration-300 hover:-translate-y-1 group"
                   >
                     {slide.primaryCta.text}
                     <ArrowRight
@@ -175,7 +173,7 @@ const Hero = ({ isVisible }) => {
                   </Link>
                   <a
                     href={slide.secondaryCta.link}
-                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/40 text-white font-bold rounded-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 group"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/40 text-white font-semibold rounded-xl backdrop-blur-md transition-all duration-300 hover:-translate-y-1 group"
                   >
                     <PlayCircle size={20} />
                     {slide.secondaryCta.text}
@@ -183,7 +181,7 @@ const Hero = ({ isVisible }) => {
                 </div>
 
                 {/* Stats Row */}
-                <div className="flex flex-wrap gap-6 text-slate-300 text-sm">
+                <div className="flex flex-wrap gap-6 text-slate-300 text-sm font-semibold">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-teal-400"></div>
                     <span>Trusted by 10k+ users</span>
@@ -214,7 +212,7 @@ const Hero = ({ isVisible }) => {
                 onClick={() => goToSlide(index)}
                 className={`h-1.5 rounded-full transition-all duration-500 backdrop-blur-sm ${
                   index === currentSlide
-                    ? "bg-gradient-to-r from-teal-400 to-indigo-400 w-8 shadow-lg shadow-teal-400/50"
+                    ? "bg-teal-400 w-8 shadow-lg shadow-teal-400/50"
                     : "bg-white/30 w-2 hover:bg-white/50"
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
@@ -253,7 +251,7 @@ const Hero = ({ isVisible }) => {
         <div className="bg-white/10 dark:bg-slate-800/50 backdrop-blur-xl border border-white/20 dark:border-slate-700/30 rounded-2xl p-6 shadow-2xl max-w-xs">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles size={18} className="text-teal-400 animate-pulse-glow" />
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
+            <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">
               System Status
             </span>
           </div>
@@ -261,16 +259,16 @@ const Hero = ({ isVisible }) => {
             <div>
               <p className="text-white font-semibold mb-1">Operational</p>
               <div className="w-full h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-teal-500 to-teal-400 rounded-full w-full"></div>
+                <div className="h-full bg-teal-500 rounded-full w-full"></div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
               <div>
-                <p className="text-2xl font-bold text-white">10k+</p>
+                <p className="text-2xl font-semibold text-white">10k+</p>
                 <p className="text-xs text-slate-400">Active Users</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">500+</p>
+                <p className="text-2xl font-semibold text-white">500+</p>
                 <p className="text-xs text-slate-400">Doctors</p>
               </div>
             </div>
@@ -279,7 +277,7 @@ const Hero = ({ isVisible }) => {
       </div>
 
       {/* Bottom Gradient Fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent z-10"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-slate-900/80 z-10"></div>
     </section>
   );
 };
